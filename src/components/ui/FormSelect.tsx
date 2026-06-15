@@ -85,7 +85,7 @@ export const FormSelect: React.FC<FormSelectProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const triggerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLElement>(null);
   const coords = useDropdownPosition(triggerRef, isOpen);
 
   const hasError = !!error;
@@ -118,7 +118,7 @@ export const FormSelect: React.FC<FormSelectProps> = ({
     onChange(option.value);
     setIsOpen(false);
     setIsFocused(false);
-    onBlur?.();
+    // onBlur?.();
   };
 
   const triggerClasses = `
@@ -262,7 +262,7 @@ export const FormMultiSelect: React.FC<FormMultiSelectProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const triggerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLElement>(null);
   const coords = useDropdownPosition(triggerRef, isOpen);
 
   const hasError = !!error;

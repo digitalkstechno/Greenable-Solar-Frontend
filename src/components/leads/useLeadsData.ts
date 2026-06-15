@@ -245,17 +245,13 @@ export function useLeadsData(
 
   const fetchMeta = useCallback(async () => {
     try {
-      const [srcRes, stRes, staffRes, labelsRes, meRes] = await Promise.all([
-        axios.get(baseUrl.leadSources, { headers: getHeaders() }),
+      const [stRes, staffRes, meRes] = await Promise.all([
         axios.get(baseUrl.leadStatuses, { headers: getHeaders() }),
         axios.get(baseUrl.getAllStaff, { headers: getHeaders() }),
-        axios.get(baseUrl.leadLabels, { headers: getHeaders() }),
-        axios.get(baseUrl.currentStaff, { headers: getHeaders() }),
+        axios.get(baseUrl.me, { headers: getHeaders() })
       ]);
-      setSources(srcRes.data?.data ?? srcRes.data ?? []);
-      setStatuses(stRes.data?.data ?? stRes.data ?? []);
-      setStaffMembers(staffRes.data?.data ?? staffRes.data ?? []);
-      setLeadLabels(labelsRes.data?.data ?? []);
+      setStatuses(stRes.data?.data ?? []);
+      setStaffMembers(staffRes.data?.data ?? []);
       const role = meRes.data?.data?.role || {};
       const rawPerms = Array.isArray(role.permissions) ? role.permissions[0] : role.permissions || {};
       const lp = rawPerms.lead || {};

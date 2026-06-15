@@ -269,7 +269,8 @@ export default function LeadsKanbanView({
 
     const lostLeadsColumns: Column<ApiLead>[] = [
         { key: 'fullName', label: 'LEAD NAME', render: (v) => (<div><div className="font-semibold text-gray-900">{v}</div><span className="text-xs text-red-500">• Lost</span></div>) },
-        { key: 'companyName', label: 'COMPANY', render: (v) => <span className="text-sm">{v || '-'}</span> },
+        { key: 'kwRequirement', label: 'KW REQ', render: (v) => <span className="text-sm">{v || '-'}</span> },
+        { key: 'discomName', label: 'DISCOM', render: (v) => <span className="text-sm">{v || '-'}</span> },
         { key: 'address', label: 'LOCATION', render: (v) => <span className="text-sm">{v || '-'}</span> },
         { key: 'contact', label: 'CONTACT', render: (v, row) => <ContactCell phone={v} email={row.email} /> },
         { key: 'lostDate', label: 'LOST DATE', render: (v) => (v ? new Date(v).toLocaleDateString() : 'N/A') },
@@ -279,7 +280,8 @@ export default function LeadsKanbanView({
 
     const wonLeadsColumns: Column<ApiLead>[] = [
         { key: 'fullName', label: 'LEAD NAME', render: (v) => <span className="font-semibold text-gray-900">{v}</span> },
-        { key: 'companyName', label: 'COMPANY', render: (v) => <span className="text-sm">{v || '-'}</span> },
+        { key: 'kwRequirement', label: 'KW REQ', render: (v) => <span className="text-sm">{v || '-'}</span> },
+        { key: 'discomName', label: 'DISCOM', render: (v) => <span className="text-sm">{v || '-'}</span> },
         { key: 'address', label: 'LOCATION', render: (v) => <span className="text-sm">{v || '-'}</span> },
         { key: 'contact', label: 'CONTACT', render: (v, row) => <ContactCell phone={v} email={row.email} /> },
         { key: 'wonDate', label: 'WON DATE', render: (v) => (v ? new Date(v).toLocaleDateString() : 'N/A') },

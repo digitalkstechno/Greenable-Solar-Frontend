@@ -23,21 +23,16 @@ function useDebounce<T>(value: T, delay = 500): T {
 type TableLead = {
   id: string;
   name: string;
-  companyName?: string;
-  address?: string;
-  phone: string;
+  contact: string;
   email: string;
-  source: string;
+  kwRequirement?: string;
+  discomName?: string;
+  address?: string;
+  locationLink?: string;
   status: string;
   staff: string;
-  priority: string;
   lastFollowUp: string;
-  nextFollowupDate?: string;
-  nextFollowupTime?: string;
-  note?: string;
   isActive?: boolean;
-  attachments?: { name: string; url?: string }[];
-  leadLabel?: Array<{ _id: string; name: string; color: string }>;
   _raw?: any;
 };
 
@@ -83,19 +78,18 @@ function mapLead(item: any): TableLead {
   return {
     id: item._id,
     name: item.fullName,
-    companyName: item.companyName,
-    address: item.address,
-    phone: item.contact || item.phone,
+    contact: item.contact || item.phone,
     email: item.email,
-    source: item.leadSource?.name || item.source?.name || '-',
+    kwRequirement: item.kwRequirement || '-',
+    discomName: item.discomName || '-',
+    address: item.address,
+    locationLink: item.locationLink,
     status: item.leadStatus?.name || item.status?.name || '-',
     staff: item.assignedTo?.fullName || '-',
-    priority: item.priority?.toUpperCase() || 'MEDIUM',
     lastFollowUp: item.updatedAt
       ? new Date(item.updatedAt).toLocaleDateString()
       : '-',
     isActive: item.isActive,
-    leadLabel: item.leadLabel || [],
     _raw: item,
   };
 }
@@ -147,14 +141,14 @@ export default function LeadsListView({
           {/* Phone number */}
           <div className="flex items-center gap-1.5 text-gray-600">
             <Phone className="h-3 w-3 text-gray-400" />
-            <span>{row.phone || '-'}</span>
+            <span>{row.contact || '-'}</span>
           </div>
           {/* Action icons */}
-          {row.phone && (
+          {row.contact && (
             <div className="flex items-center gap-2 mt-1">
               {/* Call Now */}
               <a
-                href={`tel:${row.phone}`}
+                href={`tel:${row.contact}`}
                 title="Call Now"
                 onClick={(e) => e.stopPropagation()}
                 className="flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600 hover:bg-blue-100 transition-colors"
@@ -164,7 +158,7 @@ export default function LeadsListView({
               </a>
               {/* WhatsApp */}
               <a
-                href={`https://wa.me/${row.phone.replace(/[^0-9]/g, '')}`}
+                href={`https://wa.me/${row.contact.replace(/[^0-9]/g, '')}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 title="WhatsApp"
@@ -202,33 +196,10 @@ export default function LeadsListView({
         </div>
       ),
     },
-    { key: 'source', label: 'SOURCE' },
+    { key: 'kwRequirement', label: 'KW REQ' },
+    { key: 'discomName', label: 'DISCOM' },
     { key: 'status', label: 'STATUS' },
-    {
-      key: 'leadLabel',
-      label: 'LABEL',
-      render: (_: any, row: TableLead) => {
-        if (!row.leadLabel || row.leadLabel.length === 0) {
-          return <span className="text-gray-400">-</span>;
-        }
-
-        return (
-          <div className="flex flex-wrap gap-1 whitespace-nowrap">
-            {row.leadLabel.map((label) => (
-              <span
-                key={label._id}
-                className="rounded-full px-2 py-0.5 text-xs font-medium text-white"
-                style={{ backgroundColor: label.color }}
-              >
-                {label.name}
-              </span>
-            ))}
-          </div>
-        );
-      },
-    },
     { key: 'staff', label: 'ASSIGNED STAFF' },
-    { key: 'priority', label: 'PRIORITY' },
     { key: 'lastFollowUp', label: 'LAST FOLLOW-UP' },
     { 
       key: 'paymentAmount', 
@@ -267,19 +238,14 @@ export default function LeadsListView({
         ...d,
         _id: d._id,
         fullName: d.fullName,
-        companyName: d.companyName,
-        address: d.address,
         contact: d.contact,
         email: d.email,
-        leadSource: d.leadSource,
-        leadLabel: d.leadLabel,
+        kwRequirement: d.kwRequirement,
+        discomName: d.discomName,
+        address: d.address,
+        locationLink: d.locationLink,
         leadStatus: d.leadStatus,
         assignedTo: d.assignedTo,
-        priority: d.priority,
-        lastFollowUp: d.lastFollowUp,
-        nextFollowupDate: d.nextFollowupDate,
-        nextFollowupTime: d.nextFollowupTime,
-        note: d.note,
         isActive: d.isActive,
       };
       onEdit?.(apiLead);

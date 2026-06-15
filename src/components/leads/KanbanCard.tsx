@@ -51,7 +51,7 @@ export default function KanbanCard({
             <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                     <div className="font-semibold text-gray-900 truncate">{lead.fullName}</div>
-                    <div className="text-xs text-gray-500 truncate">{lead.companyName || '-'}</div>
+                    <div className="text-xs text-gray-500 truncate">{lead.kwRequirement ? `${lead.kwRequirement} KW` : '-'}</div>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                     <button
@@ -93,33 +93,15 @@ export default function KanbanCard({
                         )}
                         <span className="truncate text-xs">{lead.assignedTo?.fullName || 'Unassigned'}</span>
                     </div>
-                    {lead.priority && (
-                        <span className={`px-2 py-0.5 text-xs font-semibold rounded-full flex-shrink-0 ${lead.priority.toLowerCase() === 'high'
-                            ? 'bg-red-100 text-red-600'
-                            : lead.priority.toLowerCase() === 'medium'
-                                ? 'bg-yellow-100 text-yellow-700'
-                                : 'bg-green-100 text-green-700'
-                            }`}>
-                            {lead.priority}
+                    {lead.discomName && (
+                        <span className="px-2 py-0.5 text-xs font-semibold rounded-full flex-shrink-0 bg-blue-100 text-blue-700">
+                            {lead.discomName}
                         </span>
                     )}
                 </div>
             </div>
 
-            {/* Labels */}
-            {lead.leadLabel && lead.leadLabel.length > 0 && (
-                <div className="mt-2 flex gap-1.5 overflow-x-auto">
-                    {lead.leadLabel.map((label) => (
-                        <span
-                            key={label._id}
-                            style={{ backgroundColor: label.color }}
-                            className="flex-shrink-0 rounded px-2 py-0.5 text-[11px] font-medium text-white"
-                        >
-                            {label.name}
-                        </span>
-                    ))}
-                </div>
-            )}
+
         </div>
     );
 }

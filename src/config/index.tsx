@@ -53,6 +53,9 @@ export const baseUrl = {
   updateTaskStatus: `${API}task`,
   updateTaskPriority: `${API}task`,
   todayTasks: `${API}task/today`,
+  category: `${API}category`,
+  product: `${API}product`,
+  stock: `${API}stock`,
   getBaseUrl: API,
 };
 

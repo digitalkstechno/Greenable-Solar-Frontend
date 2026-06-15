@@ -9,19 +9,22 @@ import { RolesContent } from './roles';
 import { StaffManagementContent } from './staff-management';
 import { LeadSourcesContent } from './lead-sources';
 import { LeadStatusContent } from './lead-status';
-import { Settings, Users, Link2, Flag, Tag, Building2, UsersRound, Settings2 } from 'lucide-react';
+import { Settings, Users, Link2, Flag, Tag, Building2, UsersRound, Settings2, List, Package, PackagePlus, PackageMinus } from 'lucide-react';
 import { LeadLabelsContent } from './lead-labels';
 import { TeamsContent } from './teams';
 import { OrganizationsContent } from './organizations';
 import { TaskStatusContent } from './task-status';
 import { useRouter } from 'next/router';
 import { FieldSettingsContent } from './field-settings';
-
+import { CategoryContent } from './category';
+import { ProductContent } from './product';
+import { StockInContent } from './stock-in';
+import { StockOutContent } from './stock-out';
 
 export default function Setup() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<
-    'Role Management' | 'Staff Management' | 'Lead Sources' | 'Lead Status' | 'Kanban Status' | 'Lead Labels' | 'Teams' | 'Organizations' | 'Task Status' | 'Field Settings'
+    'Role Management' | 'Staff Management' | 'Lead Sources' | 'Lead Status' | 'Kanban Status' | 'Lead Labels' | 'Teams' | 'Organizations' | 'Task Status' | 'Field Settings' | 'Category' | 'Product' | 'Stock In' | 'Stock Out'
   >('Role Management');
   const token = typeof window !== 'undefined' ? getAuthToken() : null;
   const [permissions, setPermissions] = useState<any>(null);
@@ -31,7 +34,7 @@ export default function Setup() {
   useEffect(() => {
     if (router.query.tab) {
       const tab = router.query.tab as string;
-      const validTabs = ['Role Management', 'Staff Management', 'Lead Sources', 'Lead Status', 'Kanban Status', 'Lead Labels', 'Teams', 'Organizations', 'Task Status', 'Field Settings'];
+      const validTabs = ['Role Management', 'Staff Management', 'Lead Sources', 'Lead Status', 'Kanban Status', 'Lead Labels', 'Teams', 'Organizations', 'Task Status', 'Field Settings', 'Category', 'Product', 'Stock In', 'Stock Out'];
       if (validTabs.includes(tab)) {
         setActiveTab(tab as any);
       }
@@ -39,7 +42,7 @@ export default function Setup() {
   }, [router.query.tab]);
 
   // Handle tab change and update URL
-  const handleTabChange = (tab: 'Role Management' | 'Staff Management' | 'Lead Sources' | 'Lead Status' | 'Kanban Status' | 'Lead Labels' | 'Teams' | 'Organizations' | 'Task Status' | 'Field Settings') => {
+  const handleTabChange = (tab: 'Role Management' | 'Staff Management' | 'Lead Sources' | 'Lead Status' | 'Kanban Status' | 'Lead Labels' | 'Teams' | 'Organizations' | 'Task Status' | 'Field Settings' | 'Category' | 'Product' | 'Stock In' | 'Stock Out') => {
     setActiveTab(tab);
     router.push({
       pathname: router.pathname,
@@ -194,6 +197,9 @@ export default function Setup() {
   const canViewTeams = useMemo(() => !!(permissions?.teams?.readAll), [permissions]);
   const canViewOrgs = useMemo(() => !!(permissions?.organizations?.readAll), [permissions]);
   const canViewTaskStatus = useMemo(() => !!(permissions?.taskStatus?.readAll || permissions?.setup?.readAll), [permissions]);
+  const canViewCategory = useMemo(() => !!(permissions?.setup?.readAll), [permissions]);
+  const canViewProduct = useMemo(() => !!(permissions?.setup?.readAll), [permissions]);
+  const canViewStock = useMemo(() => !!(permissions?.setup?.readAll), [permissions]);
 
   const menuItems = useMemo(() => {
     const items = [
@@ -207,9 +213,13 @@ export default function Setup() {
       { name: "Teams", icon: UsersRound, visible: canViewTeams },
       { name: "Organizations", icon: Building2, visible: canViewOrgs },
       { name: "Field Settings", icon: Settings2, visible: true },
+      { name: "Category", icon: List, visible: canViewCategory },
+      { name: "Product", icon: Package, visible: canViewProduct },
+      { name: "Stock In", icon: PackagePlus, visible: canViewStock },
+      { name: "Stock Out", icon: PackageMinus, visible: canViewStock },
     ];
     return items.filter(i => i.visible);
-  }, [canViewRole, canViewStaff, canViewLeadSource, canViewLeadStatus, canViewLeadLabel, canViewTeams, canViewOrgs, canViewTaskStatus]);
+  }, [canViewRole, canViewStaff, canViewLeadSource, canViewLeadStatus, canViewLeadLabel, canViewTeams, canViewOrgs, canViewTaskStatus, canViewCategory, canViewProduct, canViewStock]);
 
   // Handle access restriction - FIXED: Check if current tab is valid
   useEffect(() => {
@@ -283,6 +293,10 @@ export default function Setup() {
               {activeTab === 'Organizations' && <OrganizationsContent />}
               {activeTab === 'Task Status' && <TaskStatusContent />}
               {activeTab === 'Field Settings' && <FieldSettingsContent />}
+              {activeTab === 'Category' && <CategoryContent />}
+              {activeTab === 'Product' && <ProductContent />}
+              {activeTab === 'Stock In' && <StockInContent />}
+              {activeTab === 'Stock Out' && <StockOutContent />}
               {activeTab === 'Kanban Status' && (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
