@@ -8,6 +8,8 @@ import { toast } from 'react-toastify';
 import { ApiLead } from './types';
 import FormInput from '../ui/Input';
 import { FormSelect } from '../ui/FormSelect';
+import { FileText, Download } from 'lucide-react';
+import LeadQuotationDialog from './LeadQuotationDialog';
 
 interface DropdownItem { _id: string; name?: string; fullName?: string; }
 
@@ -39,6 +41,8 @@ export default function LeadAddDialog({
   const [statuses, setStatuses] = useState<DropdownItem[]>([]);
   const [staff, setStaff] = useState<DropdownItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [quotationOpen, setQuotationOpen] = useState(false);
 
   const [requiredFields, setRequiredFields] = useState<string[]>([]);
 
@@ -124,20 +128,25 @@ export default function LeadAddDialog({
           isActive: values.isActive,
         };
 
+        const formData = new FormData();
+        Object.keys(payload).forEach((key) => {
+          formData.append(key, payload[key]);
+        });
+        attachments.forEach((file) => {
+          formData.append('attachments', file);
+        });
+
         const headers = {
           Authorization: `Bearer ${token()}`,
-          'Content-Type': 'application/json',
         };
 
-        let body: any = payload;
-
         if (mode === 'add') {
-          const res = await axios.post(baseUrl.addLead, body, { headers });
+          const res = await axios.post(baseUrl.addLead, formData, { headers });
           toast.success('Lead created successfully!');
           onLeadCreated?.(res.data?.data ?? res.data);
         } else {
           if (!initialData?._id) throw new Error('Missing lead ID');
-          const res = await axios.put(`${baseUrl.updateLead}/${initialData._id}`, body, { headers });
+          const res = await axios.put(`${baseUrl.updateLead}/${initialData._id}`, formData, { headers });
           toast.success('Lead updated successfully!');
           onLeadUpdated?.(res.data?.data ?? res.data);
         }

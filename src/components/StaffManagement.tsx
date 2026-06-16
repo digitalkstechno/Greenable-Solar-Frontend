@@ -122,7 +122,7 @@ export default function SalesExecutiveForm({
 
       if (initialData.image) {
         setPreviewImage(
-          `${process.env.NEXT_PUBLIC_IMAGE_URL}/images/user-profile/${initialData.image}`
+          initialData.image.startsWith('http') ? initialData.image : `${process.env.NEXT_PUBLIC_IMAGE_URL}/images/StaffProfileImages/${initialData.image}`
         );
       }
     } else {
@@ -347,6 +347,32 @@ export default function SalesExecutiveForm({
           />
         </div>
 
+<<<<<<< HEAD
+=======
+        {/* Status + Role */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <FormSelect
+            label="Status"
+            name="status"
+            value={formik.values.status}
+            onChange={(e) => { formik.setFieldValue('status', e); formik.setFieldTouched('status', true, false); }}
+            onBlur={formik.handleBlur}
+            options={statusOptions.map((status) => ({ value: status, label: status }))}
+            placeholder="— Select —"
+            error={formik.touched.status && formik.errors.status ? formik.errors.status : undefined}
+          />
+          <FormSelect
+            label="Department"
+            name="role"
+            value={formik.values.role}
+            onChange={(e) => { formik.setFieldValue('role', e); formik.setFieldTouched('role', true, false); }}
+            onBlur={formik.handleBlur}
+            options={roles.map((role) => ({ value: role._id, label: role.roleName }))}
+            placeholder="— Select —"
+            error={formik.touched.role && formik.errors.role ? formik.errors.role : undefined}
+          />
+        </div>
+>>>>>>> d754194455f5378113c53838cd3fc1b1dcccb687
 
 
         {/* Department */}

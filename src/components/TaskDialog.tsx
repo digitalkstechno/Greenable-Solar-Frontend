@@ -88,6 +88,7 @@ const isImage = (filename: string) => IMAGE_EXTS.includes(filename.split('.').po
 
 // Get full URL for attachment
 const getFileUrl = (path: string) => {
+  if (path?.startsWith('http')) return path;
   const base = (process.env.NEXT_PUBLIC_IMAGE_URL || '').replace(/\/$/, '');
   return `${base}${path}`;
 };

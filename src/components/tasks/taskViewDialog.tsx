@@ -138,8 +138,8 @@ export default function TaskViewDialog({ task, taskStatuses, onClose }: TaskView
           {task.attachments?.length ? (
             <div className="space-y-2">
               {task.attachments.map((a, i) => {
-                const fileUrl = `${process.env.NEXT_PUBLIC_IMAGE_URL}${a.path}`;
-                const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(a.filename);
+                const fileUrl = a.path?.startsWith('http') ? a.path : `${process.env.NEXT_PUBLIC_IMAGE_URL}${a.path}`;
+                const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(a.filename || a.path);
 
                 return (
                   <div key={i} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">

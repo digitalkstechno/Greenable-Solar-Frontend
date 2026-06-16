@@ -36,7 +36,7 @@ export default function RoleForm({
     task: 'Tasks',
     taskStatus: 'Task Statuses',
     staff: 'Staff Management',
-    role: 'Role Management',
+    role: 'Department Management',
     leadStatus: 'Lead Statuses',
     leadSource: 'Lead Sources',
     leadLabel: 'Lead Labels',
@@ -95,10 +95,10 @@ export default function RoleForm({
   // Validation schema
   const validationSchema = Yup.object({
     roleName: Yup.string()
-      .required('Role name is required')
-      .min(2, 'Role name must be at least 2 characters')
-      .max(50, 'Role name must be at most 50 characters')
-      .matches(/^[a-zA-Z0-9\s_-]+$/, 'Role name can only contain letters, numbers, spaces, underscores, and hyphens'),
+      .required('Department name is required')
+      .min(2, 'Department name must be at least 2 characters')
+      .max(50, 'Department name must be at most 50 characters')
+      .matches(/^[a-zA-Z0-9\s_-]+$/, 'Department name can only contain letters, numbers, spaces, underscores, and hyphens'),
   });
 
   // Initialize formik
@@ -163,7 +163,7 @@ export default function RoleForm({
     <Dialog
       isOpen={isOpen}
       onClose={onClose}
-      title={initialData ? `Edit Role: ${initialData.roleName}` : "Add New Role"}
+      title={initialData ? `Edit Department: ${initialData.roleName}` : "Add New Department"}
       size="lg"
       footer={
         <>
@@ -188,7 +188,7 @@ export default function RoleForm({
       <form id="role-form" onSubmit={formik.handleSubmit} className="space-y-6">
         <div>
           <FormInput
-            label="Role Name"
+            label="Department Name"
             name="roleName"
             type="text"
             value={formik.values.roleName}
@@ -196,7 +196,7 @@ export default function RoleForm({
             onBlur={formik.handleBlur}
             error={formik.touched.roleName && formik.errors.roleName ? formik.errors.roleName : undefined}
             required
-            placeholder="Enter role name (e.g., Admin, Manager, Staff)"
+            placeholder="Enter department name (e.g., Admin, Manager, Staff)"
             // helperText="Role name must be unique and descriptive"
           />
         </div>

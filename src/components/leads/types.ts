@@ -61,6 +61,21 @@ export type ApiLead = {
   lostDate?: string;
   wonDate?: string;
   amountDate?: string;
+  activities?: {
+    message: string;
+    by?: ApiUser;
+    date: string;
+  }[];
+  quotation?: {
+    date: string;
+    solarModule: string;
+    inverter: string;
+    options: string[];
+    rows: {
+      title: string;
+      values: string[];
+    }[];
+  };
 };
 
 export type AddLeadForm = {

@@ -219,7 +219,7 @@ export function RolesContent() {
   const columns: Column<Role>[] = [
     {
       key: 'roleName',
-      label: 'ROLE NAME',
+      label: 'DEPARTMENT NAME',
       render: (value) => (
         <div className="flex items-center gap-3">
           <span className="font-semibold text-gray-900">{value}</span>
@@ -310,7 +310,7 @@ export function RolesContent() {
     <>
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Roles Management</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Department Management</h1>
         </div>
 
         <DataTable
@@ -338,7 +338,7 @@ export function RolesContent() {
           addButton={
             canCreate
               ? {
-                  label: "Add Role",
+                  label: "Add Department",
                   onClick: handleAdd,
                 }
               : undefined
@@ -353,7 +353,7 @@ export function RolesContent() {
           setShowDeleteDialog(false);
           setRoleToDelete(null);
         }}
-        title="Delete Role"
+        title="Delete Department"
         size="md"
         footer={
           <>
@@ -377,7 +377,7 @@ export function RolesContent() {
       >
         <div className="py-4">
           <p className="text-gray-700">
-            Are you sure you want to delete the role "{roleToDelete?.roleName}"? 
+            Are you sure you want to delete the department "{roleToDelete?.roleName}"? 
             This action cannot be undone.
           </p>
         </div>

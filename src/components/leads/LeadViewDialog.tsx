@@ -475,8 +475,9 @@ import { toast } from 'react-toastify';
 import Dialog, { CenterDialog } from '@/components/Dialog';
 import { baseUrl, getAuthToken } from '@/config';
 import { ApiLead, ApiStatus } from './types';
-import { Eye, Download, FileText, Image, File, FileSpreadsheet, Search } from 'lucide-react';
+import { Eye, Download, FileText, Image, File, FileSpreadsheet, Search, Trash2 } from 'lucide-react';
 import { getFileIcon } from '@/utills/utill';
+import LeadQuotationDialog from './LeadQuotationDialog';
 
 interface Props {
   lead: ApiLead | null;
@@ -507,8 +508,11 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
   const [addingFollowup, setAddingFollowup] = useState(false);
   const [previewAttachment, setPreviewAttachment] = useState<{ url: string; name: string; type: string } | null>(null);
   const [localFollowUps, setLocalFollowUps] = useState<FollowUp[]>([]);
+  const [localAttachments, setLocalAttachments] = useState<any[]>([]);
+  const [localActivities, setLocalActivities] = useState<any[]>([]);
   const [staffInfo, setStaffInfo] = useState<any>(null);
   const [followUpSearch, setFollowUpSearch] = useState('');
+  const [quotationOpen, setQuotationOpen] = useState(false);
 
   useEffect(() => {
     if (lead) {
@@ -516,6 +520,8 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
       setEditNextDate(lead.nextFollowupDate || '');
       setEditNextTime(lead.nextFollowupTime || '');
       setLocalFollowUps(lead.followUps || []);
+      setLocalAttachments(lead.attachments || []);
+      setLocalActivities(lead.activities || []);
     }
   }, [lead]);
 
@@ -549,19 +555,59 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
     if (!lead) return;
     setSaving(true);
     try {
-      await axios.put(
+      const res = await axios.put(
         `${baseUrl.updateLead}/${lead._id}`,
         {
           leadStatus: editStatus,
         },
         { headers: { Authorization: `Bearer ${getAuthToken()}` } }
       );
+      if (res.data?.data?.activities) {
+        setLocalActivities(res.data.data.activities);
+      }
       toast.success('Lead status updated');
       onRefresh();
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Failed to update lead');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!lead || !e.target.files || e.target.files.length === 0) return;
+    
+    setSaving(true);
+    try {
+      const formData = new FormData();
+      Array.from(e.target.files).forEach((file) => {
+        formData.append('attachments', file);
+      });
+
+      const response = await axios.put(
+        `${baseUrl.updateLead}/${lead._id}`,
+        formData,
+        { 
+          headers: { 
+            Authorization: `Bearer ${getAuthToken()}`,
+            'Content-Type': 'multipart/form-data'
+          } 
+        }
+      );
+      
+      if (response.data?.data?.attachments) {
+        setLocalAttachments(response.data.data.attachments);
+      }
+      
+      toast.success('Attachments uploaded successfully');
+      onRefresh();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to upload attachments');
+    } finally {
+      setSaving(false);
+      if (e.target) {
+        e.target.value = '';
+      }
     }
   };
 
@@ -627,8 +673,8 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
   };
 
   const handleView = (attachment: any) => {
-    const fileUrl = `${process.env.NEXT_PUBLIC_IMAGE_URL}${attachment.path}`;
-    const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(attachment.filename);
+    const fileUrl = attachment.path?.startsWith('http') ? attachment.path : `${process.env.NEXT_PUBLIC_IMAGE_URL}${attachment.path}`;
+    const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(attachment.filename || attachment.path);
 
     if (isImage) {
       setPreviewAttachment({
@@ -641,9 +687,34 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
     }
   };
 
+  const handleDeleteAttachment = async (attachment: any) => {
+    if (!window.confirm(`Are you sure you want to delete "${attachment.originalName}"?`)) {
+      return;
+    }
+    
+    try {
+      await axios.delete(
+        `${baseUrl.getBaseUrl?.endsWith('/') ? baseUrl.getBaseUrl.slice(0, -1) : baseUrl.getBaseUrl}/lead/${lead?._id}/attachments/${attachment._id}`,
+        { headers: { Authorization: `Bearer ${getAuthToken()}` } }
+      );
+      setLocalAttachments(prev => prev.filter(a => a._id !== attachment._id));
+      toast.success('Attachment deleted successfully');
+      onRefresh();
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || 'Failed to delete attachment');
+    }
+  };
+
   const handleDownload = async (attachment: any) => {
     try {
-      const fileUrl = `${process.env.NEXT_PUBLIC_IMAGE_URL}${attachment.path}`;
+      const fileUrl = attachment.path?.startsWith('http') ? attachment.path : `${process.env.NEXT_PUBLIC_IMAGE_URL}${attachment.path}`;
+      
+      // External URLs block CORS on fetch, so just open in new tab for them
+      if (attachment.path?.startsWith('http')) {
+        window.open(fileUrl, '_blank');
+        return;
+      }
+
       const response = await fetch(fileUrl, {
         headers: { Authorization: `Bearer ${getAuthToken()}` }
       });
@@ -906,16 +977,36 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
             )}
 
             {/* Attachments */}
-            {lead.attachments && lead.attachments.length > 0 && (
-              <div className="rounded-lg bg-gray-50 p-4">
-                <div className="mb-3 text-sm font-medium text-gray-600 flex items-center gap-2">
+            <div className="rounded-lg bg-gray-50 p-4">
+              <div className="mb-3 text-sm font-medium text-gray-600 flex items-center justify-between">
+                <div className="flex items-center gap-2">
                   <span>Attachments</span>
                   <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full text-xs">
-                    {lead.attachments.length}
+                    {localAttachments?.length || 0}
                   </span>
                 </div>
+                <div className="relative">
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,.pdf"
+                    onChange={handleFileUpload}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    title="Upload Attachments"
+                  />
+                  <button
+                    type="button"
+                    disabled={saving}
+                    className="text-xs bg-secondary text-white px-3 py-1.5 font-semibold rounded shadow-sm hover:bg-blue-700 pointer-events-none transition-colors"
+                  >
+                    + Add Attachments
+                  </button>
+                </div>
+              </div>
+              
+              {localAttachments && localAttachments.length > 0 ? (
                 <div className="space-y-2">
-                  {lead.attachments.map((att: any, idx) => {
+                  {localAttachments.map((att: any, idx) => {
                     const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(att?.filename || "");
 
                     return (
@@ -925,7 +1016,7 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
                           {isImage ? (
                             <div className="relative w-10 h-10 rounded overflow-hidden border border-gray-200">
                               <img
-                                src={`${process.env.NEXT_PUBLIC_IMAGE_URL}${att?.path}`}
+                                src={att?.path?.startsWith('http') ? att.path : `${process.env.NEXT_PUBLIC_IMAGE_URL}${att?.path}`}
                                 alt={att?.originalName}
                                 className="w-full h-full object-cover"
                               />
@@ -962,13 +1053,24 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
                           >
                             <Download className="h-4 w-4" />
                           </button>
+                          <button
+                            onClick={() => handleDeleteAttachment(att)}
+                            className="p-2 hover:bg-red-50 rounded-lg transition-colors text-gray-600 hover:text-red-600"
+                            title="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </div>
                     );
                   })}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="text-sm text-gray-500 py-2 border-t border-gray-100 mt-2">
+                  No attachments available
+                </div>
+              )}
+            </div>
 
             {/* Lost info */}
             {lead.isLost && (
@@ -991,9 +1093,83 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
                 </div>
               </div>
             )}
+
+            {/* Quotation */}
+            <div className="rounded-lg bg-gray-50 p-4">
+              <div className="mb-3 text-sm font-bold text-gray-800">Quotation</div>
+              <div className="flex gap-4">
+                {lead.quotation ? (
+                  <>
+                    <button
+                      onClick={() => setQuotationOpen(true)}
+                      className="flex-1 rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary flex items-center justify-center gap-2"
+                    >
+                      <FileText className="h-4 w-4" /> Edit Quotation
+                    </button>
+                    <button
+                      onClick={() => { toast.info('Download PDF feature coming soon'); }}
+                      className="flex-1 rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary flex items-center justify-center gap-2"
+                    >
+                      <Download className="h-4 w-4" /> Download Quotation
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setQuotationOpen(true)}
+                    className="w-full rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary flex items-center justify-center gap-2"
+                  >
+                    <FileText className="h-4 w-4" /> Generate Quotation
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Activity Log */}
+            <div className="rounded-lg bg-gray-50 p-4">
+              <div className="mb-3 text-sm font-bold text-gray-800">Activity Log</div>
+              {localActivities && localActivities.length > 0 ? (
+                <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="bg-secondary text-white">
+                        <th className="px-4 py-3 font-semibold w-12 text-center">#</th>
+                        <th className="px-4 py-3 font-semibold">MESSAGE</th>
+                        <th className="px-4 py-3 font-semibold">BY</th>
+                        <th className="px-4 py-3 font-semibold">DATE</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {[...localActivities].reverse().map((act, i) => (
+                        <tr key={i} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="px-4 py-3 text-center text-gray-500">{localActivities.length - i}</td>
+                          <td className="px-4 py-3 text-gray-700">{act.message}</td>
+                          <td className="px-4 py-3 text-gray-600">{act.by?.fullName || 'System'}</td>
+                          <td className="px-4 py-3 text-gray-500">
+                            {new Date(act.date).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', '')}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-8 text-center bg-white rounded-xl border border-gray-100 border-dashed">
+                  <p className="text-gray-400">No activity history available yet.</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </Dialog>
+
+      {lead && (
+        <LeadQuotationDialog
+          isOpen={quotationOpen}
+          onClose={() => setQuotationOpen(false)}
+          lead={lead}
+          onRefresh={onRefresh}
+        />
+      )}
 
       {/* Image Preview Modal */}
       {previewAttachment && (
