@@ -28,8 +28,8 @@ function useDropdownPosition(ref: React.RefObject<HTMLElement>, isOpen: boolean)
     if (ref.current) {
       const rect = ref.current.getBoundingClientRect();
       setCoords({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
+        top: rect.bottom,
+        left: rect.left,
         width: rect.width,
       });
     }

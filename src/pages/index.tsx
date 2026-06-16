@@ -41,6 +41,7 @@
   import { baseUrl, getAuthToken } from "@/config";
   import moment from "moment";
   import Link from 'next/link';
+  import DashboardLeadUpdateDialog from "@/components/leads/DashboardLeadUpdateDialog";
 
   interface StatusCount {
     statusId: string;
@@ -99,6 +100,9 @@
     // Today's Tasks
     const [todayTasks, setTodayTasks] = useState<any[]>([]);
     const [tasksLoading, setTasksLoading] = useState(false);
+
+    const [isUpdateLeadDialogOpen, setIsUpdateLeadDialogOpen] = useState(false);
+    const [selectedLeadForUpdate, setSelectedLeadForUpdate] = useState<any>(null);
 
     const [permissions, setPermissions] = useState<{ readAll: boolean; readOwn: boolean }>({ readAll: false, readOwn: false });
     const [user, setUser] = useState<any>(null);
@@ -543,32 +547,52 @@
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <h4 className="font-semibold text-gray-900 text-sm">
-                            {lead.lead?.fullName || lead.fullName || "Unknown"}
+                            {lead.fullName || "Unknown"}
                           </h4>
-                          {lead.lead?.contact && (
+                          {lead.contact && (
                             <span className="text-xs text-gray-500 flex items-center gap-1">
                               <Phone className="h-3 w-3" />
-                              {lead.lead.contact}
+                              {lead.contact}
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-3 text-xs">
+                        <div className="flex items-center gap-3 text-xs mb-2">
                           <span
                             className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${getStatusColor(
-                              lead.lead?.leadStatus?.name || lead.leadStatus?.name || "",
+                              lead.leadStatus?.name || "",
                             )}`}
                           >
-                            {lead.lead?.leadStatus?.name || lead.leadStatus?.name || "-"}
-                          </span>
-                          <span className="text-gray-400 flex items-center gap-1">
-                            <CalendarIcon className="h-3 w-3" />
-                            {lead.nextFollowupDate
-                              ? moment(lead.nextFollowupDate).format("DD MMM, YYYY")
-                              : "-"}
+                            {lead.leadStatus?.name || "-"}
                           </span>
                         </div>
                       </div>
-                      <ChevronRight className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="flex flex-col items-end gap-2 shrink-0">
+                        <div className="text-xs font-semibold text-gray-700">
+                           {lead.nextFollowupDate ? moment(lead.nextFollowupDate).format("DD-MM-YYYY") : "-"}
+                        </div>
+                        <div className="text-[10px] font-medium text-gray-500">
+                           {lead.nextFollowupTime || "-"}
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedLeadForUpdate(lead);
+                            setIsUpdateLeadDialogOpen(true);
+                          }}
+                          className="px-3 py-1 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium transition-colors"
+                        >
+                          Pending
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/leads/list`);
+                          }}
+                          className="px-3 py-1 rounded-full bg-gray-600 hover:bg-gray-700 text-white text-xs font-medium transition-colors"
+                        >
+                          History
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -921,6 +945,21 @@
           </div>
 
         </div>
+        
+        {isUpdateLeadDialogOpen && (
+          <DashboardLeadUpdateDialog
+            isOpen={isUpdateLeadDialogOpen}
+            onClose={() => {
+              setIsUpdateLeadDialogOpen(false);
+              setSelectedLeadForUpdate(null);
+            }}
+            lead={selectedLeadForUpdate}
+            onSuccess={() => {
+              fetchUpcomingFollowups(upcomingPage);
+              fetchDueFollowups(duePage);
+            }}
+          />
+        )}
       </div>
     );
   }
