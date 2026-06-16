@@ -331,7 +331,7 @@ export default function TaskDialog({ isOpen, onClose, mode, initialData, onSucce
     const token = getAuthToken();
     const headers = { Authorization: `Bearer ${token}` };
     Promise.all([
-      axios.get(`${baseUrl.getAllStaff}?limit=1000`, { headers }),
+      axios.get(`${baseUrl.getAllUsers}?limit=1000`, { headers }),
       axios.get(baseUrl.teams, { headers }),
       axios.get(baseUrl.taskStatuses, { headers }),
     ])
@@ -389,7 +389,7 @@ export default function TaskDialog({ isOpen, onClose, mode, initialData, onSucce
             value={formik.values.subject}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
-            error={formik.touched.subject && formik.errors.subject}
+            error={undefined}
             placeholder=""
             as="input"
             required={requiredFields.includes('subject')}
@@ -430,7 +430,7 @@ export default function TaskDialog({ isOpen, onClose, mode, initialData, onSucce
               value={formik.values.startDate}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              error={formik.touched.startDate && formik.errors.startDate}
+              error={undefined}
               placeholder=""
               as="input"
               required={requiredFields.includes('startDate')}
@@ -442,7 +442,7 @@ export default function TaskDialog({ isOpen, onClose, mode, initialData, onSucce
               value={formik.values.endDate}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
-              error={formik.touched.endDate && formik.errors.endDate}
+              error={undefined}
               placeholder=""
               as="input"
               required={requiredFields.includes('endDate')}
@@ -458,7 +458,7 @@ export default function TaskDialog({ isOpen, onClose, mode, initialData, onSucce
               onChange={(val) => formik.setFieldValue('status', val)}
               // onBlur={() => formik.setFieldTouched('status')}
               options={dropdownStatuses.map((s: any) => ({ value: s._id, label: s.name! }))}
-              error={formik.touched.status && formik.errors.status}
+              error={undefined}
               placeholder="— Select Status —"
               required={requiredFields.includes('status')}
             />
@@ -469,7 +469,7 @@ export default function TaskDialog({ isOpen, onClose, mode, initialData, onSucce
               onChange={(val) => updateField('priority', val)}
               onBlur={() => formik.setFieldTouched('priority')}
               options={PRIORITY_OPTIONS.map((p) => ({ value: p.value, label: p.label }))}
-              error={formik.touched.priority && formik.errors.priority}
+              error={undefined}
               placeholder="— Select Priority —"
               required={requiredFields.includes('priority')}
             />

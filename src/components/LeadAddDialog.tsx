@@ -12,6 +12,7 @@ interface DropdownItem {
   _id: string;
   name?: string;
   fullName?: string;
+  departmentName?: string;
 }
 
 interface LeadLabel {
@@ -96,16 +97,24 @@ export default function LeadAddDialog({
         setLoading(true);
         setFormError(null);
 
-        const [sourcesRes, statusRes, staffRes, labelsRes] = await Promise.all([
+        const [sourcesRes, statusRes, staffRes, labelsRes, deptRes] = await Promise.all([
           axios.get(baseUrl.leadSources, { headers: { Authorization: `Bearer ${token}` } }),
           axios.get(baseUrl.leadStatuses, { headers: { Authorization: `Bearer ${token}` } }),
-          axios.get(baseUrl.getAllStaff, { headers: { Authorization: `Bearer ${token}` } }),
+          axios.get(baseUrl.getAllUsers, { headers: { Authorization: `Bearer ${token}` } }),
           axios.get(baseUrl.leadLabels, { headers: { Authorization: `Bearer ${token}` } }), // Fetch labels
+          axios.get(baseUrl.department, { headers: { Authorization: `Bearer ${token}` } }),
         ]);
+
+        const depts = deptRes.data?.data || [];
+        const users = staffRes.data?.data || [];
+        const usersWithDepts = users.map((u: any) => {
+          const d = depts.find((dept: any) => dept._id === u.department);
+          return { ...u, departmentName: d ? (d.roleName || d.name) : '' };
+        });
 
         setLeadSources(sourcesRes.data?.data || []);
         setLeadStatuses(statusRes.data?.data || []);
-        setStaffList(staffRes.data?.data || []);
+        setStaffList(usersWithDepts);
         setLeadLabels(labelsRes.data?.data || []);
       } catch (err) {
         console.error(err);
@@ -434,7 +443,7 @@ export default function LeadAddDialog({
                 <option value="">— Select —</option>
                 {staffList.map((item) => (
                   <option key={item._id} value={item._id}>
-                    {item.fullName || item.name || 'Unnamed'}
+                    {item.fullName || item.name || 'Unnamed'}{item.departmentName ? ` (${item.departmentName})` : ''}
                   </option>
                 ))}
               </select>

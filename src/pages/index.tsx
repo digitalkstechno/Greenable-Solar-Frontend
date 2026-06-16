@@ -218,7 +218,7 @@
     const fetchStaffPerformance = async () => {
       if (!token) return;
       try {
-        const res = await axios.get(baseUrl.getAllStaff, {
+        const res = await axios.get(baseUrl.getAllUsers, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const chartData = (res.data.data ?? []).map((staff: any) => ({

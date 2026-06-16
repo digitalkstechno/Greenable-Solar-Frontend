@@ -11,7 +11,7 @@ import { FormSelect } from '../ui/FormSelect';
 import { FileText, Download } from 'lucide-react';
 import LeadQuotationDialog from './LeadQuotationDialog';
 
-interface DropdownItem { _id: string; name?: string; fullName?: string; }
+interface DropdownItem { _id: string; name?: string; fullName?: string; departmentName?: string; }
 
 interface Attachment {
   _id?: string;
@@ -163,40 +163,71 @@ export default function LeadAddDialog({
 
   useEffect(() => {
     if (!isOpen) return;
-    const fetchDropdowns = async () => {
+    const fetchData = async () => {
       setLoading(true);
       try {
         const headers = { Authorization: `Bearer ${token()}` };
-        const [stRes, staffRes] = await Promise.all([
-          axios.get(baseUrl.leadStatuses, { headers }),
-          axios.get(baseUrl.getAllStaff, { headers }),
-        ]);
-        setStatuses(stRes.data?.data || []);
-        setStaff(staffRes.data?.data || []);
+        
+        let leadData = null;
+        if (mode === 'edit' && initialData?._id) {
+          const [stRes, staffRes, deptRes, leadRes] = await Promise.all([
+            axios.get(baseUrl.leadStatuses, { headers }),
+            axios.get(baseUrl.getAllUsers, { headers }),
+            axios.get(baseUrl.department, { headers }),
+            axios.get(`${baseUrl.findLeadById}/${initialData._id}`, { headers })
+          ]);
+          setStatuses(stRes.data?.data || []);
+          const depts = deptRes.data?.data || [];
+          const users = staffRes.data?.data || [];
+          const usersWithDepts = users.map((u: any) => {
+            const d = depts.find((dept: any) => dept._id === u.department);
+            return { ...u, departmentName: d ? (d.roleName || d.name) : '' };
+          });
+          setStaff(usersWithDepts);
+          leadData = leadRes.data?.data;
+        } else {
+          const [stRes, staffRes, deptRes] = await Promise.all([
+            axios.get(baseUrl.leadStatuses, { headers }),
+            axios.get(baseUrl.getAllUsers, { headers }),
+            axios.get(baseUrl.department, { headers })
+          ]);
+          setStatuses(stRes.data?.data || []);
+          const depts = deptRes.data?.data || [];
+          const users = staffRes.data?.data || [];
+          const usersWithDepts = users.map((u: any) => {
+            const d = depts.find((dept: any) => dept._id === u.department);
+            return { ...u, departmentName: d ? (d.roleName || d.name) : '' };
+          });
+          setStaff(usersWithDepts);
+        }
+
+        if (mode === 'edit') {
+          // Fallback to initialData if leadData is somehow missing
+          const dataToUse = leadData || initialData;
+          if (dataToUse) {
+            formik.setValues({
+              fullName: dataToUse.fullName || '',
+              contact: dataToUse.contact || '',
+              email: dataToUse.email || '',
+              kwRequirement: dataToUse.kwRequirement || '',
+              discomName: dataToUse.discomName || '',
+              address: dataToUse.address || '',
+              locationLink: dataToUse.locationLink || '',
+              leadStatus: typeof dataToUse.leadStatus === 'string' ? dataToUse.leadStatus : (dataToUse.leadStatus?._id || ''),
+              assignedTo: typeof dataToUse.assignedTo === 'string' ? dataToUse.assignedTo : (dataToUse.assignedTo?._id || ''),
+              isActive: dataToUse.isActive ?? true,
+            });
+          }
+        } else {
+          formik.resetForm();
+        }
       } catch {
-        formik.setStatus('Failed to load options');
+        formik.setStatus('Failed to load data');
       } finally {
         setLoading(false);
       }
     };
-    fetchDropdowns();
-
-    if (mode === 'edit' && initialData) {
-      formik.setValues({
-        fullName: initialData.fullName || '',
-        contact: initialData.contact || '',
-        email: initialData.email || '',
-        kwRequirement: initialData.kwRequirement || '',
-        discomName: initialData.discomName || '',
-        address: initialData.address || '',
-        locationLink: initialData.locationLink || '',
-        leadStatus: initialData.leadStatus?._id || '',
-        assignedTo: initialData.assignedTo?._id || '',
-        isActive: initialData.isActive ?? true,
-      });
-    } else {
-      formik.resetForm();
-    }
+    fetchData();
     formik.setStatus(null);
   }, [isOpen, mode, initialData]);
 
@@ -340,14 +371,14 @@ export default function LeadAddDialog({
                 required={requiredFields.includes('leadStatus')}
               />
               <FormSelect
-                label="Sales Executive (For Assign)"
+                label="User (For Assign)"
                 name="assignedTo"
                 value={formik.values.assignedTo}
                 onChange={(val) => { formik.setFieldValue('assignedTo', val); }}
                 onBlur={() => formik.setFieldTouched('assignedTo')}
-                options={staff.map((s) => ({ value: s._id, label: s.fullName || s.name! }))}
+                options={staff.map((s) => ({ value: s._id, label: `${s.fullName || s.name!}${s.departmentName ? ` (${s.departmentName})` : ''}` }))}
                 error={getFieldError('assignedTo')}
-                placeholder="Select Sales Executive"
+                placeholder="Select User"
                 required={requiredFields.includes('assignedTo')}
               />
             </div>

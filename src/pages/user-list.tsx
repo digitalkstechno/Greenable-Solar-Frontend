@@ -35,7 +35,7 @@ function useDebounce<T>(value: T, delay: number = 500): T {
   return debouncedValue;
 }
 
-export function StaffManagementContent() {
+export function UserContent() {
   const [staffManagementData, setStaffManagementData] = useState<StaffManagement[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingExecutive, setEditingExecutive] = useState<StaffManagement | null>(null);
@@ -295,7 +295,7 @@ export function StaffManagementContent() {
     <>
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Staff Management</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">User</h1>
         </div>
 
         <DataTable
@@ -382,10 +382,10 @@ export function StaffManagementContent() {
   );
 }
 
-export default function StaffManagement() {
+export default function User() {
   return (
     <>
-      <StaffManagementContent />
+      <UserContent />
     </>
   );
 }

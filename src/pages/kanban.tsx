@@ -135,6 +135,8 @@ export default function LeadsPage() {
   });
 
   // View dialog edit states
+  const [editingStatus, setEditingStatus] = useState("");
+  const [editingNextFollowupDate, setEditingNextFollowupDate] = useState("");
   const [editingNextFollowupTime, setEditingNextFollowupTime] = useState("");
   const [requiredFields, setRequiredFields] = useState<string[]>([]);
 
@@ -302,7 +304,7 @@ export default function LeadsPage() {
   const fetchStaff = async () => {
     try {
       const token = getAuthToken();
-      const res = await axios.get(baseUrl.getAllStaff, {
+      const res = await axios.get(baseUrl.getAllUsers, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = res.data?.data ?? res.data;

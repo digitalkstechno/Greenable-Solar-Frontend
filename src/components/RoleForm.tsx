@@ -35,7 +35,7 @@ export default function RoleForm({
     lead: 'Leads',
     task: 'Tasks',
     taskStatus: 'Task Statuses',
-    staff: 'Staff Management',
+    staff: 'User',
     role: 'Department Management',
     leadStatus: 'Lead Statuses',
     leadSource: 'Lead Sources',

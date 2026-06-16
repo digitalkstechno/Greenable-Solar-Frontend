@@ -6,7 +6,7 @@ import axios from 'axios';
 import { baseUrl, getAuthToken } from '@/config';
 import { toast } from 'react-toastify';
 import { RolesContent } from './roles';
-import { StaffManagementContent } from './staff-management';
+import { UserContent } from './user-list';
 import { LeadSourcesContent } from './lead-sources';
 import { LeadStatusContent } from './lead-status';
 import { Settings, Users, Link2, Flag, Tag, Building2, UsersRound, Settings2, List, Package, PackagePlus, PackageMinus } from 'lucide-react';
@@ -24,7 +24,7 @@ import { StockOutContent } from './stock-out';
 export default function Setup() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<
-    'Department Management' | 'Staff Management' | 'Lead Sources' | 'Lead Status' | 'Kanban Status' | 'Lead Labels' | 'Teams' | 'Organizations' | 'Task Status' | 'Field Settings' | 'Category' | 'Product' | 'Stock In' | 'Stock Out'
+    'Department Management' | 'User' | 'Lead Sources' | 'Lead Status' | 'Kanban Status' | 'Lead Labels' | 'Teams' | 'Organizations' | 'Task Status' | 'Field Settings' | 'Category' | 'Product' | 'Stock In' | 'Stock Out'
   >('Department Management');
   const token = typeof window !== 'undefined' ? getAuthToken() : null;
   const [permissions, setPermissions] = useState<any>(null);
@@ -34,7 +34,7 @@ export default function Setup() {
   useEffect(() => {
     if (router.query.tab) {
       const tab = router.query.tab as string;
-      const validTabs = ['Department Management', 'Staff Management', 'Lead Sources', 'Lead Status', 'Kanban Status', 'Lead Labels', 'Teams', 'Organizations', 'Task Status', 'Field Settings', 'Category', 'Product', 'Stock In', 'Stock Out'];
+      const validTabs = ['Department Management', 'User', 'Lead Sources', 'Lead Status', 'Kanban Status', 'Lead Labels', 'Teams', 'Organizations', 'Task Status', 'Field Settings', 'Category', 'Product', 'Stock In', 'Stock Out'];
       if (validTabs.includes(tab)) {
         setActiveTab(tab as any);
       }
@@ -42,7 +42,7 @@ export default function Setup() {
   }, [router.query.tab]);
 
   // Handle tab change and update URL
-  const handleTabChange = (tab: 'Department Management' | 'Staff Management' | 'Lead Sources' | 'Lead Status' | 'Kanban Status' | 'Lead Labels' | 'Teams' | 'Organizations' | 'Task Status' | 'Field Settings' | 'Category' | 'Product' | 'Stock In' | 'Stock Out') => {
+  const handleTabChange = (tab: 'Department Management' | 'User' | 'Lead Sources' | 'Lead Status' | 'Kanban Status' | 'Lead Labels' | 'Teams' | 'Organizations' | 'Task Status' | 'Field Settings' | 'Category' | 'Product' | 'Stock In' | 'Stock Out') => {
     setActiveTab(tab);
     router.push({
       pathname: router.pathname,
@@ -204,7 +204,7 @@ export default function Setup() {
   const menuItems = useMemo(() => {
     const items = [
       { name: "Department Management", icon: Settings, visible: canViewRole },
-      { name: "Staff Management", icon: Users, visible: canViewStaff },
+      { name: "User", icon: Users, visible: canViewStaff },
       { name: "Lead Sources", icon: Link2, visible: canViewLeadSource },
       { name: "Lead Status", icon: Flag, visible: canViewLeadStatus },
       { name: "Kanban Status", icon: Settings2, visible: true },
@@ -285,7 +285,7 @@ export default function Setup() {
           <div className="md:col-span-9">
             <div className="rounded-md border border-gray-200 bg-white p-6">
               {activeTab === 'Department Management' && <RolesContent />}
-              {activeTab === 'Staff Management' && <StaffManagementContent />}
+              {activeTab === 'User' && <UserContent />}
               {activeTab === 'Lead Sources' && <LeadSourcesContent />}
               {activeTab === 'Lead Status' && <LeadStatusContent />}
               {activeTab === 'Lead Labels' && <LeadLabelsContent />}
