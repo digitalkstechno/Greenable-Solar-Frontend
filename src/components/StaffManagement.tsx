@@ -181,7 +181,7 @@ export default function SalesExecutiveForm({
       payload.append('phone', values.number);
       payload.append('email', values.email);
 
-      payload.append('department', JSON.stringify(values.department || []));
+      payload.append('department', values.department || '');
 
       // Only send password when creating or when it's changed (not empty)
       if (values.password.trim()) {
@@ -347,49 +347,18 @@ export default function SalesExecutiveForm({
           />
         </div>
 
-<<<<<<< HEAD
-=======
-        {/* Status + Role */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <FormSelect
-            label="Status"
-            name="status"
-            value={formik.values.status}
-            onChange={(e) => { formik.setFieldValue('status', e); formik.setFieldTouched('status', true, false); }}
-            onBlur={formik.handleBlur}
-            options={statusOptions.map((status) => ({ value: status, label: status }))}
-            placeholder="— Select —"
-            error={formik.touched.status && formik.errors.status ? formik.errors.status : undefined}
-          />
-          <FormSelect
-            label="Department"
-            name="role"
-            value={formik.values.role}
-            onChange={(e) => { formik.setFieldValue('role', e); formik.setFieldTouched('role', true, false); }}
-            onBlur={formik.handleBlur}
-            options={roles.map((role) => ({ value: role._id, label: role.roleName }))}
-            placeholder="— Select —"
-            error={formik.touched.role && formik.errors.role ? formik.errors.role : undefined}
-          />
-        </div>
->>>>>>> d754194455f5378113c53838cd3fc1b1dcccb687
-
-
         {/* Department */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div>
-            <FormMultiSelect
-              label="Department"
-              name="department"
-              value={formik.values.department}
-              onChange={(vals) => { formik.setFieldValue('department', vals); formik.setFieldTouched('department', true, false); }}
-              onBlur={() => formik.setFieldTouched('department')}
-              options={department?.map((d) => ({ value: d._id, label: d.name }))}
-              error={formik.touched.department && formik.errors.department ? formik.errors.department : undefined}
-              placeholder="Select department..."
-            />
-          </div>
-
+          <FormSelect
+            label="Department"
+            name="department"
+            value={formik.values.department}
+            onChange={(e) => { formik.setFieldValue('department', e); formik.setFieldTouched('department', true, false); }}
+            onBlur={formik.handleBlur}
+            options={department?.map((d: any) => ({ value: d._id, label: d.roleName || d.name })) || []}
+            placeholder="— Select Department —"
+            error={formik.touched.department && formik.errors.department ? formik.errors.department : undefined}
+          />
         </div>
       </form>
     </Dialog>

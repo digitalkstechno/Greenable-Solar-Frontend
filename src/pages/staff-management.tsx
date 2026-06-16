@@ -17,9 +17,7 @@ interface StaffManagement {
   email: string;
   password: string;
   status: string;
-  role: string;
-  teams?: string[];
-  organizations?: string[];
+  department: string;
 }
 
 // ──────────────────────────────────────────────── Debounce hook
@@ -60,8 +58,12 @@ export function StaffManagementContent() {
     delete?: boolean;
   } | null>(null);
 
+  const [departments, setDepartments] = useState<{ _id: string; roleName: string; name?: string }[]>([]);
+
   useEffect(() => {
     if (!token) return;
+    
+    // Fetch permissions
     axios
       .get(baseUrl.currentStaff, {
         headers: { Authorization: `Bearer ${token}` },
@@ -76,12 +78,21 @@ export function StaffManagementContent() {
       .catch(() => {
         setSetupPermissions(null);
       });
+    // Fetch departments to map IDs to names
+    axios
+      .get(baseUrl.department, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        setDepartments(res.data?.data ?? []);
+      })
+      .catch(() => setDepartments([]));
   }, [token]);
 
   const fetchStaff = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await axios.get(baseUrl.getAllStaff, {
+      const res = await axios.get(baseUrl.getAllUsers, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         params: {
           page,
@@ -98,24 +109,25 @@ export function StaffManagementContent() {
         email?: string;
         password?: string;
         status?: string;
-        role?: { roleName?: string } | null;
-        teams?: { _id: string; name: string }[];
-        organizations?: { _id: string; name: string }[];
+        department?: string | { roleName?: string, name?: string };
       }[]) || [];
       const pagination = res.data?.pagination || {};
 
-      const formatted: StaffManagement[] = payload.map((item) => ({
-        id: item._id,
-        image: item.profileImage || '',
-        fullName: item.fullName || '',
-        number: item.phone || '',
-        email: item.email || '',
-        password: item.password ? '******' : '',
-        status: item.status || 'Active',
-        role: item.role?.roleName || '-',
-        teams: (item.teams || []).map((t) => t.name),
-        organizations: (item.organizations || []).map((o) => o.name),
-      }));
+      const formatted: StaffManagement[] = payload.map((item: any) => {
+        const dept = departments.find(d => d._id === item.department);
+        const deptName = dept ? (dept.roleName || dept.name) : (typeof item.department === 'string' ? item.department : '-');
+
+        return {
+          id: item._id,
+          image: item.profileImage || '',
+          fullName: item.fullName || '',
+          number: item.phone || '',
+          email: item.email || '',
+          password: item.password ? '******' : '',
+          status: item.status || 'Active',
+          department: deptName || '-',
+        };
+      });
 
       setStaffManagementData(formatted);
       setTotalPages(pagination.totalPages || 1);
@@ -133,7 +145,7 @@ export function StaffManagementContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, limit, debouncedSearch, token]);
+  }, [page, limit, debouncedSearch, token, departments]);
 
   useEffect(() => {
     fetchStaff();
@@ -205,38 +217,8 @@ export function StaffManagementContent() {
       ),
     },
     {
-      key: 'role',
+      key: 'department',
       label: 'DEPARTMENT',
-    },
-    {
-      key: 'teams',
-      label: 'TEAMS',
-      render: (value: any) => (
-        <div className="flex flex-wrap gap-1">
-          {(value as string[])?.length > 0
-            ? (value as string[]).map((name) => (
-                <span key={name} className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                  {name}
-                </span>
-              ))
-            : <span className="text-gray-400 text-xs">—</span>}
-        </div>
-      ),
-    },
-    {
-      key: 'organizations',
-      label: 'ORGANIZATIONS',
-      render: (value: any) => (
-        <div className="flex flex-wrap gap-1">
-          {(value as string[])?.length > 0
-            ? (value as string[]).map((name) => (
-                <span key={name} className="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
-                  {name}
-                </span>
-              ))
-            : <span className="text-gray-400 text-xs">—</span>}
-        </div>
-      ),
     },
   ];
 
@@ -247,7 +229,7 @@ export function StaffManagementContent() {
 
   const handleEdit = async (row: StaffManagement) => {
     try {
-      const res = await axios.get(`${baseUrl.findStaffById}/${row.id}`, {
+      const res = await axios.get(`${baseUrl.findUserById}/${row.id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
 
@@ -262,9 +244,7 @@ export function StaffManagementContent() {
         email: item.email || '',
         password: '',
         status: item.status || 'Active',
-        role: item.role?._id || '',
-        teams: (item.teams || []).map((t: any) => typeof t === 'string' ? t : t._id),
-        organizations: (item.organizations || []).map((o: any) => typeof o === 'string' ? o : o._id),
+        department: item.department || '',
       };
 
       setEditingExecutive(formatted);
@@ -286,7 +266,7 @@ export function StaffManagementContent() {
     if (!staffToDelete) return;
 
     try {
-      await axios.delete(`${baseUrl.deleteStaff}/${staffToDelete.id}`, {
+      await axios.delete(`${baseUrl.deleteUser}/${staffToDelete.id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       fetchStaff();
