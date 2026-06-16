@@ -478,6 +478,7 @@ import { ApiLead, ApiStatus } from './types';
 import { Eye, Download, FileText, Image, File, FileSpreadsheet, Search, Trash2 } from 'lucide-react';
 import { getFileIcon } from '@/utills/utill';
 import LeadQuotationDialog from './LeadQuotationDialog';
+import { FormSelect } from '../ui/FormSelect';
 
 interface Props {
   lead: ApiLead | null;
@@ -513,6 +514,12 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
   const [staffInfo, setStaffInfo] = useState<any>(null);
   const [followUpSearch, setFollowUpSearch] = useState('');
   const [quotationOpen, setQuotationOpen] = useState(false);
+  const [reassignOpen, setReassignOpen] = useState(false);
+  const [reassignUsers, setReassignUsers] = useState<any[]>([]);
+  const [selectedReassignUser, setSelectedReassignUser] = useState('');
+  const [reassigning, setReassigning] = useState(false);
+  const [localAssignedTo, setLocalAssignedTo] = useState<any>(null);
+  const [departments, setDepartments] = useState<any[]>([]);
 
   useEffect(() => {
     if (lead) {
@@ -522,6 +529,7 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
       setLocalFollowUps(lead.followUps || []);
       setLocalAttachments(lead.attachments || []);
       setLocalActivities(lead.activities || []);
+      setLocalAssignedTo(lead.assignedTo || null);
     }
   }, [lead]);
 
@@ -536,20 +544,29 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
     );
   }, [localFollowUps, followUpSearch]);
 
-  // Get current staff info from localStorage or API
+  // Get current staff info and departments
   useEffect(() => {
-    const fetchCurrentStaff = async () => {
+    const fetchMeta = async () => {
       try {
-        const res = await axios.get(baseUrl.currentStaff, {
-          headers: { Authorization: `Bearer ${getAuthToken()}` }
-        });
-        setStaffInfo(res.data?.data);
+        const headers = { Authorization: `Bearer ${getAuthToken()}` };
+        const [staffRes, deptRes] = await Promise.all([
+          axios.get(baseUrl.currentStaff, { headers }),
+          axios.get(baseUrl.department, { headers }).catch(() => ({ data: { data: [] } }))
+        ]);
+        setStaffInfo(staffRes.data?.data);
+        setDepartments(deptRes.data?.data || []);
       } catch (error) {
-        console.error('Failed to fetch staff info', error);
+        console.error('Failed to fetch meta info', error);
       }
     };
-    fetchCurrentStaff();
+    fetchMeta();
   }, []);
+
+  const assignedToDeptName = useMemo(() => {
+    if (!localAssignedTo?.department) return '';
+    const d = departments.find(dept => dept._id === localAssignedTo.department);
+    return d ? (d.roleName || d.name) : '';
+  }, [localAssignedTo, departments]);
 
   const handleSave = async () => {
     if (!lead) return;
@@ -705,6 +722,59 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
     }
   };
 
+  const handleOpenReassign = async () => {
+    setReassignOpen(true);
+    setSelectedReassignUser(lead?.assignedTo?._id || '');
+    try {
+      const headers = { Authorization: `Bearer ${getAuthToken()}` };
+      const [usersRes, deptRes] = await Promise.all([
+        axios.get(baseUrl.getAllUsers, { headers }),
+        departments.length === 0 ? axios.get(baseUrl.department, { headers }) : Promise.resolve({ data: { data: departments } })
+      ]);
+      const depts = deptRes.data?.data || [];
+      if (departments.length === 0) setDepartments(depts);
+
+      const users = usersRes.data?.data || [];
+      const usersWithDepts = users.map((u: any) => {
+        const d = depts.find((dept: any) => dept._id === u.department);
+        return { ...u, departmentName: d ? (d.roleName || d.name) : '' };
+      });
+      setReassignUsers(usersWithDepts);
+    } catch (error) {
+      toast.error('Failed to load users');
+    }
+  };
+
+  const handleReassign = async () => {
+    if (!lead || !selectedReassignUser) return;
+    setReassigning(true);
+    try {
+      const res = await axios.put(
+        `${baseUrl.updateLead}/${lead._id}`,
+        { assignedTo: selectedReassignUser },
+        { headers: { Authorization: `Bearer ${getAuthToken()}` } }
+      );
+      // We can optimistically update local activities if needed
+      if (res.data?.data?.activities) {
+        setLocalActivities(res.data.data.activities);
+      }
+      if (res.data?.data?.assignedTo) {
+        setLocalAssignedTo(res.data.data.assignedTo);
+      } else {
+        // Fallback: manually update if population didn't happen
+        const newAssignee = reassignUsers.find(u => u._id === selectedReassignUser);
+        if (newAssignee) setLocalAssignedTo(newAssignee);
+      }
+      toast.success('Lead reassigned successfully');
+      setReassignOpen(false);
+      onRefresh(); // Refresh parent to get updated lead details
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || 'Failed to reassign lead');
+    } finally {
+      setReassigning(false);
+    }
+  };
+
   const handleDownload = async (attachment: any) => {
     try {
       const fileUrl = attachment.path?.startsWith('http') ? attachment.path : `${process.env.NEXT_PUBLIC_IMAGE_URL}${attachment.path}`;
@@ -772,7 +842,6 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
               <InfoCard label="Phone" value={lead.contact} />
               <InfoCard label="Email" value={lead.email} />
               <InfoCard label="Discom Name" value={lead.discomName} />
-              <InfoCard label="Assigned Staff" value={lead.assignedTo?.fullName} />
               <InfoCard label="Last Follow-Up" value={lead.lastFollowUp} />
               <InfoCard label="Active" value={lead.isActive ? 'Yes' : 'No'} />
             </div>
@@ -792,6 +861,26 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
               />
             )}
 
+            <div className="rounded-lg border border-gray-200 bg-white p-4">
+              <div className="mb-3 text-sm font-bold text-gray-800">Assigned</div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-lg">
+                    {localAssignedTo?.fullName?.charAt(0)?.toUpperCase() || 'U'}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-900">{localAssignedTo?.fullName || 'Unassigned'}</div>
+                    <div className="text-xs text-gray-500">{assignedToDeptName || localAssignedTo?.role?.name || 'Sales Executive'}</div>
+                  </div>
+                </div>
+                <button
+                  onClick={handleOpenReassign}
+                  className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                >
+                  Reassign
+                </button>
+              </div>
+            </div>
             <div className="rounded-lg bg-gray-50 p-4">
               <div className="mb-3 text-sm font-medium text-gray-600">Status</div>
               <div className="flex flex-wrap gap-2">
@@ -1098,7 +1187,7 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
             <div className="rounded-lg bg-gray-50 p-4">
               <div className="mb-3 text-sm font-bold text-gray-800">Quotation</div>
               <div className="flex gap-4">
-                {lead.quotation ? (
+                {lead.quotation && (lead.quotation.solarModule || lead.quotation.inverter || (lead.quotation.options && lead.quotation.options.length > 0) || (lead.quotation.rows && lead.quotation.rows.length > 0)) ? (
                   <>
                     <button
                       onClick={() => setQuotationOpen(true)}
@@ -1106,19 +1195,19 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
                     >
                       <FileText className="h-4 w-4" /> Edit Quotation
                     </button>
-                    <button
+                    {/* <button
                       onClick={() => { toast.info('Download PDF feature coming soon'); }}
                       className="flex-1 rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary flex items-center justify-center gap-2"
                     >
                       <Download className="h-4 w-4" /> Download Quotation
-                    </button>
+                    </button> */}
                   </>
                 ) : (
                   <button
                     onClick={() => setQuotationOpen(true)}
                     className="w-full rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary flex items-center justify-center gap-2"
                   >
-                    <FileText className="h-4 w-4" /> Generate Quotation
+                    <FileText className="h-4 w-4" /> Add Quotation
                   </button>
                 )}
               </div>
@@ -1170,6 +1259,47 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
           onRefresh={onRefresh}
         />
       )}
+
+      {/* Reassign Dialog */}
+      <Dialog
+        isOpen={reassignOpen}
+        onClose={() => setReassignOpen(false)}
+        title={
+          <div className="bg-secondary  p-4 rounded-t-lg text-white font-bold uppercase">
+            REASSIGN
+          </div>
+        }
+        size="md"
+        footer={
+          <>
+            <button
+              onClick={() => setReassignOpen(false)}
+              disabled={reassigning}
+              className="rounded border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleReassign}
+              disabled={reassigning || !selectedReassignUser}
+              className="rounded bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-50"
+            >
+              {reassigning ? 'Saving...' : 'Reassign'}
+            </button>
+          </>
+        }
+      >
+        <div className="p-2 space-y-2">
+          <FormSelect
+            label="Select Staff"
+            name="selectedReassignUser"
+            value={selectedReassignUser}
+            onChange={(val) => setSelectedReassignUser(val)}
+            options={reassignUsers.map((u) => ({ value: u._id, label: `${u.fullName || u.name}${u.departmentName ? ` (${u.departmentName})` : ''}` }))}
+            placeholder="-- Select --"
+          />
+        </div>
+      </Dialog>
 
       {/* Image Preview Modal */}
       {previewAttachment && (

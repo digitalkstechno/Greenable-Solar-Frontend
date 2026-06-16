@@ -49,7 +49,7 @@ export default function LeadQuotationDialog({ isOpen, onClose, lead, onRefresh }
         headers: { Authorization: `Bearer ${getAuthToken()}` }
       }).then(res => {
         const latestLead = res.data.data;
-        if (latestLead?.quotation) {
+        if (latestLead?.quotation && (latestLead.quotation.solarModule || latestLead.quotation.inverter || (latestLead.quotation.options && latestLead.quotation.options.length > 0) || (latestLead.quotation.rows && latestLead.quotation.rows.length > 0))) {
           setDate(latestLead.quotation.date ? new Date(latestLead.quotation.date).toISOString().substring(0, 10) : new Date().toISOString().substring(0, 10));
           setSolarModule(latestLead.quotation.solarModule || '');
           setInverter(latestLead.quotation.inverter || '');
@@ -168,7 +168,7 @@ export default function LeadQuotationDialog({ isOpen, onClose, lead, onRefresh }
     <Dialog
       isOpen={isOpen}
       onClose={onClose}
-      title={lead?.quotation ? 'Edit Quotation' : 'Generate Quotation'}
+      title={lead?.quotation && (lead.quotation.solarModule || lead.quotation.inverter || (lead.quotation.options && lead.quotation.options.length > 0) || (lead.quotation.rows && lead.quotation.rows.length > 0)) ? 'Edit Quotation' : 'Add Quotation'}
       footer={
         <>
           <button
