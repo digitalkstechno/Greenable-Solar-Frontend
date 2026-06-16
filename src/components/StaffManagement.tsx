@@ -17,11 +17,8 @@ interface SalesExecutive {
   number: string;
   email: string;
   password: string;
-  status?: string;
-  role?: string;
-  id?: string | number;
   teams?: string[];
-  organizations?: string[];
+  id?: string;
 }
 
 interface SalesExecutiveFormProps {
@@ -53,12 +50,6 @@ const validationSchema = Yup.object({
       then: (schema) => schema.required('Password is required').min(6, 'Password must be at least 6 characters'),
       otherwise: (schema) => schema.notRequired(),
     }),
-
-  status: Yup.string()
-    .required('Status is required'),
-
-  role: Yup.string()
-    .required('Role is required'),
 });
 
 export default function SalesExecutiveForm({
@@ -74,11 +65,9 @@ export default function SalesExecutiveForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [roles, setRoles] = useState<{ _id: string; roleName: string }[]>([]);
-  const [teams, setTeams] = useState<{ _id: string; name: string }[]>([]);
-  const [organizations, setOrganizations] = useState<{ _id: string; name: string }[]>([]);
+  const [department, setDepartment] = useState<{ _id: string; name: string }[]>([]);
   const [token, setToken] = useState<string | null>(null);
 
-  const statusOptions = ['Active', 'Inactive', 'Pending'];
   const isUpdate = !!initialData?.id;
 
   // Only run on client
@@ -96,10 +85,7 @@ export default function SalesExecutiveForm({
       number: '',
       email: '',
       password: '',
-      status: 'Active',
-      role: '',
-      teams: [] as string[],
-      organizations: [] as string[],
+      department: '' as string,
       id: undefined as string | number | undefined,
       image: undefined as string | undefined,
     },
@@ -131,15 +117,12 @@ export default function SalesExecutiveForm({
         number: initialData.number || '',
         email: initialData.email || '',
         password: '',
-        status: initialData.status || 'Active',
-        role: initialData.role || '',
-        teams: initialData.teams || [],
-        organizations: initialData.organizations || [],
+        department: initialData.department || [],
       });
 
       if (initialData.image) {
         setPreviewImage(
-          `${process.env.NEXT_PUBLIC_IMAGE_URL}/images/StaffProfileImages/${initialData.image}`
+          `${process.env.NEXT_PUBLIC_IMAGE_URL}/images/user-profile/${initialData.image}`
         );
       }
     } else {
@@ -156,13 +139,10 @@ export default function SalesExecutiveForm({
       .then((res) => setRoles(res.data?.data || res.data?.roles || []))
       .catch(() => setRoles([]));
 
-    axios.get(baseUrl.teams, { headers })
-      .then((res) => setTeams(res.data?.data ?? []))
-      .catch(() => setTeams([]));
+    axios.get(baseUrl.department, { headers })
+      .then((res) => setDepartment(res.data?.data ?? []))
+      .catch(() => setDepartment([]));
 
-    axios.get(baseUrl.organizations, { headers })
-      .then((res) => setOrganizations(res.data?.data ?? []))
-      .catch(() => setOrganizations([]));
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -192,7 +172,7 @@ export default function SalesExecutiveForm({
   const handleSubmit = async (values: any) => {
     setLoading(true);
     setError(null);
-
+    
     try {
       const payload = new FormData();
 
@@ -200,10 +180,8 @@ export default function SalesExecutiveForm({
       payload.append('fullName', values.fullName);
       payload.append('phone', values.number);
       payload.append('email', values.email);
-      payload.append('status', values.status || 'Active');
-      payload.append('role', values.role || '');
-      payload.append('teams', JSON.stringify(values.teams || []));
-      payload.append('organizations', JSON.stringify(values.organizations || []));
+
+      payload.append('department', JSON.stringify(values.department || []));
 
       // Only send password when creating or when it's changed (not empty)
       if (values.password.trim()) {
@@ -215,19 +193,19 @@ export default function SalesExecutiveForm({
       }
 
       const response = isUpdate
-        ? await axios.put(`${baseUrl.updateStaff}/${values.id}`, payload, {
+        ? await axios.put(`${baseUrl.userUpdate}/${values.id}`, payload, {
           headers: { Authorization: `Bearer ${token}` },
         })
-        : await axios.post(baseUrl.addStaff, payload, {
+        : await axios.post(baseUrl.userAdd, payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
       parentOnSubmit?.(response.data);
 
       if (isUpdate) {
-        toast.success('Staff updated successfully');
+        toast.success('User updated successfully');
       } else {
-        toast.success('Staff created successfully');
+        toast.success('User created successfully');
       }
 
       // ✅ reset only when creating
@@ -246,7 +224,6 @@ export default function SalesExecutiveForm({
     }
   };
 
-  console.log(formik.errors,'formik.values.role')
 
   return (
     <Dialog
@@ -370,56 +347,23 @@ export default function SalesExecutiveForm({
           />
         </div>
 
-        {/* Status + Role */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <FormSelect
-            label="Status"
-            name="status"
-            value={formik.values.status}
-            onChange={(e) => { formik.setFieldValue('status', e); formik.setFieldTouched('status', true, false); }}
-            onBlur={formik.handleBlur}
-            options={statusOptions.map((status) => ({ value: status, label: status }))}
-            placeholder="— Select —"
-            error={formik.touched.status && formik.errors.status ? formik.errors.status : undefined}
-          />
-          <FormSelect
-            label="Role"
-            name="role"
-            value={formik.values.role}
-            onChange={(e) => { formik.setFieldValue('role', e); formik.setFieldTouched('role', true, false); }}
-            onBlur={formik.handleBlur}
-            options={roles.map((role) => ({ value: role._id, label: role.roleName }))}
-            placeholder="— Select —"
-            error={formik.touched.role && formik.errors.role ? formik.errors.role : undefined}
-          />
-        </div>
 
-        {/* Teams + Organizations */}
+
+        {/* Department */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div>
             <FormMultiSelect
-              label="Teams"
-              name="teams"
-              value={formik.values.teams}
-              onChange={(vals) => { formik.setFieldValue('teams', vals); formik.setFieldTouched('teams', true, false); }}
-              onBlur={() => formik.setFieldTouched('teams')}
-              options={teams.map((t) => ({ value: t._id, label: t.name }))}
-              error={formik.touched.teams && formik.errors.teams ? formik.errors.teams : undefined}
-              placeholder="Select teams..."
+              label="Department"
+              name="department"
+              value={formik.values.department}
+              onChange={(vals) => { formik.setFieldValue('department', vals); formik.setFieldTouched('department', true, false); }}
+              onBlur={() => formik.setFieldTouched('department')}
+              options={department?.map((d) => ({ value: d._id, label: d.name }))}
+              error={formik.touched.department && formik.errors.department ? formik.errors.department : undefined}
+              placeholder="Select department..."
             />
           </div>
-          <div>
-            <FormMultiSelect
-              label="Organizations"
-              name="organizations"
-              value={formik.values.organizations}
-              onChange={(vals) => { formik.setFieldValue('organizations', vals); formik.setFieldTouched('organizations', true, false); }}
-              onBlur={() => formik.setFieldTouched('organizations')}
-              options={organizations.map((o) => ({ value: o._id, label: o.name }))}
-              error={formik.touched.organizations && formik.errors.organizations ? formik.errors.organizations : undefined}
-              placeholder="Select organizations..."
-            />
-          </div>
+
         </div>
       </form>
     </Dialog>
