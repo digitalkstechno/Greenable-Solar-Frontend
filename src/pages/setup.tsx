@@ -24,8 +24,8 @@ import { StockOutContent } from './stock-out';
 export default function Setup() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<
-    'Role Management' | 'Staff Management' | 'Lead Sources' | 'Lead Status' | 'Kanban Status' | 'Lead Labels' | 'Teams' | 'Organizations' | 'Task Status' | 'Field Settings' | 'Category' | 'Product' | 'Stock In' | 'Stock Out'
-  >('Role Management');
+    'Department Management' | 'Staff Management' | 'Lead Sources' | 'Lead Status' | 'Kanban Status' | 'Lead Labels' | 'Teams' | 'Organizations' | 'Task Status' | 'Field Settings' | 'Category' | 'Product' | 'Stock In' | 'Stock Out'
+  >('Department Management');
   const token = typeof window !== 'undefined' ? getAuthToken() : null;
   const [permissions, setPermissions] = useState<any>(null);
   const [loadingPermissions, setLoadingPermissions] = useState(true);
@@ -34,7 +34,7 @@ export default function Setup() {
   useEffect(() => {
     if (router.query.tab) {
       const tab = router.query.tab as string;
-      const validTabs = ['Role Management', 'Staff Management', 'Lead Sources', 'Lead Status', 'Kanban Status', 'Lead Labels', 'Teams', 'Organizations', 'Task Status', 'Field Settings', 'Category', 'Product', 'Stock In', 'Stock Out'];
+      const validTabs = ['Department Management', 'Staff Management', 'Lead Sources', 'Lead Status', 'Kanban Status', 'Lead Labels', 'Teams', 'Organizations', 'Task Status', 'Field Settings', 'Category', 'Product', 'Stock In', 'Stock Out'];
       if (validTabs.includes(tab)) {
         setActiveTab(tab as any);
       }
@@ -42,7 +42,7 @@ export default function Setup() {
   }, [router.query.tab]);
 
   // Handle tab change and update URL
-  const handleTabChange = (tab: 'Role Management' | 'Staff Management' | 'Lead Sources' | 'Lead Status' | 'Kanban Status' | 'Lead Labels' | 'Teams' | 'Organizations' | 'Task Status' | 'Field Settings' | 'Category' | 'Product' | 'Stock In' | 'Stock Out') => {
+  const handleTabChange = (tab: 'Department Management' | 'Staff Management' | 'Lead Sources' | 'Lead Status' | 'Kanban Status' | 'Lead Labels' | 'Teams' | 'Organizations' | 'Task Status' | 'Field Settings' | 'Category' | 'Product' | 'Stock In' | 'Stock Out') => {
     setActiveTab(tab);
     router.push({
       pathname: router.pathname,
@@ -203,7 +203,7 @@ export default function Setup() {
 
   const menuItems = useMemo(() => {
     const items = [
-      { name: "Role Management", icon: Settings, visible: canViewRole },
+      { name: "Department Management", icon: Settings, visible: canViewRole },
       { name: "Staff Management", icon: Users, visible: canViewStaff },
       { name: "Lead Sources", icon: Link2, visible: canViewLeadSource },
       { name: "Lead Status", icon: Flag, visible: canViewLeadStatus },
@@ -284,7 +284,7 @@ export default function Setup() {
 
           <div className="md:col-span-9">
             <div className="rounded-md border border-gray-200 bg-white p-6">
-              {activeTab === 'Role Management' && <RolesContent />}
+              {activeTab === 'Department Management' && <RolesContent />}
               {activeTab === 'Staff Management' && <StaffManagementContent />}
               {activeTab === 'Lead Sources' && <LeadSourcesContent />}
               {activeTab === 'Lead Status' && <LeadStatusContent />}

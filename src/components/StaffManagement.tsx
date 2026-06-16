@@ -139,7 +139,7 @@ export default function SalesExecutiveForm({
 
       if (initialData.image) {
         setPreviewImage(
-          `${process.env.NEXT_PUBLIC_IMAGE_URL}/images/StaffProfileImages/${initialData.image}`
+          initialData.image.startsWith('http') ? initialData.image : `${process.env.NEXT_PUBLIC_IMAGE_URL}/images/StaffProfileImages/${initialData.image}`
         );
       }
     } else {
@@ -383,7 +383,7 @@ export default function SalesExecutiveForm({
             error={formik.touched.status && formik.errors.status ? formik.errors.status : undefined}
           />
           <FormSelect
-            label="Role"
+            label="Department"
             name="role"
             value={formik.values.role}
             onChange={(e) => { formik.setFieldValue('role', e); formik.setFieldTouched('role', true, false); }}
