@@ -44,6 +44,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
   const [canViewLeadStatus, setCanViewLeadStatus] = useState(false);
   const [canViewLeadSource, setCanViewLeadSource] = useState(false);
   const [canViewLeadLabel, setCanViewLeadLabel] = useState(false);
+  const [canViewUser, setCanViewUser] = useState(false);
 
   useEffect(() => {
     const token = getAuthToken();
@@ -64,6 +65,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
         const leadStatusPerms = rawPerms.leadStatus || {};
         const leadSourcePerms = rawPerms.leadSource || {};
         const leadLabelPerms = rawPerms.leadLabel || {};
+        const setupPerms = rawPerms.setup || {};
 
         setCanViewLead(!!(leadPerms.readOwn || leadPerms.readAll));
         setCanViewTask(!!(taskPerms.readOwn || taskPerms.readAll));
@@ -72,6 +74,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
         setCanViewLeadStatus(!!leadStatusPerms.readAll);
         setCanViewLeadSource(!!leadSourcePerms.readAll);
         setCanViewLeadLabel(!!leadLabelPerms.readAll);
+        setCanViewUser(!!setupPerms.readAll || true); // Default true if no strict permission is yet defined
       })
       .catch(() => {
         setCanViewLead(false);
@@ -81,6 +84,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
         setCanViewLeadStatus(false);
         setCanViewLeadSource(false);
         setCanViewLeadLabel(false);
+        setCanViewUser(true); // Fallback
       });
   }, []);
 
@@ -94,6 +98,10 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
 
   if (canViewTask) {
     menuItems.push({ icon: CheckSquare, label: "Tasks", path: "/tasks" });
+  }
+
+  if (canViewUser) {
+    menuItems.push({ icon: Users, label: "Users", path: "/user-management" });
   }
 
   const hasAnySetupPerm = canViewStaff || canViewRole || canViewLeadStatus || canViewLeadSource || canViewLeadLabel;
