@@ -95,7 +95,7 @@ export function UserManagementContent() {
         email?: string;
         password?: string;
         status?: string;
-        department?: string;
+        department?: { _id: string; name: string } | null;
       }[]) || [];
       const pagination = res.data?.pagination || {};
 
@@ -107,7 +107,7 @@ export function UserManagementContent() {
         email: item.email || '',
         password: item.password ? '******' : '',
         status: item.status || 'Active',
-        department: item.department || '-',
+        department: item.department?.name || '-',
       }));
 
       setUserManagementData(formatted);
@@ -211,7 +211,7 @@ export function UserManagementContent() {
         email: item.email || '',
         password: '',
         status: item.status || 'Active',
-        department: item.department || '',
+        department: typeof item.department === 'object' && item.department ? item.department._id : (item.department || ''),
       };
 
       setEditingUser(formatted);
