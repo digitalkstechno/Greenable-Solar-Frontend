@@ -243,10 +243,21 @@ export default function LeadsKanbanView({
             return kanbanVisibleStatusNames.includes(group.title);
         });
 
+    const removeLeadFromBoard = (id: string) => {
+        setBoardLeads(prev => {
+            const next = { ...prev };
+            Object.keys(next).forEach(statusId => {
+                next[statusId] = next[statusId].filter(l => l._id !== id);
+            });
+            return next;
+        });
+    };
+
     const markLost = async (id: string) => {
         try {
             await axios.put(`${baseUrl.updateLead}/${id}`, { isLost: true, lostDate: new Date().toISOString() }, { headers: { Authorization: `Bearer ${token()}` } });
             toast.success('Lead marked as lost');
+            removeLeadFromBoard(id);
             onRefresh();
         } catch { toast.error('Failed to update lead'); }
     };
@@ -255,6 +266,7 @@ export default function LeadsKanbanView({
         try {
             await axios.put(`${baseUrl.updateLead}/${id}`, { isWon: true, wonDate: new Date().toISOString() }, { headers: { Authorization: `Bearer ${token()}` } });
             toast.success('Lead marked as won');
+            removeLeadFromBoard(id);
             onRefresh();
         } catch { toast.error('Failed to update lead'); }
     };
@@ -263,6 +275,8 @@ export default function LeadsKanbanView({
         try {
             await axios.put(`${baseUrl.updateLead}/${id}`, { isLost: false, isWon: false }, { headers: { Authorization: `Bearer ${token()}` } });
             toast.success('Lead reactivated');
+            // We need to re-fetch board leads since we don't know the status, or rely on parent
+            // Since this is in the 'lost' or 'won' view, parent's onRefresh updates those views.
             onRefresh();
         } catch { toast.error('Failed to reactivate lead'); }
     };

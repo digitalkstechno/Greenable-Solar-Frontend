@@ -833,7 +833,7 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
         }
       >
         {lead && (
-          <div className="space-y-4 text-sm max-h-[70vh] overflow-y-auto pr-1">
+          <div className="space-y-4 text-sm">
             <h2 className="text-xl font-bold text-gray-900">{lead.fullName}</h2>
 
             {/* Info grid */}
