@@ -317,7 +317,7 @@ export default function LeadsKanbanView({
                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                         >
-                            {v === 'board' ? 'Board View' : v === 'lost' ? 'Lost Leads' : 'Won Leads'}
+                            {v === 'board' ? 'Kanban View' : v === 'lost' ? 'Lost Leads' : 'Won Leads'}
                         </button>
                     ))}
                 </div>

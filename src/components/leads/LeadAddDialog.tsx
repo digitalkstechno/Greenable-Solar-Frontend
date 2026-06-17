@@ -79,6 +79,8 @@ export default function LeadAddDialog({
         .max(100, 'Email must not exceed 100 characters'),
       kwRequirement: Yup.string(),
       discomName: Yup.string(),
+      leadrefrance: Yup.string(),
+      projecttype: Yup.string(),
       address: Yup.string().max(500, 'Address must not exceed 500 characters'),
       locationLink: Yup.string(),
       leadStatus: Yup.string(),
@@ -103,6 +105,8 @@ export default function LeadAddDialog({
       email: '',
       kwRequirement: '',
       discomName: '',
+      leadrefrance: '',
+      projecttype: '',
       address: '',
       locationLink: '',
       leadStatus: '',
@@ -167,7 +171,7 @@ export default function LeadAddDialog({
       setLoading(true);
       try {
         const headers = { Authorization: `Bearer ${token()}` };
-        
+
         let leadData = null;
         if (mode === 'edit' && initialData?._id) {
           const [stRes, staffRes, deptRes, leadRes] = await Promise.all([
@@ -211,6 +215,8 @@ export default function LeadAddDialog({
               email: dataToUse.email || '',
               kwRequirement: dataToUse.kwRequirement || '',
               discomName: dataToUse.discomName || '',
+              leadrefrance: dataToUse.leadrefrance || '',
+              projecttype: dataToUse.projecttype || '',
               address: dataToUse.address || '',
               locationLink: dataToUse.locationLink || '',
               leadStatus: typeof dataToUse.leadStatus === 'string' ? dataToUse.leadStatus : (dataToUse.leadStatus?._id || ''),
@@ -336,6 +342,20 @@ export default function LeadAddDialog({
                 error={getFieldError('discomName')}
                 placeholder="Select Discom Name"
               />
+              <FormSelect
+                label="Lead Refrance"
+                name="leadrefrance"
+                value={formik.values.leadrefrance || ''}
+                onChange={(val) => { formik.setFieldValue('leadrefrance', val); }}
+                onBlur={() => formik.setFieldTouched('leadrefrance')}
+                options={[
+                  { value: 'like', label: 'Link' },
+                  { value: 'facebook', label: 'Facebook' },
+                  { value: 'data', label: 'Data' },
+                ]}
+                error={getFieldError('leadrefrance')}
+                placeholder="Select Lead Refrance"
+              />
             </div>
 
             <FormInput
@@ -380,6 +400,22 @@ export default function LeadAddDialog({
                 error={getFieldError('assignedTo')}
                 placeholder="Select User"
                 required={requiredFields.includes('assignedTo')}
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <FormSelect
+                label="Project Type"
+                name="projecttype"
+                value={formik.values.projecttype || ''}
+                onChange={(val) => { formik.setFieldValue('projecttype', val); }}
+                onBlur={() => formik.setFieldTouched('projecttype')}
+                options={[
+                  { value: 'resident', label: 'Resident' },
+                  { value: 'industrial', label: 'Industrial' },
+                  { value: 'commercial', label: 'Commercial' },
+                ]}
+                error={getFieldError('projecttype')}
+                placeholder="Select Lead Refrance"
               />
             </div>
 
