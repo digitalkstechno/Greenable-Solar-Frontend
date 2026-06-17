@@ -277,9 +277,9 @@ export function useLeadsData(
       const calls: Promise<void>[] = [
         fetchKanbanLeads(tab, f),
         fetchCounts(tab, f),
+        fetchLostLeads(tab, f, lsp),
+        fetchWonLeads(tab, f, wp)
       ];
-      if (ksv === 'lost') calls.push(fetchLostLeads(tab, f, lsp));
-      if (ksv === 'won') calls.push(fetchWonLeads(tab, f, wp));
       await Promise.all(calls);
     }
   }, [fetchLeadsList, fetchKanbanLeads, fetchLostLeads, fetchWonLeads, fetchCounts]);
@@ -297,14 +297,16 @@ export function useLeadsData(
     const init = async () => {
       setLoading(true);
       if (viewMode === 'list') {
-        await Promise.all([fetchLeadsList(activeTab, filters, 1), fetchCounts(activeTab, filters)]);
+        await Promise.all([
+          fetchLeadsList(activeTab, filters, 1), 
+          fetchCounts(activeTab, filters)
+        ]);
       } else {
         const calls: Promise<void>[] = [
-          // Global Kanban fetch removed - component now fetches status-wise
           fetchCounts(activeTab, filters),
+          fetchLostLeads(activeTab, filters, 1),
+          fetchWonLeads(activeTab, filters, 1)
         ];
-        if (kanbanSubView === 'lost') calls.push(fetchLostLeads(activeTab, filters, 1));
-        if (kanbanSubView === 'won') calls.push(fetchWonLeads(activeTab, filters, 1));
         await Promise.all(calls);
       }
       if (!cancelled) setLoading(false);
@@ -328,10 +330,9 @@ export function useLeadsData(
       fetchLeadsList(activeTab, filters, 1);
       fetchCounts(activeTab, filters);
     } else {
-      // fetchKanbanLeads(activeTab, filters); // Status-wise fetching handled by component
       fetchCounts(activeTab, filters);
-      if (kanbanSubView === 'lost') fetchLostLeads(activeTab, filters, 1);
-      if (kanbanSubView === 'won') fetchWonLeads(activeTab, filters, 1);
+      fetchLostLeads(activeTab, filters, 1);
+      fetchWonLeads(activeTab, filters, 1);
     }
   }, [viewMode, activeTab, filters]); // eslint-disable-line react-hooks/exhaustive-deps
 

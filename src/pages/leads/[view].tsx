@@ -583,7 +583,10 @@ export default function LeadsPage() {
         lead={viewingLead}
         statuses={statuses}
         onClose={() => setViewingLead(null)}
-        onRefresh={refetchAll}
+        onRefresh={() => {
+          refetchAll();
+          setBoardRefreshKey((k) => k + 1);
+        }}
       />
 
       {/* ── Bulk Import Dialog ─────────────────────────────────────────── */}
