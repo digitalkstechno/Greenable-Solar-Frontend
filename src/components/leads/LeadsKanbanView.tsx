@@ -51,6 +51,7 @@ interface Props {
     lostPagination?: PaginationShape;
     wonPagination?: PaginationShape;
     onSubViewChange?: (subView: 'board' | 'lost' | 'won') => void;
+    refreshKey?: number;
 }
 
 type SubView = 'board' | 'lost' | 'won';
@@ -63,6 +64,7 @@ export default function LeadsKanbanView({
     lostPagination,
     wonPagination,
     onSubViewChange,
+    refreshKey = 0,
 }: Props) {
     const [subView, setSubView] = useState<SubView>('board');
     const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -148,7 +150,7 @@ export default function LeadsKanbanView({
         [scope, filters]
     );
 
-    // Initial fetch and re-fetch on filter change
+    // Initial fetch and re-fetch on filter/scope/refreshKey change
     useEffect(() => {
         if (subView !== 'board') return;
         statuses.forEach((s) => {
@@ -157,7 +159,7 @@ export default function LeadsKanbanView({
                 fetchStatusLeads(s._id, 1);
             }
         });
-    }, [subView, statuses, kanbanVisibleStatusNames, scope, filters, fetchStatusLeads]);
+    }, [subView, statuses, kanbanVisibleStatusNames, scope, filters, fetchStatusLeads, refreshKey]);
 
     const loadMore = useCallback(
         async (statusId: string) => {
@@ -348,19 +350,36 @@ export default function LeadsKanbanView({
         <div className="flex h-full flex-col gap-4">
             <div className="flex flex-wrap items-center justify-between gap-3 px-1">
                 <div className="flex items-center gap-2">
-                    {(['board', 'lost', 'won'] as SubView[]).map((v) => (
+                    {(['board', 'lost', 'won'] as SubView[]).map((v) => {
+                        const lostCount = lostPagination?.totalItems ?? lostLeads.length;
+                        const wonCount = wonPagination?.totalItems ?? wonLeads.length;
+                        const label = v === 'board' ? 'Kanban View' : v === 'lost' ? 'Lost Leads' : 'Won Leads';
+                        const count = v === 'lost' ? lostCount : v === 'won' ? wonCount : null;
+                        return (
                         <button
                             key={v}
                             onClick={() => handleSubViewChange(v)}
-                            className={`rounded-lg cursor-pointer px-4 py-1.5 text-sm font-medium capitalize transition-colors ${
+                            className={`flex items-center gap-2 rounded-lg cursor-pointer px-4 py-1.5 text-sm font-medium capitalize transition-colors ${
                                 subView === v
                                     ? 'border border-[#F28522] text-[#F28522] bg-white'
                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-transparent'
                             }`}
                         >
-                            {v === 'board' ? 'Kanban View' : v === 'lost' ? 'Lost Leads' : 'Won Leads'}
+                            {label}
+                            {count !== null && (
+                                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
+                                    subView === v
+                                        ? 'bg-[#F28522] text-white'
+                                        : v === 'lost'
+                                            ? 'bg-red-100 text-red-700'
+                                            : 'bg-green-100 text-green-700'
+                                }`}>
+                                    {count}
+                                </span>
+                            )}
                         </button>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
 

@@ -8,7 +8,7 @@ import { toast } from 'react-toastify';
 import { ApiLead } from './types';
 import FormInput from '../ui/Input';
 import { FormSelect } from '../ui/FormSelect';
-import { FileText, Download } from 'lucide-react';
+import { FileText, Download, AlertCircle } from 'lucide-react';
 import LeadQuotationDialog from './LeadQuotationDialog';
 
 interface DropdownItem { _id: string; name?: string; fullName?: string; departmentName?: string; }
@@ -71,9 +71,8 @@ export default function LeadAddDialog({
         .min(2, 'Full Name must be at least 2 characters')
         .max(100, 'Full Name must not exceed 100 characters'),
       contact: Yup.string()
-        .matches(/^[0-9+\-\s()]+$/, 'Invalid phone number format')
-        .min(10, 'Phone number must be at least 10 digits')
-        .max(20, 'Phone number must not exceed 20 digits'),
+        .matches(/^\d+$/, 'Only numbers allowed')
+        .length(10, 'Mobile number must be exactly 10 digits'),
       email: Yup.string()
         .email('Invalid email format')
         .max(100, 'Email must not exceed 100 characters'),
@@ -296,16 +295,52 @@ export default function LeadAddDialog({
                 error={getFieldError('fullName')}
                 required={requiredFields.includes('fullName')}
               />
-              <FormInput
-                label="Mobile Number"
-                name="contact"
-                type="text"
-                value={formik.values.contact}
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                error={getFieldError('contact')}
-                required={requiredFields.includes('contact')}
-              />
+              {/* Mobile Number — numeric only, max 10 digits */}
+              <div className="w-full mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-semibold text-gray-700">
+                    Mobile Number
+                    {requiredFields.includes('contact') && <span className="text-red-700 ml-1">*</span>}
+                  </label>
+                </div>
+                <div className="relative">
+                  <input
+                    type="tel"
+                    name="contact"
+                    inputMode="numeric"
+                    maxLength={10}
+                    value={formik.values.contact}
+                    onChange={(e) => {
+                      // Strip any non-digit characters
+                      const numericOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      formik.setFieldValue('contact', numericOnly);
+                    }}
+                    onKeyDown={(e) => {
+                      // Allow: backspace, delete, tab, escape, enter, arrows, home, end
+                      const allowed = ['Backspace','Delete','Tab','Escape','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'];
+                      if (allowed.includes(e.key)) return;
+                      // Block anything that's not a digit
+                      if (!/^\d$/.test(e.key)) e.preventDefault();
+                    }}
+                    onBlur={formik.handleBlur}
+                    placeholder="Enter 10-digit number"
+                    className={`w-full px-3 py-2.5 pr-52 rounded-xl bg-white/90 text-gray-800 text-sm outline-none transition-all duration-200 border-2 ${
+                      formik.touched.contact && formik.errors.contact
+                        ? 'border-red-500 ring-2 ring-red-200'
+                        : formik.values.contact.length === 10
+                          ? 'border-green-500 ring-2 ring-green-200'
+                          : 'border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
+                    }`}
+                  />
+               
+                </div>
+                {formik.touched.contact && formik.errors.contact && (
+                  <div className="mt-2 flex items-center gap-1.5">
+                    <AlertCircle size={14} className="text-red-700 flex-shrink-0" />
+                    <p className="text-red-700 text-xs">{formik.errors.contact}</p>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

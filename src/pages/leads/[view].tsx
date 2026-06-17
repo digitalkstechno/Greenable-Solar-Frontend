@@ -67,6 +67,7 @@ export default function LeadsPage() {
   const [viewingLead, setViewingLead] = useState<ApiLead | null>(null);
   const [exporting, setExporting] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
+  const [boardRefreshKey, setBoardRefreshKey] = useState(0);
 
   // ── Permissions ──────────────────────────────────────────────────────────
   const [leadPermissions, setLeadPermissions] = useState<{
@@ -544,6 +545,7 @@ export default function LeadsPage() {
             wonPagination={wonPagination}
             // Notify parent when sub-view changes so hook fetches correct data
             onSubViewChange={setKanbanSubView}
+            refreshKey={boardRefreshKey}
             permissions={{
               create: canCreate,
               readAll: canReadAll,
@@ -566,10 +568,12 @@ export default function LeadsPage() {
         initialData={editingLead}
         onLeadCreated={() => {
           refetchAll();
+          setBoardRefreshKey((k) => k + 1);
           handleDialogClose();
         }}
         onLeadUpdated={() => {
           refetchAll();
+          setBoardRefreshKey((k) => k + 1);
           handleDialogClose();
         }}
       />

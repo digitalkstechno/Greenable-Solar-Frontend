@@ -165,7 +165,7 @@ export default function DashboardLeadUpdateDialog({ isOpen, onClose, lead, onSuc
               onChange={() => setActionType('done')}
               className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
             />
-            <span className="text-sm font-medium text-gray-700">Done</span>
+            <span className="text-sm font-medium text-gray-700">Follow Up Done</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input

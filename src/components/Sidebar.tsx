@@ -20,6 +20,7 @@ import {
   Package,
   PackagePlus,
   PackageMinus,
+  Building2,
 } from 'lucide-react';
 import { useRouter } from "next/navigation";
 import axios from "axios";
@@ -111,7 +112,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
     menuItems.push({ icon: CheckSquare, label: "Tasks", path: "/tasks" });
   }
 
-  if (canViewRole) menuItems.push({ icon: Settings, label: "Department Management", path: "/roles" });
+  if (canViewRole) menuItems.push({ icon: Building2, label: "Department Management", path: "/roles" });
   if (canViewStaff) menuItems.push({ icon: Users, label: "User", path: "/user-list" });
   if (canViewLeadStatus) menuItems.push({ icon: Flag, label: "Lead Status", path: "/lead-status" });
   if (canViewCategory) menuItems.push({ icon: List, label: "Category", path: "/category" });

@@ -584,6 +584,7 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
       }
       toast.success('Lead status updated');
       onRefresh();
+      onClose();
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Failed to update lead');
     } finally {
@@ -767,7 +768,8 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
       }
       toast.success('Lead reassigned successfully');
       setReassignOpen(false);
-      onRefresh(); // Refresh parent to get updated lead details
+      onClose();
+      onRefresh();
     } catch (e: any) {
       toast.error(e?.response?.data?.message || 'Failed to reassign lead');
     } finally {
