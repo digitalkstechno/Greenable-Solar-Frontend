@@ -2,7 +2,7 @@
 // Kanban board with Board / Lost / Won sub-views + drag-and-drop
 
 import { useState, useCallback, useEffect } from 'react';
-import { FiSearch, FiPhone, FiMail, FiEye, FiEdit } from 'react-icons/fi';
+import { FiSearch, FiPhone, FiMail, FiEye, FiEdit, FiThumbsDown } from 'react-icons/fi';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { baseUrl, getAuthToken } from '@/config';
@@ -68,6 +68,15 @@ export default function KanbanCard({
                             className="h-7 w-7 cursor-pointer rounded-full bg-green-600 text-white flex items-center justify-center hover:-translate-y-0.5 hover:shadow transition-all"
                         >
                             <FiEdit className="h-3.5 w-3.5" />
+                        </button>
+                    )}
+                    {onMarkLost && (
+                        <button
+                            onClick={onMarkLost}
+                            title="Mark as Lost"
+                            className="h-7 w-7 cursor-pointer rounded-full bg-red-100 text-red-600 flex items-center justify-center hover:-translate-y-0.5 hover:shadow transition-all"
+                        >
+                            <FiThumbsDown className="h-3.5 w-3.5" />
                         </button>
                     )}
                 </div>

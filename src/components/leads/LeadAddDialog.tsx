@@ -125,6 +125,8 @@ export default function LeadAddDialog({
           email: values.email.trim().toLowerCase(),
           kwRequirement: values.kwRequirement.trim(),
           discomName: values.discomName,
+          leadrefrance: values.leadrefrance,
+          projecttype: values.projecttype,
           address: values.address.trim(),
           locationLink: values.locationLink.trim(),
           leadStatus: values.leadStatus,

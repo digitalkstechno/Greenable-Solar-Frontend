@@ -842,6 +842,8 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
               <InfoCard label="Phone" value={lead.contact} />
               <InfoCard label="Email" value={lead.email} />
               <InfoCard label="Discom Name" value={lead.discomName} />
+              <InfoCard label="Lead Reference" value={lead.leadrefrance} />
+              <InfoCard label="Project Type" value={lead.projecttype} />
               <InfoCard label="Last Follow-Up" value={lead.lastFollowUp} />
               <InfoCard label="Active" value={lead.isActive ? 'Yes' : 'No'} />
             </div>

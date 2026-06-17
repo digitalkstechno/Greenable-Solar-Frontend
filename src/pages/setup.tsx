@@ -203,20 +203,20 @@ export default function Setup() {
 
   const menuItems = useMemo(() => {
     const items = [
-      { name: "Department Management", icon: Settings, visible: canViewRole },
-      { name: "User", icon: Users, visible: canViewStaff },
+      // { name: "Department Management", icon: Settings, visible: canViewRole },
+      // { name: "User", icon: Users, visible: canViewStaff },
       // { name: "Lead Sources", icon: Link2, visible: canViewLeadSource },
-      { name: "Lead Status", icon: Flag, visible: canViewLeadStatus },
+      // { name: "Lead Status", icon: Flag, visible: canViewLeadStatus },
       { name: "Kanban Status", icon: Settings2, visible: true },
       // { name: "Lead Labels", icon: Tag, visible: canViewLeadLabel },
       // { name: "Task Status", icon: Settings, visible: canViewTaskStatus },
       // { name: "Teams", icon: UsersRound, visible: canViewTeams },
       // { name: "Organizations", icon: Building2, visible: canViewOrgs },
       { name: "Field Settings", icon: Settings2, visible: true },
-      { name: "Category", icon: List, visible: canViewCategory },
-      { name: "Product", icon: Package, visible: canViewProduct },
-      { name: "Stock In", icon: PackagePlus, visible: canViewStock },
-      { name: "Stock Out", icon: PackageMinus, visible: canViewStock },
+      // { name: "Category", icon: List, visible: canViewCategory },
+      // { name: "Product", icon: Package, visible: canViewProduct },
+      // { name: "Stock In", icon: PackagePlus, visible: canViewStock },
+      // { name: "Stock Out", icon: PackageMinus, visible: canViewStock },
     ];
     return items.filter(i => i.visible);
   }, [canViewRole, canViewStaff, canViewLeadSource, canViewLeadStatus, canViewLeadLabel, canViewTeams, canViewOrgs, canViewTaskStatus, canViewCategory, canViewProduct, canViewStock]);

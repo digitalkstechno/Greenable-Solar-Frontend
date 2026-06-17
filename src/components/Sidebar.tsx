@@ -15,6 +15,11 @@ import {
   ChevronLeft,
   Menu,
   CheckSquare,
+  Flag,
+  List,
+  Package,
+  PackagePlus,
+  PackageMinus,
 } from 'lucide-react';
 import { useRouter } from "next/navigation";
 import axios from "axios";
@@ -44,6 +49,9 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
   const [canViewLeadStatus, setCanViewLeadStatus] = useState(false);
   const [canViewLeadSource, setCanViewLeadSource] = useState(false);
   const [canViewLeadLabel, setCanViewLeadLabel] = useState(false);
+  const [canViewCategory, setCanViewCategory] = useState(false);
+  const [canViewProduct, setCanViewProduct] = useState(false);
+  const [canViewStock, setCanViewStock] = useState(false);
 
   useEffect(() => {
     const token = getAuthToken();
@@ -64,14 +72,18 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
         const leadStatusPerms = rawPerms.leadStatus || {};
         const leadSourcePerms = rawPerms.leadSource || {};
         const leadLabelPerms = rawPerms.leadLabel || {};
+        const setupPerms = rawPerms.setup || {};
 
         setCanViewLead(!!(leadPerms.readOwn || leadPerms.readAll));
         setCanViewTask(!!(taskPerms.readOwn || taskPerms.readAll));
-        setCanViewStaff(!!staffPerms.readAll);
-        setCanViewRole(!!rolePerms.readAll);
-        setCanViewLeadStatus(!!leadStatusPerms.readAll);
-        setCanViewLeadSource(!!leadSourcePerms.readAll);
-        setCanViewLeadLabel(!!leadLabelPerms.readAll);
+        setCanViewStaff(!!(staffPerms.readAll || setupPerms.readAll));
+        setCanViewRole(!!(rolePerms.readAll || setupPerms.readAll));
+        setCanViewLeadStatus(!!(leadStatusPerms.readAll || setupPerms.readAll));
+        setCanViewLeadSource(!!(leadSourcePerms.readAll || setupPerms.readAll));
+        setCanViewLeadLabel(!!(leadLabelPerms.readAll || setupPerms.readAll));
+        setCanViewCategory(!!setupPerms.readAll);
+        setCanViewProduct(!!setupPerms.readAll);
+        setCanViewStock(!!setupPerms.readAll);
       })
       .catch(() => {
         setCanViewLead(false);
@@ -81,6 +93,9 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
         setCanViewLeadStatus(false);
         setCanViewLeadSource(false);
         setCanViewLeadLabel(false);
+        setCanViewCategory(false);
+        setCanViewProduct(false);
+        setCanViewStock(false);
       });
   }, []);
 
@@ -96,7 +111,17 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
     menuItems.push({ icon: CheckSquare, label: "Tasks", path: "/tasks" });
   }
 
-  const hasAnySetupPerm = canViewStaff || canViewRole || canViewLeadStatus || canViewLeadSource || canViewLeadLabel;
+  if (canViewRole) menuItems.push({ icon: Settings, label: "Department Management", path: "/roles" });
+  if (canViewStaff) menuItems.push({ icon: Users, label: "User", path: "/user-list" });
+  if (canViewLeadStatus) menuItems.push({ icon: Flag, label: "Lead Status", path: "/lead-status" });
+  if (canViewCategory) menuItems.push({ icon: List, label: "Category", path: "/category" });
+  if (canViewProduct) menuItems.push({ icon: Package, label: "Product", path: "/product" });
+  if (canViewStock) {
+    menuItems.push({ icon: PackagePlus, label: "Stock In", path: "/stock-in" });
+    menuItems.push({ icon: PackageMinus, label: "Stock Out", path: "/stock-out" });
+  }
+
+  const hasAnySetupPerm = true; // Still show Setup if needed for remaining items like Kanban Status
 
   // if (hasAnySetupPerm) {
     menuItems.push({
@@ -196,7 +221,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-40 h-screen bg-[#05111e] text-white shadow-2xl transition-all duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 z-40 h-screen bg-[#d87612] text-white shadow-2xl transition-all duration-300 ease-in-out ${
           isOpen 
             ? 'w-64 translate-x-0' 
             : 'w-64 -translate-x-full md:w-20 md:translate-x-0'
@@ -206,7 +231,8 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
           {/* Header with Logo */}
           <div className={`flex items-center h-20 px-4 border-b border-white/10 ${isOpen ? 'justify-between' : 'justify-center'}`}>
             <div className={`flex items-center gap-3 ${!isOpen && 'hidden md:flex'}`}>
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#30cdb2] to-[#23abed] flex items-center justify-center font-bold text-white shadow-lg">
+              {/* <img src="/logo/greeneable-logo.png" alt="Greeneable Logo" className={`object-contain ${isOpen ? 'h-12' : 'h-10 w-10'}`} /> */}
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#30cdb2] to-[#23abed] flex items-center justify-center font-bold text-white shadow-lg">
                 LF
               </div>
               {isOpen && <span className="text-lg font-semibold text-white tracking-wide">LeadFlow</span>}
@@ -290,15 +316,15 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
                         onClick={() => handleNavigation(item.path)}
                         className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 group ${
                           isItemActive
-                            ? 'bg-gradient-to-r from-[#0f3c70] to-[#0f2f5a] text-white'
-                            : 'text-white/70 hover:bg-white/5 hover:text-white'
+                            ? 'bg-[#f4f7fb] text-green-600 shadow-md'
+                            : 'text-white/80 hover:bg-white/10 hover:text-white'
                         }`}
                       >
                         <Icon className={`h-5 w-5 flex-shrink-0 transition-transform group-hover:scale-110 ${
-                          isItemActive ? 'text-white' : 'text-white/70'
+                          isItemActive ? 'text-green-600' : 'text-white/80'
                         }`} />
                         {isOpen && (
-                          <span className="text-sm font-medium">{item.label}</span>
+                          <span className="text-sm font-medium text-left flex-1 whitespace-nowrap truncate">{item.label}</span>
                         )}
                       </button>
                     )}

@@ -239,6 +239,7 @@ export default function LeadsKanbanView({
             isLoading: columnLoading[s._id]
         }))
         .filter((group) => {
+            if (group.title.match(/^lost$/i) || group.title.match(/^won$/i)) return false;
             if (kanbanVisibleStatusNames.length === 0) return true;
             return kanbanVisibleStatusNames.includes(group.title);
         });
@@ -254,12 +255,51 @@ export default function LeadsKanbanView({
     };
 
     const markLost = async (id: string) => {
-        try {
-            await axios.put(`${baseUrl.updateLead}/${id}`, { isLost: true, lostDate: new Date().toISOString() }, { headers: { Authorization: `Bearer ${token()}` } });
-            toast.success('Lead marked as lost');
-            removeLeadFromBoard(id);
-            onRefresh();
-        } catch { toast.error('Failed to update lead'); }
+        const { value: formValues } = await Swal.fire({
+            title: 'Mark Lead as Lost?',
+            html: `
+                <div style="text-align: left; margin-bottom: 10px;">
+                    <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 5px;">
+                        <span style="color: #F28522; margin-right: 5px;">✖</span> Remove Reason
+                    </label>
+                    <input id="swal-input1" class="swal2-input" placeholder="Enter reason for marking lead as lost" style="width: 100%; box-sizing: border-box; height: 40px; margin: 0; font-size: 14px;">
+                </div>
+                <div style="text-align: left;">
+                    <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 5px;">
+                        <span style="color: #F28522; margin-right: 5px;">📅</span> Lost Date
+                    </label>
+                    <input id="swal-input2" type="date" class="swal2-input" style="width: 100%; box-sizing: border-box; height: 40px; margin: 0; font-size: 14px;">
+                </div>
+            `,
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Confirm',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#F28522',
+            cancelButtonColor: '#6D7A86',
+            preConfirm: () => {
+                const reason = (document.getElementById('swal-input1') as HTMLInputElement).value;
+                const date = (document.getElementById('swal-input2') as HTMLInputElement).value;
+                if (!reason || !date) {
+                    Swal.showValidationMessage('Both reason and date are required');
+                    return false;
+                }
+                return { reason, date };
+            }
+        });
+        
+        if (formValues) {
+            try {
+                const lostStatusId = statuses.find(s => s.name.match(/^lost$/i))?._id;
+                await axios.put(`${baseUrl.updateLead}/${id}`, 
+                    { leadStatus: lostStatusId, lostReason: formValues.reason, lostDate: formValues.date }, 
+                    { headers: { Authorization: `Bearer ${token()}` } }
+                );
+                toast.success('Lead marked as lost');
+                removeLeadFromBoard(id);
+                onRefresh();
+            } catch { toast.error('Failed to update lead'); }
+        }
     };
 
     const markWon = async (id: string) => {
@@ -273,7 +313,8 @@ export default function LeadsKanbanView({
 
     const reactivate = async (id: string) => {
         try {
-            await axios.put(`${baseUrl.updateLead}/${id}`, { isLost: false, isWon: false }, { headers: { Authorization: `Bearer ${token()}` } });
+            const newLeadStatusId = statuses.find(s => s.name.match(/^new lead$/i))?._id;
+            await axios.put(`${baseUrl.updateLead}/${id}`, { leadStatus: newLeadStatusId }, { headers: { Authorization: `Bearer ${token()}` } });
             toast.success('Lead reactivated');
             // We need to re-fetch board leads since we don't know the status, or rely on parent
             // Since this is in the 'lost' or 'won' view, parent's onRefresh updates those views.
@@ -313,8 +354,8 @@ export default function LeadsKanbanView({
                             onClick={() => handleSubViewChange(v)}
                             className={`rounded-lg cursor-pointer px-4 py-1.5 text-sm font-medium capitalize transition-colors ${
                                 subView === v
-                                    ? v === 'lost' ? 'bg-red-600 text-white' : v === 'won' ? 'bg-green-600 text-white' : 'bg-secondary text-white'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    ? 'border border-[#F28522] text-[#F28522] bg-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-transparent'
                             }`}
                         >
                             {v === 'board' ? 'Kanban View' : v === 'lost' ? 'Lost Leads' : 'Won Leads'}

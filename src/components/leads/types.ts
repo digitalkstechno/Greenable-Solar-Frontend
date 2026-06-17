@@ -40,6 +40,8 @@ export type ApiLead = {
   email: string;
   kwRequirement?: string;
   discomName?: string;
+  leadrefrance?: string;
+  projecttype?: string;
   address?: string;
   locationLink?: string;
   leadStatus?: ApiStatus;
@@ -61,6 +63,9 @@ export type ApiLead = {
   lostDate?: string;
   wonDate?: string;
   amountDate?: string;
+  nextFollowupDate?: string;
+  nextFollowupTime?: string;
+  lastFollowUp?: string;
   activities?: {
     message: string;
     by?: ApiUser;
@@ -84,6 +89,8 @@ export type AddLeadForm = {
   email: string;
   kwRequirement?: string;
   discomName?: string;
+  leadrefrance?: string;
+  projecttype?: string;
   address?: string;
   locationLink?: string;
   leadStatus: string;
