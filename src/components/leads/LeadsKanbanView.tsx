@@ -7,10 +7,11 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { baseUrl, getAuthToken } from '@/config';
 import { ApiLead } from './types';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Plus } from 'lucide-react';
 import DataTable, { Column } from '@/components/DataTable';
 import KanbanCard from './KanbanCard';
 import Swal from 'sweetalert2';
+import ProjectDetailDrawer from './ProjectDetailDrawer';
 
 type PaginationShape = {
     currentPage: number;
@@ -69,6 +70,7 @@ export default function LeadsKanbanView({
     const [subView, setSubView] = useState<SubView>('board');
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
+    const [projectDetailLead, setProjectDetailLead] = useState<ApiLead | null>(null);
     
     // Board state
     const [boardLeads, setBoardLeads] = useState<Record<string, ApiLead[]>>({});
@@ -505,6 +507,12 @@ export default function LeadsKanbanView({
                         onEdit={permissions?.update ? (row) => onEdit?.(row) : undefined}
                         extraActions={permissions?.update ? [
                             {
+                                label: 'Add Details',
+                                icon: <Plus className="h-3.5 w-3.5" />,
+                                color: 'emerald',
+                                onClick: (row) => setProjectDetailLead(row),
+                            },
+                            {
                                 label: 'Payment',
                                 icon: <span className="text-xs font-bold">₹</span>,
                                 color: 'emerald',
@@ -539,6 +547,14 @@ export default function LeadsKanbanView({
                     />
                 </div>
             )}
+
+            {/* Project Detail Drawer */}
+            <ProjectDetailDrawer
+                isOpen={!!projectDetailLead}
+                lead={projectDetailLead}
+                onClose={() => setProjectDetailLead(null)}
+                onSaved={() => { onRefresh(); setProjectDetailLead(null); }}
+            />
         </div>
     );
 }

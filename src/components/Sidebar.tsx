@@ -108,9 +108,9 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
     menuItems.push({ icon: UserPlus, label: "Leads", path: "/leads" });
   }
 
-  if (canViewTask) {
-    menuItems.push({ icon: CheckSquare, label: "Tasks", path: "/tasks" });
-  }
+  // if (canViewTask) {
+  //   menuItems.push({ icon: CheckSquare, label: "Tasks", path: "/tasks" });
+  // }
 
   if (canViewRole) menuItems.push({ icon: Building2, label: "Department Management", path: "/roles" });
   if (canViewStaff) menuItems.push({ icon: Users, label: "User", path: "/user-list" });

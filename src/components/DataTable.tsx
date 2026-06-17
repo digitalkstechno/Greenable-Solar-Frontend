@@ -335,22 +335,23 @@ export default function DataTable<T extends Record<string, any>>({
 
                         {/* EXTRA ACTIONS */}
                         {extraActions?.map((act, idx) => {
-                          const colors: Record<string, string> = {
-                            blue: 'text-blue-600 hover:bg-blue-600 focus:ring-blue-500',
-                            green: 'text-green-600 hover:bg-green-600 focus:ring-green-500',
-                            red: 'text-red-600 hover:bg-red-500 focus:ring-red-500',
-                            orange: 'text-orange-600 hover:bg-orange-500 focus:ring-orange-500',
-                            purple: 'text-purple-600 hover:bg-purple-600 focus:ring-purple-500',
+                          const colors: Record<string, { base: string; hover: string; ring: string }> = {
+                            blue:    { base: 'text-blue-600',   hover: 'hover:bg-blue-600',   ring: 'focus:ring-blue-500' },
+                            green:   { base: 'text-green-600',  hover: 'hover:bg-green-600',  ring: 'focus:ring-green-500' },
+                            red:     { base: 'text-red-600',    hover: 'hover:bg-red-500',    ring: 'focus:ring-red-500' },
+                            orange:  { base: 'text-orange-600', hover: 'hover:bg-orange-500', ring: 'focus:ring-orange-500' },
+                            purple:  { base: 'text-purple-600', hover: 'hover:bg-purple-600', ring: 'focus:ring-purple-500' },
+                            emerald: { base: 'text-emerald-600', hover: 'hover:bg-emerald-500', ring: 'focus:ring-emerald-500' },
                           };
-                          const colorClass = colors[act.color || 'blue'];
+                          const c = colors[act.color || 'blue'] || colors.blue;
                           return (
                             <button
                               key={idx}
                               onClick={() => act.onClick(row)}
-                              className={`group h-9 min-w-[36px] flex items-center justify-center rounded-lg bg-gray-100 ${colorClass} hover:text-white px-3 transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95`}
+                              className={`group h-9 min-w-[36px] flex items-center justify-center gap-1.5 rounded-lg bg-gray-100 border border-transparent ${c.base} ${c.hover} ${c.ring} hover:text-white hover:border-transparent px-3 transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95`}
                               title={act.label}
                             >
-                              {act.icon && <span className={act.label ? 'mr-1.5' : ''}>{act.icon}</span>}
+                              {act.icon && <span className="transition-colors">{act.icon}</span>}
                               {act.label && <span className="text-xs font-semibold">{act.label}</span>}
                             </button>
                           );

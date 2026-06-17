@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { Phone, Mail } from 'lucide-react';
+import { Phone, Mail, Plus } from 'lucide-react';
 import { baseUrl, getAuthToken } from '@/config';
 import { ApiSource, ApiStatus, ApiUser, ApiLead } from './types';
 import DataTable, { Column } from '@/components/DataTable';
 import DeleteDialog from '@/components/DeleteDialog';
 import Swal from 'sweetalert2';
+import ProjectDetailDrawer from './ProjectDetailDrawer';
 
 // ── Debounce helper ──────────────────────────────────────────────────────────
 function useDebounce<T>(value: T, delay = 500): T {
@@ -113,6 +114,7 @@ export default function LeadsListView({
   const [showDelete, setShowDelete] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<TableLead | null>(null);
   const [localLoading, setLocalLoading] = useState(false);
+  const [projectDetailLead, setProjectDetailLead] = useState<ApiLead | null>(null);
 
   // Use loading from prop or local state
   const loading = loadingProp !== undefined ? loadingProp : localLoading;
@@ -305,6 +307,15 @@ export default function LeadsListView({
         onDelete={permissions?.delete ? (row) => { setDeleteTarget(row); setShowDelete(true); } : undefined}
         extraActions={permissions?.update ? [
           {
+            label: 'Add Details',
+            icon: <Plus className="h-3.5 w-3.5" />,
+            color: 'emerald',
+            onClick: (row) => {
+              const rawLead: ApiLead = row._raw || row;
+              setProjectDetailLead(rawLead);
+            },
+          },
+          {
             label: 'Payment',
             icon: <span className="text-xs font-bold">₹</span>,
             color: 'emerald',
@@ -367,6 +378,14 @@ export default function LeadsListView({
           This action cannot be undone.
         </p>
       </DeleteDialog>
+
+      {/* Project Detail Drawer */}
+      <ProjectDetailDrawer
+        isOpen={!!projectDetailLead}
+        lead={projectDetailLead}
+        onClose={() => setProjectDetailLead(null)}
+        onSaved={() => { onRefresh(); setProjectDetailLead(null); }}
+      />
     </div>
   );
 }
