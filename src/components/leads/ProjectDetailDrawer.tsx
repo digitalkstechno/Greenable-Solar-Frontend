@@ -9,7 +9,8 @@ import {
 } from 'lucide-react';
 import { baseUrl, getAuthToken } from '@/config';
 import { ApiLead } from './types';
-import { FormSelect } from '@/components/ui/FormSelect';
+import FormSelect from '@/components/ui/FormSelect';
+import FormInput from '@/components/ui/Input';
 
 interface Props {
   isOpen: boolean;
@@ -86,7 +87,7 @@ const LOAN_DOC_FIELDS = [
 
 type SectionKey = 'project' | 'photos' | 'regDocs' | 'payment' | 'loanDocs';
 
-// ── Option lists ─────────────────────────────────────────────────────────────
+// ─── Option lists ───────────────────────────────────────────────────────────────
 const PHASE_OPTS = [{ value: 'single', label: 'Single' }, { value: 'three', label: 'Three' }];
 const ROOF_OPTS = [
   { value: 'rcc', label: 'RCC' },
@@ -100,51 +101,7 @@ const ELCB_BY_OPTS = [{ value: 'greeneable', label: 'Greeneable' }, { value: 'cu
 const WIRING_OPTS = [{ value: 'open', label: 'Open' }, { value: 'consild', label: 'Consild' }];
 const PAYMENT_OPTS = [{ value: 'cash', label: 'Cash' }, { value: 'cheque', label: 'Cheque' }];
 
-// ── Reusable sub-components ────────────────────────────────────────────────
-const Field = ({ label, req, children }: { label: string; req?: boolean; children: React.ReactNode }) => (
-  <div className="space-y-1">
-    <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
-      {label} {req && <span className="text-red-500">*</span>}
-    </label>
-    {children}
-  </div>
-);
-
-interface TextInputProps {
-  name: keyof FormState;
-  type?: string;
-  placeholder?: string;
-  value: string;
-  onChange: (name: keyof FormState, val: string) => void;
-}
-const TextInput = ({ name, type = 'text', placeholder = '', value, onChange }: TextInputProps) => (
-  <input
-    type={type}
-    value={value}
-    onChange={(e) => onChange(name, e.target.value)}
-    placeholder={placeholder}
-    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 shadow-sm hover:border-gray-400 hover:shadow-md focus:border-secondary focus:outline-none focus:ring-2 focus:ring-blue-50 transition-all duration-300"
-  />
-);
-
-interface SelectProps {
-  name: keyof FormState;
-  options: { value: string; label: string }[];
-  uid?: string;
-  value: string;
-  onChange: (name: keyof FormState, val: string) => void;
-}
-// Thin wrapper so FormSelect works with our `onChange` helper
-const Select = ({ name, options, uid, value, onChange }: SelectProps) => (
-  <FormSelect
-    name={uid || name}
-    value={value}
-    onChange={(val) => onChange(name, val)}
-    options={options}
-    placeholder="Select..."
-  />
-);
-
+// ─── File Input Component ─────────────────────────────────────────────────────
 interface FileInputProps {
   fieldKey: string;
   label: string;
@@ -153,16 +110,19 @@ interface FileInputProps {
   existingFiles: Record<string, any>;
   files: Record<string, FileOrNull>;
   onFileChange: (key: string, file: File | null) => void;
+  error?: string;
 }
-const FileInput = ({ fieldKey, label, accept = '*', isPdf = false, existingFiles, files, onFileChange }: FileInputProps) => {
+const FileInput = ({ fieldKey, label, accept = '*', isPdf = false, existingFiles, files, onFileChange, error }: FileInputProps) => {
   const existing = existingFiles[fieldKey];
   const selected = files[fieldKey];
+  const hasError = !!error;
+  
   return (
-    <div className="space-y-1">
-      <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
-        {label} <span className="text-red-500">*</span>
+    <div className="space-y-1 mb-4">
+      <label className="block text-xs font-bold text-gray-700 mb-1.5">
+        {label} <span className="text-red-700">*</span>
       </label>
-      <label className="group flex items-center gap-3 cursor-pointer rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 px-4 py-3 hover:border-orange-300 hover:bg-orange-50/30 transition">
+      <label className={`group flex items-center gap-3 cursor-pointer rounded-xl border-2 border-dashed bg-gray-50 px-4 py-3 hover:border-orange-300 hover:bg-orange-50/30 transition ${hasError ? 'border-red-700 ring-2 ring-red-300' : 'border-gray-200'}`}>
         <div className="flex-shrink-0 rounded-lg bg-gray-100 p-2 group-hover:bg-orange-100 transition">
           {isPdf
             ? <FileText className="h-4 w-4 text-gray-500 group-hover:text-orange-500" />
@@ -187,13 +147,19 @@ const FileInput = ({ fieldKey, label, accept = '*', isPdf = false, existingFiles
           onChange={(e) => onFileChange(fieldKey, e.target.files?.[0] || null)}
         />
       </label>
+      {hasError && (
+        <div className="mt-1.5 flex items-center gap-1.5">
+          <X size={14} className="text-red-700 flex-shrink-0" />
+          <p className="text-red-700 text-xs">{error}</p>
+        </div>
+      )}
     </div>
   );
 };
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2 mb-2">
+    <div className="flex items-center gap-2 mb-4">
       <div className="h-1 w-6 rounded-full bg-orange-500" />
       <h3 className="text-sm font-bold text-gray-800">{children}</h3>
     </div>
@@ -207,6 +173,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeSection, setActiveSection] = useState<SectionKey>('project');
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const drawerRef = useRef<HTMLDivElement>(null);
 
   // Fetch existing data when drawer opens
@@ -216,6 +183,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
     setFiles({});
     setExistingFiles({});
     setActiveSection('project');
+    setErrors({});
 
     const fetchData = async () => {
       setLoading(true);
@@ -285,15 +253,78 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
     return () => document.removeEventListener('mousedown', handler);
   }, [isOpen, onClose]);
 
-  const handleFormChange = (key: keyof FormState, val: string) =>
+  const handleFormChange = (key: keyof FormState, val: string) => {
     setForm((p) => ({ ...p, [key]: val }));
+    if (errors[key]) {
+      setErrors((prev) => ({ ...prev, [key]: '' }));
+    }
+  };
 
   const handleFileChange = (key: string, file: File | null) => {
     setFiles((p) => ({ ...p, [key]: file }));
+    if (errors[key]) {
+      setErrors((prev) => ({ ...prev, [key]: '' }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    const requiredFields: (keyof FormState)[] = [
+      'leadRefrance', 'panelMake', 'panelWp', 'noOfPanel',
+      'inverterMake', 'inverterKw', 'inverterPhase', 'installationRoof',
+      'discom', 'consumerConnectionType', 'elcbInstalled', 'elcbProvideBy',
+      'wiringType', 'homeFloor', 'walkway', 'ladder', 'hdgiPipeMake',
+      'paymentMode', 'projectAmount', 'subsidyLessProject'
+    ];
+
+    requiredFields.forEach(field => {
+      if (!form[field]) {
+        const fieldNames: Record<string, string> = {
+          leadRefrance: 'Lead Reference',
+          panelMake: 'Panel Make',
+          panelWp: 'Panel WP',
+          noOfPanel: 'No. of Panels',
+          inverterMake: 'Inverter Make',
+          inverterKw: 'Inverter KW',
+          inverterPhase: 'Inverter Phase',
+          installationRoof: 'Installation Roof',
+          discom: 'DISCOM',
+          consumerConnectionType: 'Consumer Connection Type',
+          elcbInstalled: 'ELCB / RCCB Installed',
+          elcbProvideBy: 'ELCB / RCCB Provide By',
+          wiringType: 'Wiring Type',
+          homeFloor: 'Home Floor',
+          walkway: 'Walkway',
+          ladder: 'Ladder',
+          hdgiPipeMake: 'HDGI Pipe Make',
+          paymentMode: 'Payment Mode',
+          projectAmount: 'Project Amount',
+          subsidyLessProject: 'Subsidy Less Project'
+        };
+        newErrors[field] = `${fieldNames[field] || field} is required`;
+      }
+    });
+
+    if (form.walkway === 'yes' && !form.walkwayLengthFeet) {
+      newErrors.walkwayLengthFeet = 'Walkway Length is required';
+    }
+    if (form.ladder === 'yes' && !form.ladderLengthFeet) {
+      newErrors.ladderLengthFeet = 'Ladder Length is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
     if (!lead) return;
+    
+    if (!validateForm()) {
+      toast.error('Please fill all required fields');
+      setActiveSection('project');
+      return;
+    }
+
     setSaving(true);
     try {
       const token = getAuthToken();
@@ -333,7 +364,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
       {/* Drawer */}
       <div
         ref={drawerRef}
-        className={`fixed right-0 top-0 z-50 flex h-full w-full max-w-xl flex-col bg-white shadow-2xl transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed right-0 top-0 z-50 flex h-full w-full max-w-4xl flex-col bg-white shadow-2xl transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {/* Header */}
         <div className="flex items-center gap-4 border-b border-gray-100 bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-5">
@@ -368,235 +399,268 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+        <div className="flex-1 overflow-y-auto px-6 py-5">
           {loading ? (
             <div className="flex h-40 items-center justify-center">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-200 border-t-orange-500" />
             </div>
           ) : (
             <>
-              {/* ── Project Info ──────────────────────────────────────────── */}
+              {/* ─── Project Info ───────────────────────────────────────────────── */}
               {activeSection === 'project' && (
-                <div className="space-y-4">
+                <div>
                   <SectionTitle>Add Details After Project Done</SectionTitle>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Field label="Lead Reference" req>
-                      <TextInput
-                        name="leadRefrance"
-                        placeholder="Lead ref..."
-                        value={form.leadRefrance}
-                        onChange={handleFormChange}
-                      />
-                    </Field>
-                    <Field label="Panel Make" req>
-                      <TextInput
-                        name="panelMake"
-                        placeholder="e.g. Adani"
-                        value={form.panelMake}
-                        onChange={handleFormChange}
-                      />
-                    </Field>
-                    <Field label="Panel WP" req>
-                      <TextInput
-                        name="panelWp"
-                        type="number"
-                        placeholder="e.g. 540"
-                        value={form.panelWp}
-                        onChange={handleFormChange}
-                      />
-                    </Field>
-                    <Field label="No. of Panels" req>
-                      <TextInput
-                        name="noOfPanel"
-                        type="number"
-                        placeholder="e.g. 10"
-                        value={form.noOfPanel}
-                        onChange={handleFormChange}
-                      />
-                    </Field>
-                    <Field label="Inverter Make" req>
-                      <TextInput
-                        name="inverterMake"
-                        placeholder="e.g. Growatt"
-                        value={form.inverterMake}
-                        onChange={handleFormChange}
-                      />
-                    </Field>
-                    <Field label="Inverter KW" req>
-                      <TextInput
-                        name="inverterKw"
-                        type="number"
-                        placeholder="e.g. 5"
-                        value={form.inverterKw}
-                        onChange={handleFormChange}
-                      />
-                    </Field>
-                    <Field label="Inverter Phase" req>
-                      <Select
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <FormInput
+                      label="Lead Reference"
+                      name="leadRefrance"
+                      placeholder="Lead ref..."
+                      value={form.leadRefrance}
+                      onChange={(e) => handleFormChange('leadRefrance', e.target.value)}
+                      error={errors.leadRefrance}
+                      required
+                    />
+                    <FormInput
+                      label="Panel Make"
+                      name="panelMake"
+                      placeholder="e.g. Adani"
+                      value={form.panelMake}
+                      onChange={(e) => handleFormChange('panelMake', e.target.value)}
+                      error={errors.panelMake}
+                      required
+                    />
+                    <FormInput
+                      label="Panel WP"
+                      name="panelWp"
+                      type="number"
+                      placeholder="e.g. 540"
+                      value={form.panelWp}
+                      onChange={(e) => handleFormChange('panelWp', e.target.value)}
+                      error={errors.panelWp}
+                      required
+                    />
+                    <FormInput
+                      label="No. of Panels"
+                      name="noOfPanel"
+                      type="number"
+                      placeholder="e.g. 10"
+                      value={form.noOfPanel}
+                      onChange={(e) => handleFormChange('noOfPanel', e.target.value)}
+                      error={errors.noOfPanel}
+                      required
+                    />
+                    <FormInput
+                      label="Inverter Make"
+                      name="inverterMake"
+                      placeholder="e.g. Growatt"
+                      value={form.inverterMake}
+                      onChange={(e) => handleFormChange('inverterMake', e.target.value)}
+                      error={errors.inverterMake}
+                      required
+                    />
+                    <FormInput
+                      label="Inverter KW"
+                      name="inverterKw"
+                      type="number"
+                      placeholder="e.g. 5"
+                      value={form.inverterKw}
+                      onChange={(e) => handleFormChange('inverterKw', e.target.value)}
+                      error={errors.inverterKw}
+                      required
+                    />
+                    <div>
+                      <FormSelect
+                        label="Inverter Phase"
                         name="inverterPhase"
-                        options={PHASE_OPTS}
-                        uid="inv-phase"
                         value={form.inverterPhase}
-                        onChange={handleFormChange}
+                        onChange={(val) => handleFormChange('inverterPhase', val)}
+                        options={PHASE_OPTS}
+                        placeholder="Select..."
+                        error={errors.inverterPhase}
+                        required
                       />
-                    </Field>
-                    <Field label="Installation Roof" req>
-                      <Select
+                    </div>
+                    <div>
+                      <FormSelect
+                        label="Installation Roof"
                         name="installationRoof"
-                        options={ROOF_OPTS}
-                        uid="inst-roof"
                         value={form.installationRoof}
-                        onChange={handleFormChange}
+                        onChange={(val) => handleFormChange('installationRoof', val)}
+                        options={ROOF_OPTS}
+                        placeholder="Select..."
+                        error={errors.installationRoof}
+                        required
                       />
-                    </Field>
-                    <Field label="DISCOM" req>
-                      <Select
+                    </div>
+                    <div>
+                      <FormSelect
+                        label="DISCOM"
                         name="discom"
-                        options={DISCOM_OPTS}
-                        uid="discom"
                         value={form.discom}
-                        onChange={handleFormChange}
+                        onChange={(val) => handleFormChange('discom', val)}
+                        options={DISCOM_OPTS}
+                        placeholder="Select..."
+                        error={errors.discom}
+                        required
                       />
-                    </Field>
-                    <Field label="Consumer Connection Type" req>
-                      <Select
+                    </div>
+                    <div>
+                      <FormSelect
+                        label="Consumer Connection Type"
                         name="consumerConnectionType"
-                        options={CONN_TYPE_OPTS}
-                        uid="conn-type"
                         value={form.consumerConnectionType}
-                        onChange={handleFormChange}
+                        onChange={(val) => handleFormChange('consumerConnectionType', val)}
+                        options={CONN_TYPE_OPTS}
+                        placeholder="Select..."
+                        error={errors.consumerConnectionType}
+                        required
                       />
-                    </Field>
-                    <Field label="ELCB / RCCB Installed" req>
-                      <Select
+                    </div>
+                    <div>
+                      <FormSelect
+                        label="ELCB / RCCB Installed"
                         name="elcbInstalled"
-                        options={YES_NO_OPTS}
-                        uid="elcb-inst"
                         value={form.elcbInstalled}
-                        onChange={handleFormChange}
+                        onChange={(val) => handleFormChange('elcbInstalled', val)}
+                        options={YES_NO_OPTS}
+                        placeholder="Select..."
+                        error={errors.elcbInstalled}
+                        required
                       />
-                    </Field>
-                    <Field label="ELCB / RCCB Provide By" req>
-                      <Select
+                    </div>
+                    <div>
+                      <FormSelect
+                        label="ELCB / RCCB Provide By"
                         name="elcbProvideBy"
-                        options={ELCB_BY_OPTS}
-                        uid="elcb-by"
                         value={form.elcbProvideBy}
-                        onChange={handleFormChange}
+                        onChange={(val) => handleFormChange('elcbProvideBy', val)}
+                        options={ELCB_BY_OPTS}
+                        placeholder="Select..."
+                        error={errors.elcbProvideBy}
+                        required
                       />
-                    </Field>
-                    <Field label="Wiring Type" req>
-                      <Select
+                    </div>
+                    <div>
+                      <FormSelect
+                        label="Wiring Type"
                         name="wiringType"
-                        options={WIRING_OPTS}
-                        uid="wiring"
                         value={form.wiringType}
-                        onChange={handleFormChange}
+                        onChange={(val) => handleFormChange('wiringType', val)}
+                        options={WIRING_OPTS}
+                        placeholder="Select..."
+                        error={errors.wiringType}
+                        required
                       />
-                    </Field>
-                    <Field label="Home Floor" req>
-                      <TextInput
-                        name="homeFloor"
-                        placeholder="e.g. G+2"
-                        value={form.homeFloor}
-                        onChange={handleFormChange}
-                      />
-                    </Field>
-                    <Field label="Walkway" req>
-                      <Select
+                    </div>
+                    <FormInput
+                      label="Home Floor"
+                      name="homeFloor"
+                      placeholder="e.g. G+2"
+                      value={form.homeFloor}
+                      onChange={(e) => handleFormChange('homeFloor', e.target.value)}
+                      error={errors.homeFloor}
+                      required
+                    />
+                    <div>
+                      <FormSelect
+                        label="Walkway"
                         name="walkway"
-                        options={YES_NO_OPTS}
-                        uid="walkway"
                         value={form.walkway}
-                        onChange={handleFormChange}
-                      />
-                    </Field>
-                    {form.walkway === 'yes' && (
-                      <Field label="Walkway Length (feet)" req>
-                        <TextInput
-                          name="walkwayLengthFeet"
-                          type="number"
-                          value={form.walkwayLengthFeet}
-                          onChange={handleFormChange}
-                        />
-                      </Field>
-                    )}
-                    <Field label="Ladder" req>
-                      <Select
-                        name="ladder"
+                        onChange={(val) => handleFormChange('walkway', val)}
                         options={YES_NO_OPTS}
-                        uid="ladder"
-                        value={form.ladder}
-                        onChange={handleFormChange}
+                        placeholder="Select..."
+                        error={errors.walkway}
+                        required
                       />
-                    </Field>
-                    {form.ladder === 'yes' && (
-                      <Field label="Ladder Length (feet)" req>
-                        <TextInput
-                          name="ladderLengthFeet"
-                          type="number"
-                          value={form.ladderLengthFeet}
-                          onChange={handleFormChange}
-                        />
-                      </Field>
+                    </div>
+                    {form.walkway === 'yes' && (
+                      <FormInput
+                        label="Walkway Length (feet)"
+                        name="walkwayLengthFeet"
+                        type="number"
+                        value={form.walkwayLengthFeet}
+                        onChange={(e) => handleFormChange('walkwayLengthFeet', e.target.value)}
+                        error={errors.walkwayLengthFeet}
+                        required
+                      />
                     )}
-                    <Field label="HDGI Pipe Make" req>
-                      <TextInput
-                        name="hdgiPipeMake"
-                        placeholder="e.g. Tata"
-                        value={form.hdgiPipeMake}
-                        onChange={handleFormChange}
+                    <div>
+                      <FormSelect
+                        label="Ladder"
+                        name="ladder"
+                        value={form.ladder}
+                        onChange={(val) => handleFormChange('ladder', val)}
+                        options={YES_NO_OPTS}
+                        placeholder="Select..."
+                        error={errors.ladder}
+                        required
                       />
-                    </Field>
+                    </div>
+                    {form.ladder === 'yes' && (
+                      <FormInput
+                        label="Ladder Length (feet)"
+                        name="ladderLengthFeet"
+                        type="number"
+                        value={form.ladderLengthFeet}
+                        onChange={(e) => handleFormChange('ladderLengthFeet', e.target.value)}
+                        error={errors.ladderLengthFeet}
+                        required
+                      />
+                    )}
+                    <FormInput
+                      label="HDGI Pipe Make"
+                      name="hdgiPipeMake"
+                      placeholder="e.g. Tata"
+                      value={form.hdgiPipeMake}
+                      onChange={(e) => handleFormChange('hdgiPipeMake', e.target.value)}
+                      error={errors.hdgiPipeMake}
+                      required
+                    />
                   </div>
 
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-3">
-                    <p className="text-xs font-bold text-gray-600 uppercase tracking-wide">HDGI Pipe in Feet</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Field label="80 × 40">
-                        <TextInput
-                          name="hdgiPipe80x40"
-                          type="number"
-                          placeholder="0 = acceptable"
-                          value={form.hdgiPipe80x40}
-                          onChange={handleFormChange}
-                        />
-                      </Field>
-                      <Field label="60 × 40">
-                        <TextInput
-                          name="hdgiPipe60x40"
-                          type="number"
-                          placeholder="0 = acceptable"
-                          value={form.hdgiPipe60x40}
-                          onChange={handleFormChange}
-                        />
-                      </Field>
-                      <Field label="40 × 40">
-                        <TextInput
-                          name="hdgiPipe40x40"
-                          type="number"
-                          placeholder="0 = acceptable"
-                          value={form.hdgiPipe40x40}
-                          onChange={handleFormChange}
-                        />
-                      </Field>
-                      <Field label="20 × 40 Pati Pipe">
-                        <TextInput
-                          name="hdgiPipe20x40PatiPipe"
-                          type="number"
-                          placeholder="0 = acceptable"
-                          value={form.hdgiPipe20x40PatiPipe}
-                          onChange={handleFormChange}
-                        />
-                      </Field>
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 mt-4">
+                    <p className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">HDGI Pipe in Feet</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <FormInput
+                        label="80 × 40"
+                        name="hdgiPipe80x40"
+                        type="number"
+                        placeholder="0 = acceptable"
+                        value={form.hdgiPipe80x40}
+                        onChange={(e) => handleFormChange('hdgiPipe80x40', e.target.value)}
+                      />
+                      <FormInput
+                        label="60 × 40"
+                        name="hdgiPipe60x40"
+                        type="number"
+                        placeholder="0 = acceptable"
+                        value={form.hdgiPipe60x40}
+                        onChange={(e) => handleFormChange('hdgiPipe60x40', e.target.value)}
+                      />
+                      <FormInput
+                        label="40 × 40"
+                        name="hdgiPipe40x40"
+                        type="number"
+                        placeholder="0 = acceptable"
+                        value={form.hdgiPipe40x40}
+                        onChange={(e) => handleFormChange('hdgiPipe40x40', e.target.value)}
+                      />
+                      <FormInput
+                        label="20 × 40 Pati Pipe"
+                        name="hdgiPipe20x40PatiPipe"
+                        type="number"
+                        placeholder="0 = acceptable"
+                        value={form.hdgiPipe20x40PatiPipe}
+                        onChange={(e) => handleFormChange('hdgiPipe20x40PatiPipe', e.target.value)}
+                      />
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* ── Site Photos ───────────────────────────────────────────── */}
+              {/* ─── Site Photos ─────────────────────────────────────────────────── */}
               {activeSection === 'photos' && (
-                <div className="space-y-3">
+                <div>
                   <SectionTitle>Required Photos for Installation</SectionTitle>
                   {PHOTO_FIELDS.map((f) => (
                     <FileInput
@@ -607,14 +671,15 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                       existingFiles={existingFiles}
                       files={files}
                       onFileChange={handleFileChange}
+                      error={errors[f.key]}
                     />
                   ))}
                 </div>
               )}
 
-              {/* ── Registration Docs ─────────────────────────────────────── */}
+              {/* ─── Registration Docs ───────────────────────────────────────────── */}
               {activeSection === 'regDocs' && (
-                <div className="space-y-3">
+                <div>
                   <SectionTitle>Required Documents for Registration</SectionTitle>
                   {REG_DOC_FIELDS.map((f) => (
                     <FileInput
@@ -626,50 +691,58 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                       existingFiles={existingFiles}
                       files={files}
                       onFileChange={handleFileChange}
+                      error={errors[f.key]}
                     />
                   ))}
                 </div>
               )}
 
-              {/* ── Payment ───────────────────────────────────────────────── */}
+              {/* ─── Payment ─────────────────────────────────────────────────────── */}
               {activeSection === 'payment' && (
-                <div className="space-y-4">
+                <div>
                   <SectionTitle>Payment Details</SectionTitle>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Field label="Payment Mode" req>
-                      <Select
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                      <FormSelect
+                        label="Payment Mode"
                         name="paymentMode"
-                        options={PAYMENT_OPTS}
-                        uid="pay-mode"
                         value={form.paymentMode}
-                        onChange={handleFormChange}
+                        onChange={(val) => handleFormChange('paymentMode', val)}
+                        options={PAYMENT_OPTS}
+                        placeholder="Select..."
+                        error={errors.paymentMode}
+                        required
                       />
-                    </Field>
-                    <Field label="Project Amount" req>
-                      <TextInput
-                        name="projectAmount"
-                        type="number"
-                        placeholder="e.g. 150000"
-                        value={form.projectAmount}
-                        onChange={handleFormChange}
-                      />
-                    </Field>
-                    <Field label="Subsidy Less Project" req>
-                      <Select
+                    </div>
+                    <FormInput
+                      label="Project Amount"
+                      name="projectAmount"
+                      type="number"
+                      placeholder="e.g. 150000"
+                      value={form.projectAmount}
+                      onChange={(e) => handleFormChange('projectAmount', e.target.value)}
+                      error={errors.projectAmount}
+                      required
+                    />
+                    <div>
+                      <FormSelect
+                        label="Subsidy Less Project"
                         name="subsidyLessProject"
-                        options={YES_NO_OPTS}
-                        uid="subsidy"
                         value={form.subsidyLessProject}
-                        onChange={handleFormChange}
+                        onChange={(val) => handleFormChange('subsidyLessProject', val)}
+                        options={YES_NO_OPTS}
+                        placeholder="Select..."
+                        error={errors.subsidyLessProject}
+                        required
                       />
-                    </Field>
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* ── Loan Docs ─────────────────────────────────────────────── */}
+              {/* ─── Loan Docs ───────────────────────────────────────────────────── */}
               {activeSection === 'loanDocs' && (
-                <div className="space-y-3">
+                <div>
                   <SectionTitle>Required Documents for Loan</SectionTitle>
                   {LOAN_DOC_FIELDS.map((f) => (
                     <FileInput
@@ -681,6 +754,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                       existingFiles={existingFiles}
                       files={files}
                       onFileChange={handleFileChange}
+                      error={errors[f.key]}
                     />
                   ))}
                 </div>
@@ -705,7 +779,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 transition"
+              className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
             >
               Cancel
             </button>

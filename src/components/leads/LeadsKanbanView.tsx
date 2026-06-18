@@ -12,6 +12,7 @@ import DataTable, { Column } from '@/components/DataTable';
 import KanbanCard from './KanbanCard';
 import Swal from 'sweetalert2';
 import ProjectDetailDrawer from './ProjectDetailDrawer';
+import PaymentModal from './PaymentModal';
 
 type PaginationShape = {
     currentPage: number;
@@ -71,6 +72,7 @@ export default function LeadsKanbanView({
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const [projectDetailLead, setProjectDetailLead] = useState<ApiLead | null>(null);
+    const [paymentLead, setPaymentLead] = useState<ApiLead | null>(null);
     
     // Board state
     const [boardLeads, setBoardLeads] = useState<Record<string, ApiLead[]>>({});
@@ -316,14 +318,25 @@ export default function LeadsKanbanView({
     };
 
     const reactivate = async (id: string) => {
-        try {
-            const newLeadStatusId = statuses.find(s => s.name.match(/^new lead$/i))?._id;
-            await axios.put(`${baseUrl.updateLead}/${id}`, { leadStatus: newLeadStatusId }, { headers: { Authorization: `Bearer ${token()}` } });
-            toast.success('Lead reactivated');
-            // We need to re-fetch board leads since we don't know the status, or rely on parent
-            // Since this is in the 'lost' or 'won' view, parent's onRefresh updates those views.
-            onRefresh();
-        } catch { toast.error('Failed to reactivate lead'); }
+        const result = await Swal.fire({
+            title: 'Reactivate Lead?',
+            text: 'This will move the lead back to the first stage',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Reactivate',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#F28522',
+            cancelButtonColor: '#6D7A86',
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const newLeadStatusId = statuses.find(s => s.name.match(/^new lead$/i))?._id;
+                await axios.put(`${baseUrl.updateLead}/${id}`, { leadStatus: newLeadStatusId }, { headers: { Authorization: `Bearer ${token()}` } });
+                toast.success('Lead reactivated');
+                onRefresh();
+            } catch { toast.error('Failed to reactivate lead'); }
+        }
     };
 
     const lostLeadsColumns: Column<ApiLead>[] = [
@@ -516,32 +529,7 @@ export default function LeadsKanbanView({
                                 label: 'Payment',
                                 icon: <span className="text-xs font-bold">₹</span>,
                                 color: 'emerald',
-                                onClick: async (row) => {
-                                    const { value: amount } = await Swal.fire({
-                                        title: 'Add Payment',
-                                        input: 'number',
-                                        inputLabel: 'Enter payment amount',
-                                        inputPlaceholder: 'e.g. 5000',
-                                        showCancelButton: true,
-                                        inputValidator: (value: any) => {
-                                            if (!value) return 'You need to write something!';
-                                            if (isNaN(value) || value < 0) return 'Please enter a valid amount';
-                                        }
-                                    });
-
-                                    if (amount) {
-                                        try {
-                                            await axios.put(`${baseUrl.updateLead}/${row._id}`, 
-                                                { paymentAmount: Number(amount) }, 
-                                                { headers: { Authorization: `Bearer ${getAuthToken()}` } }
-                                            );
-                                            Swal.fire('Success', 'Payment added successfully', 'success');
-                                            onRefresh();
-                                        } catch (err) {
-                                            Swal.fire('Error', 'Failed to add payment', 'error');
-                                        }
-                                    }
-                                }
+                                onClick: (row) => setPaymentLead(row),
                             }
                         ] : undefined}
                     />
@@ -554,6 +542,14 @@ export default function LeadsKanbanView({
                 lead={projectDetailLead}
                 onClose={() => setProjectDetailLead(null)}
                 onSaved={() => { onRefresh(); setProjectDetailLead(null); }}
+            />
+
+            {/* Payment Modal */}
+            <PaymentModal
+                isOpen={!!paymentLead}
+                lead={paymentLead}
+                onClose={() => setPaymentLead(null)}
+                onPaymentAdded={onRefresh}
             />
         </div>
     );

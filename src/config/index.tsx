@@ -64,6 +64,7 @@ export const baseUrl = {
   stock: `${API}stock`,
   getBaseUrl: API,
   projectDetail: `${API}project-detail`,
+  leadPayments: `${API}lead`,
 };
 
 const TOKEN_COOKIE_NAME = "crm_token";
