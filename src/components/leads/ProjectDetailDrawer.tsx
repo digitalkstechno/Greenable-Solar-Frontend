@@ -120,9 +120,9 @@ const FileInput = ({ fieldKey, label, accept = '*', isPdf = false, existingFiles
   return (
     <div className="space-y-1 mb-4">
       <label className="block text-xs font-bold text-gray-700 mb-1.5">
-        {label} <span className="text-red-700">*</span>
+        {label} <span className="text-red-500">*</span>
       </label>
-      <label className={`group flex items-center gap-3 cursor-pointer rounded-xl border-2 border-dashed bg-gray-50 px-4 py-3 hover:border-orange-300 hover:bg-orange-50/30 transition ${hasError ? 'border-red-700 ring-2 ring-red-300' : 'border-gray-200'}`}>
+      <label className={`group flex items-center gap-3 cursor-pointer rounded-xl border-2 border-dashed bg-gray-50 px-4 py-3 hover:border-orange-300 hover:bg-orange-50/30 transition ${hasError ? 'border-red-500 ring-2 ring-red-50' : 'border-gray-200'}`}>
         <div className="flex-shrink-0 rounded-lg bg-gray-100 p-2 group-hover:bg-orange-100 transition">
           {isPdf
             ? <FileText className="h-4 w-4 text-gray-500 group-hover:text-orange-500" />
@@ -149,8 +149,8 @@ const FileInput = ({ fieldKey, label, accept = '*', isPdf = false, existingFiles
       </label>
       {hasError && (
         <div className="mt-1.5 flex items-center gap-1.5">
-          <X size={14} className="text-red-700 flex-shrink-0" />
-          <p className="text-red-700 text-xs">{error}</p>
+          <X size={14} className="text-red-500 flex-shrink-0" />
+          <p className="text-red-500 text-xs">{error}</p>
         </div>
       )}
     </div>

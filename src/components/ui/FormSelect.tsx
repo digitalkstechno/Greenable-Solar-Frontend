@@ -216,7 +216,7 @@ export const FormSelect: React.FC<FormSelectProps> = ({
       {hasError && (
         <div className="mt-1.5 flex items-center gap-1.5 px-1 animate-in slide-in-from-top-1 duration-200">
           <AlertCircle size={14} className="text-red-500" />
-          <p className="text-red-500 text-xs font-medium">{error}</p>
+          <p className="text-red-500 text-xs">{error}</p>
         </div>
       )}
       {helperText && !hasError && (
@@ -440,7 +440,7 @@ export const FormMultiSelect: React.FC<FormMultiSelectProps> = ({
       {hasError && (
         <div className="mt-1.5 flex items-center gap-1.5 px-1 animate-in slide-in-from-top-1 duration-200">
           <AlertCircle size={14} className="text-red-500" />
-          <p className="text-red-500 text-xs font-medium">{error}</p>
+          <p className="text-red-500 text-xs">{error}</p>
         </div>
       )}
       {helperText && !hasError && (

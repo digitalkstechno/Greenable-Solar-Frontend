@@ -89,6 +89,7 @@ export default function LeadAddDialog({
 
     if (requiredFields.includes('fullName')) shape.fullName = shape.fullName.required('Full Name is required');
     if (requiredFields.includes('contact')) shape.contact = shape.contact.required('Mobile Number is required');
+    if (requiredFields.includes('email')) shape.email = shape.email.required('Email is required');
     if (requiredFields.includes('leadStatus')) shape.leadStatus = Yup.string().required('Please select a stage');
     if (requiredFields.includes('assignedTo')) shape.assignedTo = Yup.string().required('Please assign a sales executive');
 
@@ -300,7 +301,7 @@ export default function LeadAddDialog({
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-sm font-semibold text-gray-700">
                     Mobile Number
-                    {requiredFields.includes('contact') && <span className="text-red-700 ml-1">*</span>}
+                    {requiredFields.includes('contact') && <span className="text-red-500 ml-1">*</span>}
                   </label>
                 </div>
                 <div className="relative">
@@ -326,7 +327,7 @@ export default function LeadAddDialog({
                     placeholder="Enter 10-digit number"
                     className={`w-full px-3 py-2.5 pr-52 rounded-xl bg-white/90 text-gray-800 text-sm outline-none transition-all duration-200 border-2 ${
                       formik.touched.contact && formik.errors.contact
-                        ? 'border-red-500 ring-2 ring-red-200'
+                        ? 'border-red-500 ring-2 ring-red-50'
                         : formik.values.contact.length === 10
                           ? 'border-green-500 ring-2 ring-green-200'
                           : 'border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
@@ -336,8 +337,8 @@ export default function LeadAddDialog({
                 </div>
                 {formik.touched.contact && formik.errors.contact && (
                   <div className="mt-2 flex items-center gap-1.5">
-                    <AlertCircle size={14} className="text-red-700 flex-shrink-0" />
-                    <p className="text-red-700 text-xs">{formik.errors.contact}</p>
+                    <AlertCircle size={14} className="text-red-500 flex-shrink-0" />
+                    <p className="text-red-500 text-xs">{formik.errors.contact}</p>
                   </div>
                 )}
               </div>
