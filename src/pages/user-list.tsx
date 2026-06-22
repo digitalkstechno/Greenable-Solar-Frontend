@@ -109,13 +109,16 @@ export function UserContent() {
         email?: string;
         password?: string;
         status?: string;
-        department?: string | { roleName?: string, name?: string };
+        role?: string | { roleName?: string, name?: string, _id?: string };
       }[]) || [];
       const pagination = res.data?.pagination || {};
 
       const formatted: StaffManagement[] = payload.map((item: any) => {
-        const dept = departments.find(d => d._id === item.department);
-        const deptName = dept ? (dept.roleName || dept.name) : (typeof item.department === 'string' ? item.department : '-');
+        const roleObj = item.role;
+        const roleOrDeptId = typeof roleObj === 'object' && roleObj !== null ? roleObj._id : roleObj;
+        const deptName = typeof roleObj === 'object' && roleObj !== null 
+          ? (roleObj.roleName || roleObj.name) 
+          : departments.find(d => d._id === roleOrDeptId)?.roleName || roleOrDeptId || '-';
 
         return {
           id: item._id,
@@ -234,7 +237,7 @@ export function UserContent() {
       });
 
       const item = res.data?.data;
-      if (!item) throw new Error('Staff not found');
+      if (!item) throw new Error('User not found');
 
       const formatted: StaffManagement = {
         id: item._id,
@@ -244,14 +247,14 @@ export function UserContent() {
         email: item.email || '',
         password: '',
         status: item.status || 'Active',
-        department: item.department || '',
+        department: item.role?._id || item.role || '',
       };
 
       setEditingExecutive(formatted);
       setIsFormOpen(true);
     } catch (err: any) {
-      console.error('Failed to fetch staff by id:', err);
-      toast.error(err?.response?.data?.message || 'Could not load staff details');
+      console.error('Failed to fetch user by id:', err);
+      toast.error(err?.response?.data?.message || 'Could not load user details');
     }
   };
 
@@ -270,14 +273,14 @@ export function UserContent() {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       fetchStaff();
-      toast.success('Staff member deleted successfully');
+      toast.success('User deleted successfully');
       
       // Close dialog
       setShowDeleteDialog(false);
       setStaffToDelete(null);
     } catch (err: any) {
       console.error('Delete failed:', err);
-      toast.error(err?.response?.data?.message || 'Failed to delete staff member');
+      toast.error(err?.response?.data?.message || 'Failed to delete user');
     }
   };
 
@@ -322,7 +325,7 @@ export function UserContent() {
           addButton={
             canCreate
               ? {
-                  label: 'Add Staff',
+                  label: 'Add User',
                   onClick: handleAdd,
                 }
               : undefined
@@ -339,7 +342,7 @@ export function UserContent() {
           setShowDeleteDialog(false);
           setStaffToDelete(null);
         }}
-        title="Delete Staff Member"
+        title="Delete User"
         size="md"
         footer={
           <>
@@ -363,7 +366,7 @@ export function UserContent() {
       >
         <div className="py-4">
           <p className="text-gray-700">
-            Are you sure you want to delete staff member "{staffToDelete?.fullName}"? 
+            Are you sure you want to delete user "{staffToDelete?.fullName}"? 
             This action cannot be undone.
           </p>
         </div>

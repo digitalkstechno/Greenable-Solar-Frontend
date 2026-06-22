@@ -181,7 +181,7 @@ export default function SalesExecutiveForm({
       payload.append('phone', values.number);
       payload.append('email', values.email);
 
-      payload.append('department', values.department || '');
+      payload.append('role', values.department || '');
 
       // Only send password when creating or when it's changed (not empty)
       if (values.password.trim()) {
