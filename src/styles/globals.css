@@ -257,3 +257,49 @@ button {
   background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
   background-size: 200% 100%;
 }
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+[contenteditable][data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+}
+
+.border-error {
+  border-color: #ef4444 !important;
+  border-width: 1.5px !important;
+}
+
+.border-error:focus {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important;
+}
+
+.header-option-input {
+  border-radius: 0 !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+  background-color: transparent !important;
+  color: white !important;
+  padding: 2px 4px !important;
+  height: auto !important;
+  font-size: 0.75rem !important; /* text-xs */
+  text-transform: uppercase !important;
+  font-weight: 700 !important; /* font-bold */
+}
+
+.header-option-input:focus {
+  border-width: 0 !important;
+  box-shadow: none !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 4px !important;
+}

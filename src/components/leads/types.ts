@@ -71,6 +71,7 @@ export type ApiLead = {
     by?: ApiUser;
     date: string;
   }[];
+  quotations?: any[];
   quotation?: {
     date: string;
     solarModule: string;
@@ -104,4 +105,4 @@ export type LeadCountSummary = {
   totalLeads: number;
   totalLost: number;
   totalWon: number;
-};
+};

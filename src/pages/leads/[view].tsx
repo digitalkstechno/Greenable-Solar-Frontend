@@ -175,6 +175,16 @@ export default function LeadsPage() {
     setViewingLead(lead);
   };
 
+  // Sync viewingLead if the underlying list/kanban data updates
+  useEffect(() => {
+    if (viewingLead) {
+      const updated = findLeadById(viewingLead._id);
+      if (updated) {
+        setViewingLead(updated);
+      }
+    }
+  }, [leads, leadsList, lostLeads, wonLeads, findLeadById]);
+
   const handleDialogClose = () => {
     setShowAddDialog(false);
     setEditingLead(null);

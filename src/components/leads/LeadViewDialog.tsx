@@ -475,10 +475,11 @@ import { toast } from 'react-toastify';
 import Dialog, { CenterDialog } from '@/components/Dialog';
 import { baseUrl, getAuthToken } from '@/config';
 import { ApiLead, ApiStatus } from './types';
-import { Eye, Download, FileText, Image, File, FileSpreadsheet, Search, Trash2 } from 'lucide-react';
+import { Eye, Download, FileText, Image, File, FileSpreadsheet, Search, Trash2, Pencil } from 'lucide-react';
 import { getFileIcon } from '@/utills/utill';
 import LeadQuotationDialog from './LeadQuotationDialog';
 import { FormSelect } from '../ui/FormSelect';
+import { generateQuotationPdf } from '@/components/leads/generateQuotationPdf';
 
 interface Props {
   lead: ApiLead | null;
@@ -511,9 +512,13 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
   const [localFollowUps, setLocalFollowUps] = useState<FollowUp[]>([]);
   const [localAttachments, setLocalAttachments] = useState<any[]>([]);
   const [localActivities, setLocalActivities] = useState<any[]>([]);
+  const [localQuotations, setLocalQuotations] = useState<any[]>([]);
   const [staffInfo, setStaffInfo] = useState<any>(null);
   const [followUpSearch, setFollowUpSearch] = useState('');
   const [quotationOpen, setQuotationOpen] = useState(false);
+  const [editQuotationData, setEditQuotationData] = useState<any>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; solarModule: string } | null>(null);
+  const [deletingQuotation, setDeletingQuotation] = useState(false);
   const [reassignOpen, setReassignOpen] = useState(false);
   const [reassignUsers, setReassignUsers] = useState<any[]>([]);
   const [selectedReassignUser, setSelectedReassignUser] = useState('');
@@ -530,13 +535,14 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
       setLocalAttachments(lead.attachments || []);
       setLocalActivities(lead.activities || []);
       setLocalAssignedTo(lead.assignedTo || null);
+      setLocalQuotations(lead.quotations || []);
     }
   }, [lead]);
 
   const filteredFollowUps = useMemo(() => {
     if (!followUpSearch.trim()) return localFollowUps;
     const search = followUpSearch.toLowerCase();
-    return localFollowUps.filter(f => 
+    return localFollowUps.filter(f =>
       (f.note?.toLowerCase() || '').includes(search) ||
       (f.date?.toLowerCase() || '').includes(search) ||
       (f.time?.toLowerCase() || '').includes(search) ||
@@ -592,9 +598,32 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
     }
   };
 
+  const handleDeleteQuotation = async (id: string) => {
+    if (!lead) return;
+    const prevQuotations = localQuotations;
+    const updatedQuotations = (localQuotations || []).filter((q: any) => q.id !== id);
+    setDeletingQuotation(true);
+    setLocalQuotations(updatedQuotations);
+    try {
+      await axios.put(
+        `${baseUrl.updateLead}/${lead._id}`,
+        { quotations: updatedQuotations },
+        { headers: { Authorization: `Bearer ${getAuthToken()}` } }
+      );
+      toast.success('Quotation deleted');
+      onRefresh();
+    } catch (e: any) {
+      setLocalQuotations(prevQuotations);
+      toast.error(e?.response?.data?.message || 'Failed to delete quotation');
+    } finally {
+      setDeletingQuotation(false);
+      setDeleteConfirm(null);
+    }
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!lead || !e.target.files || e.target.files.length === 0) return;
-    
+
     setSaving(true);
     try {
       const formData = new FormData();
@@ -605,18 +634,18 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
       const response = await axios.put(
         `${baseUrl.updateLead}/${lead._id}`,
         formData,
-        { 
-          headers: { 
+        {
+          headers: {
             Authorization: `Bearer ${getAuthToken()}`,
             'Content-Type': 'multipart/form-data'
-          } 
+          }
         }
       );
-      
+
       if (response.data?.data?.attachments) {
         setLocalAttachments(response.data.data.attachments);
       }
-      
+
       toast.success('Attachments uploaded successfully');
       onRefresh();
     } catch (error: any) {
@@ -709,7 +738,7 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
     if (!window.confirm(`Are you sure you want to delete "${attachment.originalName}"?`)) {
       return;
     }
-    
+
     try {
       await axios.delete(
         `${baseUrl.getBaseUrl?.endsWith('/') ? baseUrl.getBaseUrl.slice(0, -1) : baseUrl.getBaseUrl}/lead/${lead?._id}/attachments/${attachment._id}`,
@@ -780,7 +809,7 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
   const handleDownload = async (attachment: any) => {
     try {
       const fileUrl = attachment.path?.startsWith('http') ? attachment.path : `${process.env.NEXT_PUBLIC_IMAGE_URL}${attachment.path}`;
-      
+
       // External URLs block CORS on fetch, so just open in new tab for them
       if (attachment.path?.startsWith('http')) {
         window.open(fileUrl, '_blank');
@@ -855,13 +884,13 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
 
             {/* Location Link */}
             {lead.locationLink && (
-              <InfoCard 
-                label="Location Link" 
+              <InfoCard
+                label="Location Link"
                 value={
                   <a href={lead.locationLink} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline break-all">
                     {lead.locationLink}
                   </a>
-                } 
+                }
               />
             )}
 
@@ -983,7 +1012,7 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
                       </p>
                     )}
                   </div>
-                  
+
                   {/* Table */}
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
@@ -1096,7 +1125,7 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
                   </button>
                 </div>
               </div>
-              
+
               {localAttachments && localAttachments.length > 0 ? (
                 <div className="space-y-2">
                   {localAttachments.map((att: any, idx) => {
@@ -1187,8 +1216,73 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
               </div>
             )}
 
-            {/* Quotation */}
+            {/* Quotations List */}
             <div className="rounded-lg bg-gray-50 p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <div className="text-sm font-bold text-gray-800">Quotations</div>
+                <button
+                  onClick={() => { setEditQuotationData(null); setQuotationOpen(true); }}
+                  className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary flex items-center gap-1"
+                >
+                  <FileText className="h-3.5 w-3.5" /> Add Quotation
+                </button>
+              </div>
+              {localQuotations && localQuotations.length > 0 ? (
+                <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+                  <table className="w-full text-left text-sm">
+                    <thead>
+                      <tr className="bg-gray-100 border-b border-gray-200">
+                        <th className="px-4 py-3 font-semibold text-gray-600 w-12">#</th>
+                        <th className="px-4 py-3 font-semibold text-gray-600">Date</th>
+                        <th className="px-4 py-3 font-semibold text-gray-600">Solar Module</th>
+                        <th className="px-4 py-3 font-semibold text-gray-600">Inverter</th>
+                        <th className="px-4 py-3 font-semibold text-gray-600">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {localQuotations.map((q: any, idx: number) => (
+                        <tr key={q.id || idx} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="px-4 py-3 text-gray-500">{idx + 1}</td>
+                          <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
+                            {(q.createdAt || q.date) ? new Date(q.createdAt || q.date).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}
+                          </td>
+                          <td className="px-4 py-3 text-gray-700">{q.solarModule}</td>
+                          <td className="px-4 py-3 text-gray-700">{q.inverter}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-1">
+                              <button onClick={() => generateQuotationPdf(q, { ...lead, quotations: localQuotations })} className="p-1.5 hover:bg-gray-100 rounded text-gray-500" title="Download">
+                                <Download className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => { setEditQuotationData(q); setQuotationOpen(true); }}
+                                className="p-1.5 hover:bg-blue-50 rounded text-blue-600"
+                                title="Update"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirm({ id: q.id, solarModule: q.solarModule || 'this quotation' })}
+                                className="p-1.5 hover:bg-red-50 rounded text-red-600"
+                                title="Delete"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-6 text-center bg-white rounded-xl border border-gray-100 border-dashed">
+                  <p className="text-gray-400 text-sm">No quotations yet</p>
+                </div>
+              )}
+            </div>
+
+            {/* Quotation */}
+            {/* <div className="rounded-lg bg-gray-50 p-4">
               <div className="mb-3 text-sm font-bold text-gray-800">Quotation</div>
               <div className="flex gap-4">
                 {lead.quotation && (lead.quotation.solarModule || lead.quotation.inverter || (lead.quotation.options && lead.quotation.options.length > 0) || (lead.quotation.rows && lead.quotation.rows.length > 0)) ? (
@@ -1198,14 +1292,14 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
                       className="flex-1 rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary flex items-center justify-center gap-2"
                     >
                       <FileText className="h-4 w-4" /> Edit Quotation
-                    </button>
-                    {/* <button
+                    </button> */}
+            {/* <button
                       onClick={() => { toast.info('Download PDF feature coming soon'); }}
                       className="flex-1 rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary flex items-center justify-center gap-2"
                     >
                       <Download className="h-4 w-4" /> Download Quotation
                     </button> */}
-                  </>
+            {/* </>
                 ) : (
                   <button
                     onClick={() => setQuotationOpen(true)}
@@ -1215,7 +1309,7 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
                   </button>
                 )}
               </div>
-            </div>
+            </div> */}
 
             {/* Activity Log */}
             <div className="rounded-lg bg-gray-50 p-4">
@@ -1259,10 +1353,13 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
         <LeadQuotationDialog
           isOpen={quotationOpen}
           onClose={() => setQuotationOpen(false)}
-          lead={lead}
+          lead={{ ...lead, quotations: localQuotations }}
+          editQuotationData={editQuotationData}
           onRefresh={onRefresh}
+          onQuotationSaved={(updatedQuotations: any[]) => setLocalQuotations(updatedQuotations)}
         />
       )}
+
 
       {/* Reassign Dialog */}
       <Dialog
@@ -1329,6 +1426,49 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
             </div>
           </div>
         </CenterDialog>
+      )}
+
+      {/* Quotation Delete Confirmation Popup */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => !deletingQuotation && setDeleteConfirm(null)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 flex flex-col items-center gap-4" style={{ animation: 'fadeInScale 0.2s ease' }}>
+            <div className="flex items-center justify-center w-14 h-14 rounded-full bg-[#f9e9d9]">
+              <Trash2 className="h-7 w-7 text-[#d87612]" />
+            </div>
+            <div className="text-center">
+              <h3 className="text-base font-bold text-gray-800 mb-1">Delete Quotation?</h3>
+              <p className="text-sm text-gray-500">
+                Are you sure you want to delete the quotation for{' '}
+                <span className="font-semibold text-gray-800">{deleteConfirm.solarModule}</span>?
+              </p>
+            </div>
+            <div className="flex gap-3 w-full mt-1">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                disabled={deletingQuotation}
+                className="flex-1 px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteQuotation(deleteConfirm.id)}
+                disabled={deletingQuotation}
+                className="flex-1 px-4 py-2 rounded-xl bg-[#d87612] text-sm font-semibold text-white transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+              >
+                {deletingQuotation ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Deleting...
+                  </>
+                ) : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

@@ -354,6 +354,8 @@ interface FormInputProps {
   className?: string;
   checked?: boolean; // For checkbox
   checkboxColor?: string; // Custom color for checkbox
+  min?: string;
+  max?: string;
 }
 
 const FormInput: React.FC<FormInputProps> = ({
@@ -375,6 +377,8 @@ const FormInput: React.FC<FormInputProps> = ({
   className = "",
   checked,
   checkboxColor = "#1e40af", // Default dark blue color
+  min,
+  max,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -404,7 +408,7 @@ const FormInput: React.FC<FormInputProps> = ({
     if (isPassword) base += " pr-10";
 
     if (hasError) {
-      base += " border-red-500 ring-2 ring-red-50 focus:border-red-500 focus:ring-red-50";
+      base += " border-error ring-2 ring-red-50 focus:border-error focus:ring-red-50";
     } else if (showSuccess) {
       base += " border-green-700 ring-2 ring-green-300 focus:border-green-700 focus:ring-green-300";
     } else if (isFocused) {
@@ -434,7 +438,7 @@ const FormInput: React.FC<FormInputProps> = ({
     }
 
     if (hasError) {
-      classes += " border-red-500 ring-2 ring-red-50";
+      classes += " border-error ring-2 ring-red-50";
     } else if (showSuccess) {
       classes += " border-green-700 ring-2 ring-green-300";
     } else if (isFocused) {
@@ -642,6 +646,8 @@ const FormInput: React.FC<FormInputProps> = ({
             onFocus={() => setIsFocused(true)}
             placeholder={placeholder}
             disabled={disabled}
+            min={min}
+            max={max}
             className={getInputClasses()}
           />
         )}
