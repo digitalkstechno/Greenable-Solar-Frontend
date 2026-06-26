@@ -57,6 +57,7 @@ interface DataTableProps<T> {
     icon?: React.ReactNode;
     color?: 'blue' | 'green' | 'red' | 'orange' | 'purple';
   }[];
+  searchValue?: string;
 }
 
 export default function DataTable<T extends Record<string, any>>({
@@ -85,10 +86,15 @@ export default function DataTable<T extends Record<string, any>>({
   onRefresh,
   onExport,
   extraActions,
+  searchValue: searchValueProp = '',
 }: DataTableProps<T>) {
-  const [searchValue, setSearchValue] = useState('');
+  const [searchValue, setSearchValue] = useState(searchValueProp);
   const [showFilters, setShowFilters] = useState(false);
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
+
+  useEffect(() => {
+    setSearchValue(searchValueProp);
+  }, [searchValueProp]);
 
   const renderCell = (column: Column<T>, row: T) => {
     const value = row[column.key as string];

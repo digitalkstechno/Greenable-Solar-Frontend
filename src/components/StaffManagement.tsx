@@ -308,17 +308,37 @@ export default function SalesExecutiveForm({
             required
             placeholder="Enter full name"
           />
-          <FormInput
-            label="Mobile Number"
-            name="number"
-            type="tel"
-            value={formik.values.number}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            error={formik.touched.number && formik.errors.number ? formik.errors.number : undefined}
-            required
-            placeholder="Enter mobile number"
-          />
+          <div className="w-full">
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Mobile Number <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="tel"
+              name="number"
+              inputMode="numeric"
+              maxLength={10}
+              value={formik.values.number}
+              onChange={(e) => {
+                const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
+                formik.setFieldValue('number', digitsOnly);
+              }}
+              onKeyDown={(e) => {
+                const allowed = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+                if (allowed.includes(e.key)) return;
+                if (!/^\d$/.test(e.key)) e.preventDefault();
+              }}
+              onBlur={formik.handleBlur}
+              placeholder="Enter mobile number"
+              className={`w-full px-3 py-2.5 rounded-xl bg-white text-gray-800 text-sm outline-none transition-all duration-200 border-2 ${
+                formik.touched.number && formik.errors.number
+                  ? 'border-red-500 ring-2 ring-red-50'
+                  : 'border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
+              }`}
+            />
+            {formik.touched.number && formik.errors.number && (
+              <p className="mt-1.5 text-xs text-red-500">{formik.errors.number}</p>
+            )}
+          </div>
         </div>
 
         {/* Email + Password */}

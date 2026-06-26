@@ -197,9 +197,9 @@ export default function Setup() {
   const canViewTeams = useMemo(() => !!(permissions?.teams?.readAll), [permissions]);
   const canViewOrgs = useMemo(() => !!(permissions?.organizations?.readAll), [permissions]);
   const canViewTaskStatus = useMemo(() => !!(permissions?.taskStatus?.readAll || permissions?.setup?.readAll), [permissions]);
-  const canViewCategory = useMemo(() => !!(permissions?.setup?.readAll), [permissions]);
-  const canViewProduct = useMemo(() => !!(permissions?.setup?.readAll), [permissions]);
-  const canViewStock = useMemo(() => !!(permissions?.setup?.readAll), [permissions]);
+  const canViewCategory = useMemo(() => !!(permissions?.category?.readAll || permissions?.setup?.readAll), [permissions]);
+  const canViewProduct = useMemo(() => !!(permissions?.product?.readAll || permissions?.setup?.readAll), [permissions]);
+  const canViewStock = useMemo(() => !!(permissions?.stock?.readAll || permissions?.setup?.readAll), [permissions]);
 
   const menuItems = useMemo(() => {
     const items = [

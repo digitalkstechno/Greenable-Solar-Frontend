@@ -73,6 +73,7 @@ interface Props {
     handlePageChange: (page: number) => void;
     handleRowsPerPageChange: (rows: number) => void;
   };
+  onSearch?: (value: string) => void;
 }
 
 function mapLead(item: any): TableLead {
@@ -108,6 +109,7 @@ export default function LeadsListView({
   externalLeads,
   loading: loadingProp,
   pagination, // Receive pagination from parent
+  onSearch,
 }: Props) {
   const router = useRouter();
   const [leads, setLeads] = useState<TableLead[]>([]);
@@ -203,11 +205,11 @@ export default function LeadsListView({
     { key: 'status', label: 'STATUS' },
     { key: 'staff', label: 'ASSIGNED STAFF' },
     { key: 'lastFollowUp', label: 'LAST FOLLOW-UP' },
-    { 
-      key: 'paymentAmount', 
-      label: 'AMOUNT',
-      render: (v) => (v ? <span className="font-bold text-emerald-600">₹{v.toLocaleString()}</span> : <span className="text-gray-400">-</span>)
-    },
+    // { 
+    //   key: 'paymentAmount', 
+    //   label: 'AMOUNT',
+    //   render: (v) => (v ? <span className="font-bold text-emerald-600">₹{v.toLocaleString()}</span> : <span className="text-gray-400">-</span>)
+    // },
   ];
 
   // ── Handlers ─────────────────────────────────────────────────────────────
@@ -295,6 +297,8 @@ export default function LeadsListView({
         columns={columns}
         loading={loading}
         pagination
+        searchValue={filters.search || ''}
+        onSearch={onSearch}
         currentPage={pagination?.currentPage || 1}
         totalPages={pagination?.totalPages || 1}
         totalRecords={pagination?.totalItems || 0}

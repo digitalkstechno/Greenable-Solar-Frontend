@@ -82,17 +82,21 @@ export default function LeadsKanbanView({
     const [loadingMoreMap, setLoadingMoreMap] = useState<Record<string, boolean>>({});
     const [columnCounts, setColumnCounts] = useState<Record<string, number>>({});
 
-    const [kanbanVisibleStatusNames, setKanbanVisibleStatusNames] = useState<string[]>([]);
+    const [kanbanVisibleStatusNames, setKanbanVisibleStatusNames] = useState<string[] | null>(null);
 
     useEffect(() => {
         try {
-            const stored = localStorage.getItem('kanbanVisibleStatusNames');
-            if (stored) {
-                const parsed = JSON.parse(stored);
-                setKanbanVisibleStatusNames(Array.isArray(parsed) ? parsed : []);
+            const raw = localStorage.getItem('kanbanVisibleStatusNames');
+            if (raw !== null) {
+                // Key exists in storage — use whatever was saved (even empty [])
+                const parsed = JSON.parse(raw);
+                setKanbanVisibleStatusNames(Array.isArray(parsed) ? parsed : null);
+            } else {
+                // Key not set yet → show all columns
+                setKanbanVisibleStatusNames(null);
             }
         } catch {
-            setKanbanVisibleStatusNames([]);
+            setKanbanVisibleStatusNames(null);
         }
     }, []);
 
@@ -158,7 +162,7 @@ export default function LeadsKanbanView({
     useEffect(() => {
         if (subView !== 'board') return;
         statuses.forEach((s) => {
-            const isVisible = kanbanVisibleStatusNames.length === 0 || kanbanVisibleStatusNames.includes(s.name);
+            const isVisible = kanbanVisibleStatusNames === null || kanbanVisibleStatusNames.includes(s.name);
             if (isVisible) {
                 fetchStatusLeads(s._id, 1);
             }
@@ -242,11 +246,12 @@ export default function LeadsKanbanView({
             title: s.name,
             leads: boardLeads[s._id] || [],
             count: columnCounts[s._id] ?? (counts ? counts[s._id] || 0 : 0),
-            isLoading: columnLoading[s._id]
+            isLoading: columnLoading[s._id],
+            isWon: /^won$/i.test(s.name),
+            isLost: /^lost$/i.test(s.name),
         }))
         .filter((group) => {
-            if (group.title.match(/^lost$/i) || group.title.match(/^won$/i)) return false;
-            if (kanbanVisibleStatusNames.length === 0) return true;
+            if (kanbanVisibleStatusNames === null) return true;
             return kanbanVisibleStatusNames.includes(group.title);
         });
 
@@ -398,22 +403,53 @@ export default function LeadsKanbanView({
                 </div>
             </div>
 
-            {subView === 'board' && (
+            {subView === 'board' && statusGroups.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-[calc(100vh-320px)] text-center gap-4">
+                    <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center">
+                        <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p className="text-gray-700 font-semibold text-base">No columns selected</p>
+                        <p className="text-gray-400 text-sm mt-1">Go to <strong>Setup → Kanban Status</strong> and select which stages to show.</p>
+                    </div>
+                </div>
+            ) : subView === 'board' && (
                 <div className="overflow-x-auto w-full pb-4">
                     <div className="flex gap-4 h-[calc(100vh-280px)] min-w-max">
-                        {statusGroups.map((group) => (
+                        {statusGroups.map((group) => {
+                            const headerBg = group.isWon
+                                ? 'bg-secondary'
+                                : group.isLost
+                                    ? 'bg-secondary'
+                                    : 'bg-secondary';
+                            const headerCountColor = group.isWon
+                                ? 'text-emerald-700'
+                                : group.isLost
+                                    ? 'text-red-500'
+                                    : 'text-secondary';
+                            const bodyBg = group.isWon
+                                ? 'bg-[#f4f7fb]'
+                                : group.isLost
+                                    ? 'bg-[#f4f7fb]'
+                                    : 'bg-[#f4f7fb]';
+
+                            return (
                             <div key={group.id} className="w-80 flex-shrink-0 flex flex-col">
-                                <div className="rounded-t-xl bg-secondary px-5 py-3">
+                                <div className={`rounded-t-xl ${headerBg} px-5 py-3`}>
                                     <div className="flex items-center justify-between">
-                                        <h3 className="font-semibold text-white capitalize">{group.title}</h3>
-                                        <span className="rounded-full bg-white px-3 py-0.5 text-sm font-semibold text-secondary">
+                                        <div className="flex items-center gap-2">
+                                            <h3 className="font-semibold text-white capitalize">{group.title}</h3>
+                                        </div>
+                                        <span className={`rounded-full bg-white px-3 py-0.5 text-sm font-semibold ${headerCountColor}`}>
                                             {group.count}
                                         </span>
                                     </div>
                                 </div>
 
                                 <div
-                                    className="flex-1 overflow-y-auto rounded-b-lg bg-[#f4f7fb] p-3 space-y-3"
+                                    className={`flex-1 overflow-y-auto rounded-b-lg ${bodyBg} p-3 space-y-3`}
                                     onDragOver={(e) => e.preventDefault()}
                                     onDrop={() => handleDrop(group.id)}
                                     onScroll={(e) => {
@@ -425,11 +461,13 @@ export default function LeadsKanbanView({
                                 >
                                     {group.isLoading ? (
                                         <div className="flex h-full items-center justify-center py-10">
-                                            <div className="h-8 w-8 animate-spin rounded-full border-4 border-secondary border-t-transparent" />
+                                            <div className={`h-8 w-8 animate-spin rounded-full border-4 border-t-transparent ${
+                                                group.isWon ? 'border-emerald-500' : group.isLost ? 'border-red-400' : 'border-secondary'
+                                            }`} />
                                         </div>
                                     ) : group.leads.length === 0 ? (
                                         <div className="flex h-full items-center justify-center text-sm text-gray-400">
-                                            No leads
+                                            {group.isWon ? 'No won leads' : group.isLost ? 'No lost leads' : 'No leads'}
                                         </div>
                                     ) : (
                                         group.leads.map((lead: ApiLead) => (
@@ -437,11 +475,12 @@ export default function LeadsKanbanView({
                                                 key={lead._id}
                                                 lead={lead}
                                                 isUpdating={updatingId === lead._id}
-                                                onDragStart={() => { if (permissions?.update) setDraggingId(lead._id); }}
+                                                onDragStart={() => { if (permissions?.update && !group.isWon && !group.isLost) setDraggingId(lead._id); }}
                                                 onView={() => onView?.(lead)}
                                                 onEdit={permissions?.update ? () => onEdit?.(lead) : undefined}
-                                                onMarkLost={permissions?.update ? () => markLost(lead._id) : undefined}
-                                                onMarkWon={permissions?.update ? () => markWon(lead._id) : undefined}
+                                                onMarkLost={permissions?.update && !group.isLost ? () => markLost(lead._id) : undefined}
+                                                onMarkWon={permissions?.update && !group.isWon ? () => markWon(lead._id) : undefined}
+                                                onReactivate={permissions?.update && (group.isLost || group.isWon) ? () => reactivate(lead._id) : undefined}
                                             />
                                         ))
                                     )}
@@ -452,7 +491,8 @@ export default function LeadsKanbanView({
                                     )}
                                 </div>
                             </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
             )}

@@ -1,31 +1,11 @@
-// components/leads/LeadsKanbanView.tsx
-// Kanban board with Board / Lost / Won sub-views + drag-and-drop
+// components/leads/KanbanCard.tsx
 
-import { useState, useCallback, useEffect } from 'react';
-import { FiSearch, FiPhone, FiMail, FiEye, FiEdit, FiThumbsDown } from 'react-icons/fi';
-import axios from 'axios';
-import toast from 'react-hot-toast';
-import { baseUrl, getAuthToken } from '@/config';
-import { ApiLead, ApiStatus } from './types';
-import { Edit, Eye, RefreshCw } from 'lucide-react';
-import DataTable, { Column } from '@/components/DataTable';
-
-interface Props {
-    leads: ApiLead[];
-    lostLeads: ApiLead[];
-    wonLeads: ApiLead[];
-    statuses: any[];
-    onEdit: (lead: ApiLead) => void;
-    onView: (lead: ApiLead) => void;
-    onRefresh: () => void;
-    counts?: Record<string, number>;
-    permissions?: { create: boolean; update: boolean; delete: boolean };
-}
-
-type SubView = 'board' | 'lost' | 'won';
+import { FiPhone, FiMail, FiEye, FiEdit, FiThumbsDown } from 'react-icons/fi';
+import { ApiLead } from './types';
+import { RefreshCw, Trophy } from 'lucide-react';
 
 export default function KanbanCard({
-    lead, onDragStart, onView, onEdit, onMarkLost, onMarkWon, isUpdating
+    lead, onDragStart, onView, onEdit, onMarkLost, onMarkWon, onReactivate, isUpdating
 }: {
     lead: ApiLead;
     onDragStart: () => void;
@@ -33,14 +13,15 @@ export default function KanbanCard({
     onEdit?: () => void;
     onMarkLost?: () => void;
     onMarkWon?: () => void;
+    onReactivate?: () => void;
     isUpdating?: boolean;
 }) {
     return (
         <div
-            draggable={!isUpdating}
-            onDragStart={!isUpdating ? onDragStart : undefined}
+            draggable={!isUpdating && !onReactivate}
+            onDragStart={(!isUpdating && !onReactivate) ? onDragStart : undefined}
             className={`relative rounded-xl bg-white p-3 shadow-sm transition-shadow ${
-                isUpdating ? "opacity-60 pointer-events-none" : "cursor-move hover:shadow-md"
+                isUpdating ? "opacity-60 pointer-events-none" : onReactivate ? "cursor-default hover:shadow-md" : "cursor-move hover:shadow-md"
             }`}
         >
             {isUpdating && (
@@ -70,6 +51,15 @@ export default function KanbanCard({
                             <FiEdit className="h-3.5 w-3.5" />
                         </button>
                     )}
+                    {onMarkWon && (
+                        <button
+                            onClick={onMarkWon}
+                            title="Mark as Won"
+                            className="h-7 w-7 cursor-pointer rounded-full bg-emerald-500 text-white flex items-center justify-center hover:-translate-y-0.5 hover:shadow transition-all"
+                        >
+                            <Trophy className="h-3.5 w-3.5" />
+                        </button>
+                    )}
                     {onMarkLost && (
                         <button
                             onClick={onMarkLost}
@@ -77,6 +67,15 @@ export default function KanbanCard({
                             className="h-7 w-7 cursor-pointer rounded-full bg-red-100 text-red-600 flex items-center justify-center hover:-translate-y-0.5 hover:shadow transition-all"
                         >
                             <FiThumbsDown className="h-3.5 w-3.5" />
+                        </button>
+                    )}
+                    {onReactivate && (
+                        <button
+                            onClick={onReactivate}
+                            title="Reactivate Lead"
+                            className="h-7 w-7 cursor-pointer rounded-full bg-orange-100 text-orange-600 flex items-center justify-center hover:-translate-y-0.5 hover:shadow transition-all"
+                        >
+                            <RefreshCw className="h-3.5 w-3.5" />
                         </button>
                     )}
                 </div>
@@ -109,8 +108,6 @@ export default function KanbanCard({
                     )}
                 </div>
             </div>
-
-
         </div>
     );
 }

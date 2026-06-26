@@ -136,7 +136,10 @@ export default function LeadAddDialog({
 
         const formData = new FormData();
         Object.keys(payload).forEach((key) => {
-          formData.append(key, payload[key]);
+          const val = payload[key];
+          if (val !== null && val !== undefined && val !== '') {
+            formData.append(key, String(val));
+          }
         });
         attachments.forEach((file) => {
           formData.append('attachments', file);
@@ -222,7 +225,7 @@ export default function LeadAddDialog({
               address: dataToUse.address || '',
               locationLink: dataToUse.locationLink || '',
               leadStatus: typeof dataToUse.leadStatus === 'string' ? dataToUse.leadStatus : (dataToUse.leadStatus?._id || ''),
-              assignedTo: typeof dataToUse.assignedTo === 'string' ? dataToUse.assignedTo : (dataToUse.assignedTo?._id || ''),
+              assignedTo: typeof dataToUse.assignedTo === 'string' ? dataToUse.assignedTo : (dataToUse.assignedTo?._id ? String(dataToUse.assignedTo._id) : ''),
               isActive: dataToUse.isActive ?? true,
             });
           }
@@ -290,6 +293,7 @@ export default function LeadAddDialog({
                 label="Full Name"
                 name="fullName"
                 type="text"
+                placeholder="Rajesh Patel"
                 value={formik.values.fullName}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -318,22 +322,19 @@ export default function LeadAddDialog({
                     }}
                     onKeyDown={(e) => {
                       // Allow: backspace, delete, tab, escape, enter, arrows, home, end
-                      const allowed = ['Backspace','Delete','Tab','Escape','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'];
+                      const allowed = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
                       if (allowed.includes(e.key)) return;
                       // Block anything that's not a digit
                       if (!/^\d$/.test(e.key)) e.preventDefault();
                     }}
                     onBlur={formik.handleBlur}
-                    placeholder="Enter 10-digit number"
-                    className={`w-full px-3 py-2.5 pr-52 rounded-xl bg-white/90 text-gray-800 text-sm outline-none transition-all duration-200 border-2 ${
-                      formik.touched.contact && formik.errors.contact
-                        ? 'border-red-500 ring-2 ring-red-50'
-                        : formik.values.contact.length === 10
-                          ? 'border-green-500 ring-2 ring-green-200'
-                          : 'border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
-                    }`}
+                    placeholder="9876543210"
+                    className={`w-full px-3 py-2.5 rounded-xl bg-white/90 text-gray-800 text-sm outline-none transition-all duration-200 border-2 ${formik.touched.contact && formik.errors.contact
+                      ? 'border-red-500 ring-2 ring-red-50 focus:border-red-500 focus:ring-red-50'
+                      : 'border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
+                      }`}
                   />
-               
+
                 </div>
                 {formik.touched.contact && formik.errors.contact && (
                   <div className="mt-2 flex items-center gap-1.5">
@@ -349,6 +350,7 @@ export default function LeadAddDialog({
                 label="Email"
                 name="email"
                 type="email"
+                placeholder="rajesh@gmail.com"
                 value={formik.values.email}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
@@ -359,10 +361,12 @@ export default function LeadAddDialog({
                 label="KW Requirement"
                 name="kwRequirement"
                 type="text"
+                placeholder="5"
                 value={formik.values.kwRequirement}
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
                 error={getFieldError('kwRequirement')}
+                required={requiredFields.includes('kwRequirement')}
               />
             </div>
 
@@ -399,6 +403,7 @@ export default function LeadAddDialog({
             <FormInput
               label="Address"
               name="address"
+              placeholder="215, Escon Plaza, Above SBI Bank, Amroli, Surat"
               value={formik.values.address}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
@@ -409,6 +414,7 @@ export default function LeadAddDialog({
             <FormInput
               label="Location Link"
               name="locationLink"
+              placeholder="https://maps.app.goo.gl/abc123xyz"
               value={formik.values.locationLink}
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
@@ -434,7 +440,7 @@ export default function LeadAddDialog({
                 value={formik.values.assignedTo}
                 onChange={(val) => { formik.setFieldValue('assignedTo', val); }}
                 onBlur={() => formik.setFieldTouched('assignedTo')}
-                options={staff.map((s) => ({ value: s._id, label: `${s.fullName || s.name!}${s.departmentName ? ` (${s.departmentName})` : ''}` }))}
+                options={staff.map((s) => ({ value: String(s._id), label: `${s.fullName || s.name!}${s.departmentName ? ` (${s.departmentName})` : ''}` }))}
                 error={getFieldError('assignedTo')}
                 placeholder="Select User"
                 required={requiredFields.includes('assignedTo')}
@@ -453,7 +459,7 @@ export default function LeadAddDialog({
                   { value: 'commercial', label: 'Commercial' },
                 ]}
                 error={getFieldError('projecttype')}
-                placeholder="Select Lead Refrance"
+                placeholder="Select Project Type"
               />
             </div>
 

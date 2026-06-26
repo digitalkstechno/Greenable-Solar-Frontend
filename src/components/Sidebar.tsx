@@ -74,6 +74,9 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
         const leadSourcePerms = rawPerms.leadSource || {};
         const leadLabelPerms = rawPerms.leadLabel || {};
         const setupPerms = rawPerms.setup || {};
+        const categoryPerms = rawPerms.category || {};
+        const productPerms = rawPerms.product || {};
+        const stockPerms = rawPerms.stock || {};
 
         setCanViewLead(!!(leadPerms.readOwn || leadPerms.readAll));
         setCanViewTask(!!(taskPerms.readOwn || taskPerms.readAll));
@@ -82,9 +85,9 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
         setCanViewLeadStatus(!!(leadStatusPerms.readAll || setupPerms.readAll));
         setCanViewLeadSource(!!(leadSourcePerms.readAll || setupPerms.readAll));
         setCanViewLeadLabel(!!(leadLabelPerms.readAll || setupPerms.readAll));
-        setCanViewCategory(!!setupPerms.readAll);
-        setCanViewProduct(!!setupPerms.readAll);
-        setCanViewStock(!!setupPerms.readAll);
+        setCanViewCategory(!!(categoryPerms.readAll || categoryPerms.readOwn || setupPerms.readAll));
+        setCanViewProduct(!!(productPerms.readAll || productPerms.readOwn || setupPerms.readAll));
+        setCanViewStock(!!(stockPerms.readAll || stockPerms.readOwn || setupPerms.readAll));
       })
       .catch(() => {
         setCanViewLead(false);
