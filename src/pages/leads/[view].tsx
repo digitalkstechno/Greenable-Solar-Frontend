@@ -3,7 +3,7 @@
 // View is persisted in localStorage AND reflected in the URL
 
 import { useRouter } from 'next/router';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { ListCollapse, Plus, Filter, Kanban, Search, Download, Upload } from 'lucide-react';
 import axios from 'axios';
 import { baseUrl, getAuthToken } from '@/config';
@@ -135,11 +135,27 @@ export default function LeadsPage() {
     loading,
     refetchAll,
     fetchLeadsList,
+    fetchLostLeads,
+    fetchWonLeads,
     findLeadById,
     listPagination,
     lostPagination,
     wonPagination,
   } = useLeadsData(activeTab, filters, viewMode, kanbanSubView);
+
+  // ── Local search for Lost / Won sub-views ─────────────────────────────────
+  const [lostSearch, setLostSearch] = useState('');
+  const [wonSearch, setWonSearch] = useState('');
+
+  const handleLostSearch = useCallback((value: string) => {
+    setLostSearch(value);
+    fetchLostLeads(activeTab, { ...filters, search: value }, 1);
+  }, [activeTab, filters, fetchLostLeads]);
+
+  const handleWonSearch = useCallback((value: string) => {
+    setWonSearch(value);
+    fetchWonLeads(activeTab, { ...filters, search: value }, 1);
+  }, [activeTab, filters, fetchWonLeads]);
 
   // ── Sync URL → state ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -558,6 +574,8 @@ export default function LeadsPage() {
             wonPagination={wonPagination}
             // Notify parent when sub-view changes so hook fetches correct data
             onSubViewChange={setKanbanSubView}
+            onLostSearch={handleLostSearch}
+            onWonSearch={handleWonSearch}
             refreshKey={boardRefreshKey}
             permissions={{
               create: canCreate,

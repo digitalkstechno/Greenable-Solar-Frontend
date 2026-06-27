@@ -181,9 +181,6 @@ export function LeadSourcesContent() {
 
   return (
     <div className="space-y-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Lead Sources</h1>
-      </div>
 
       <DataTable
         data={allData}

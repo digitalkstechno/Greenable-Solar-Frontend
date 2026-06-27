@@ -391,6 +391,8 @@ export function useLeadsData(
     refetchAll,
     fetchLeadsList,
     fetchKanbanLeads,
+    fetchLostLeads,
+    fetchWonLeads,
     findLeadById,
 
     listPagination: {

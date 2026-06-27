@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import Dialog from './Dialog';
@@ -10,6 +10,7 @@ import { toast } from 'react-toastify';
 import FormInput from './ui/Input';
 import FormSelect, { FormMultiSelect } from './ui/FormSelect';
 import { FiCamera } from 'react-icons/fi';
+import { AlertCircle } from 'lucide-react';
 
 interface SalesExecutive {
   image?: string;
@@ -17,8 +18,10 @@ interface SalesExecutive {
   number: string;
   email: string;
   password: string;
+  status?: string;
   teams?: string[];
   id?: string;
+  department?: string;
 }
 
 interface SalesExecutiveFormProps {
@@ -28,29 +31,7 @@ interface SalesExecutiveFormProps {
   initialData?: SalesExecutive | null;
 }
 
-// Validation schema
-const validationSchema = Yup.object({
-  fullName: Yup.string()
-    .required('Full name is required')
-    .min(2, 'Full name must be at least 2 characters')
-    .max(100, 'Full name must be at most 100 characters')
-    .matches(/^[a-zA-Z\s]+$/, 'Full name can only contain letters and spaces'),
 
-  number: Yup.string()
-    .required('Mobile number is required')
-    .matches(/^[0-9]{10}$/, 'Mobile number must be exactly 10 digits'),
-
-  email: Yup.string()
-    .required('Email is required')
-    .email('Invalid email format'),
-
-  password: Yup.string()
-    .when('$isUpdate', {
-      is: false,
-      then: (schema) => schema.required('Password is required').min(6, 'Password must be at least 6 characters'),
-      otherwise: (schema) => schema.notRequired(),
-    }),
-});
 
 export default function SalesExecutiveForm({
   isOpen,
@@ -59,24 +40,41 @@ export default function SalesExecutiveForm({
   initialData,
 }: SalesExecutiveFormProps) {
 
-  const [showPassword, setShowPassword] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [roles, setRoles] = useState<{ _id: string; roleName: string }[]>([]);
   const [department, setDepartment] = useState<{ _id: string; name: string }[]>([]);
-  const [token, setToken] = useState<string | null>(null);
 
   const isUpdate = !!initialData?.id;
 
-  // Only run on client
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedToken = getAuthToken();
-      setToken(storedToken);
-    }
-  }, []);
+  // Build validation schema reactively based on isUpdate
+  const validationSchema = useMemo(
+    () =>
+      Yup.object({
+        fullName: Yup.string()
+          .required('Full name is required')
+          .min(2, 'Full name must be at least 2 characters')
+          .max(100, 'Full name must be at most 100 characters')
+          .matches(/^[a-zA-Z\s]+$/, 'Full name can only contain letters and spaces'),
+
+        number: Yup.string()
+          .required('Mobile number is required')
+          .matches(/^[0-9]{10}$/, 'Mobile number must be exactly 10 digits'),
+
+        email: Yup.string()
+          .required('Email is required')
+          .email('Invalid email format'),
+
+        password: isUpdate
+          ? Yup.string().notRequired()
+          : Yup.string()
+              .required('Password is required')
+              .min(6, 'Password must be at least 6 characters'),
+      }),
+    [isUpdate]
+  );
 
   // Initialize formik
   const formik = useFormik({
@@ -85,6 +83,7 @@ export default function SalesExecutiveForm({
       number: '',
       email: '',
       password: '',
+      status: 'active',
       department: '' as string,
       id: undefined as string | number | undefined,
       image: undefined as string | undefined,
@@ -92,7 +91,6 @@ export default function SalesExecutiveForm({
     validationSchema,
     validateOnChange: true,
     validateOnBlur: true,
-    context: { isUpdate },
     onSubmit: async (values) => {
       await handleSubmit(values);
     },
@@ -103,7 +101,6 @@ export default function SalesExecutiveForm({
     formik.resetForm();
     setSelectedFile(null);
     setPreviewImage(null);
-    setShowPassword(false);
     setError(null);
   };
 
@@ -117,7 +114,8 @@ export default function SalesExecutiveForm({
         number: initialData.number || '',
         email: initialData.email || '',
         password: '',
-        department: initialData.department || [],
+        status: (initialData as any).status || 'active',
+        department: (initialData as any).department || '',
       });
 
       if (initialData.image) {
@@ -172,7 +170,7 @@ export default function SalesExecutiveForm({
   const handleSubmit = async (values: any) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const payload = new FormData();
 
@@ -180,7 +178,7 @@ export default function SalesExecutiveForm({
       payload.append('fullName', values.fullName);
       payload.append('phone', values.number);
       payload.append('email', values.email);
-
+      payload.append('status', values.status || 'active');
       payload.append('role', values.department || '');
 
       // Only send password when creating or when it's changed (not empty)
@@ -192,12 +190,13 @@ export default function SalesExecutiveForm({
         payload.append('profileImage', selectedFile);
       }
 
+      const authToken = getAuthToken();
       const response = isUpdate
         ? await axios.put(`${baseUrl.userUpdate}/${values.id}`, payload, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${authToken}` },
         })
         : await axios.post(baseUrl.userAdd, payload, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${authToken}` },
         });
 
       parentOnSubmit?.(response.data);
@@ -321,6 +320,7 @@ export default function SalesExecutiveForm({
               onChange={(e) => {
                 const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
                 formik.setFieldValue('number', digitsOnly);
+                formik.setFieldTouched('number', true, true);
               }}
               onKeyDown={(e) => {
                 const allowed = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
@@ -331,12 +331,15 @@ export default function SalesExecutiveForm({
               placeholder="Enter mobile number"
               className={`w-full px-3 py-2.5 rounded-xl bg-white text-gray-800 text-sm outline-none transition-all duration-200 border-2 ${
                 formik.touched.number && formik.errors.number
-                  ? 'border-red-500 ring-2 ring-red-50'
+                  ? 'border-error ring-2 ring-red-100 focus:border-error focus:ring-red-100'
                   : 'border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
               }`}
             />
             {formik.touched.number && formik.errors.number && (
-              <p className="mt-1.5 text-xs text-red-500">{formik.errors.number}</p>
+              <div className="mt-2 flex items-center gap-1.5">
+                <AlertCircle size={14} className="text-red-500 flex-shrink-0" />
+                <p className="text-red-500 text-xs">{formik.errors.number}</p>
+              </div>
             )}
           </div>
         </div>
@@ -357,7 +360,7 @@ export default function SalesExecutiveForm({
           <FormInput
             label={isUpdate ? 'New Password (optional)' : 'Password'}
             name="password"
-            type={showPassword ? 'text' : 'password'}
+            type="password"
             value={formik.values.password}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
@@ -367,7 +370,7 @@ export default function SalesExecutiveForm({
           />
         </div>
 
-        {/* Department */}
+        {/* Department + Status */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <FormSelect
             label="Department"
@@ -378,6 +381,18 @@ export default function SalesExecutiveForm({
             options={department?.map((d: any) => ({ value: d._id, label: d.roleName || d.name })) || []}
             placeholder="— Select Department —"
             error={formik.touched.department && formik.errors.department ? formik.errors.department : undefined}
+          />
+          <FormSelect
+            label="Status"
+            name="status"
+            value={formik.values.status}
+            onChange={(e) => { formik.setFieldValue('status', e); formik.setFieldTouched('status', true, false); }}
+            onBlur={formik.handleBlur}
+            options={[
+              { value: 'active', label: 'Active' },
+              { value: 'inactive', label: 'Inactive' },
+            ]}
+            placeholder="— Select Status —"
           />
         </div>
       </form>

@@ -1,7 +1,7 @@
 // components/leads/LeadsKanbanView.tsx
 // Kanban board with Board / Lost / Won sub-views + drag-and-drop
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { FiSearch, FiPhone, FiMail } from 'react-icons/fi';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -53,6 +53,8 @@ interface Props {
     lostPagination?: PaginationShape;
     wonPagination?: PaginationShape;
     onSubViewChange?: (subView: 'board' | 'lost' | 'won') => void;
+    onLostSearch?: (search: string) => void;
+    onWonSearch?: (search: string) => void;
     refreshKey?: number;
 }
 
@@ -66,9 +68,39 @@ export default function LeadsKanbanView({
     lostPagination,
     wonPagination,
     onSubViewChange,
+    onLostSearch,
+    onWonSearch,
     refreshKey = 0,
 }: Props) {
+
+    // Local search state for Lost / Won sub-views (debounced → triggers API re-fetch via parent)
+    const [lostSearchValue, setLostSearchValue] = useState('');
+    const [wonSearchValue, setWonSearchValue] = useState('');
+    const lostSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const wonSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const handleLostSearch = (value: string) => {
+        setLostSearchValue(value);
+        if (lostSearchTimer.current) clearTimeout(lostSearchTimer.current);
+        lostSearchTimer.current = setTimeout(() => {
+            onLostSearch?.(value);
+        }, 500);
+    };
+
+    const handleWonSearch = (value: string) => {
+        setWonSearchValue(value);
+        if (wonSearchTimer.current) clearTimeout(wonSearchTimer.current);
+        wonSearchTimer.current = setTimeout(() => {
+            onWonSearch?.(value);
+        }, 500);
+    };
+
+    // Reset local search when switching sub-views
     const [subView, setSubView] = useState<SubView>('board');
+    useEffect(() => {
+        setLostSearchValue('');
+        setWonSearchValue('');
+    }, [subView]);
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const [projectDetailLead, setProjectDetailLead] = useState<ApiLead | null>(null);
@@ -526,6 +558,8 @@ export default function LeadsKanbanView({
                         onView={(row) => onView?.(row)}
                         onEdit={permissions?.update ? (row) => onEdit?.(row) : undefined}
                         extraActions={permissions?.update ? [{ label: 'Reactivate', onClick: (row) => reactivate(row._id), icon: <RefreshCw className="h-4 w-4" />, color: 'orange' }] : undefined}
+                        searchValue={lostSearchValue}
+                        onSearch={handleLostSearch}
                     />
                 </div>
             )}
@@ -572,6 +606,8 @@ export default function LeadsKanbanView({
                                 onClick: (row) => setPaymentLead(row),
                             }
                         ] : undefined}
+                        searchValue={wonSearchValue}
+                        onSearch={handleWonSearch}
                     />
                 </div>
             )}

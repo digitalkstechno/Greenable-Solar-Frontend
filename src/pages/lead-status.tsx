@@ -206,10 +206,6 @@ export function LeadStatusContent() {
 
   return (
     <div className="space-y-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Lead Status</h1>
-        <p className="text-sm text-gray-500">Manage lead statuses. "New Lead", "Won", and "Lost" are system reserved statuses.</p>
-      </div>
       <DataTable
         data={allData}
         columns={columns}

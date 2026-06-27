@@ -267,61 +267,187 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
     }
   };
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-    const requiredFields: (keyof FormState)[] = [
-      'leadRefrance', 'panelMake', 'panelWp', 'noOfPanel',
-      'inverterMake', 'inverterKw', 'inverterPhase', 'installationRoof',
-      'discom', 'consumerConnectionType', 'elcbInstalled', 'elcbProvideBy',
-      'wiringType', 'homeFloor', 'walkway', 'ladder', 'hdgiPipeMake',
-      'paymentMode', 'projectAmount', 'subsidyLessProject'
-    ];
+  const validateSection = (section: SectionKey): boolean => {
+    const newErrors: Record<string, string> = { ...errors };
 
-    requiredFields.forEach(field => {
-      if (!form[field]) {
-        const fieldNames: Record<string, string> = {
-          leadRefrance: 'Lead Reference',
-          panelMake: 'Panel Make',
-          panelWp: 'Panel WP',
-          noOfPanel: 'No. of Panels',
-          inverterMake: 'Inverter Make',
-          inverterKw: 'Inverter KW',
-          inverterPhase: 'Inverter Phase',
-          installationRoof: 'Installation Roof',
-          discom: 'DISCOM',
-          consumerConnectionType: 'Consumer Connection Type',
-          elcbInstalled: 'ELCB / RCCB Installed',
-          elcbProvideBy: 'ELCB / RCCB Provide By',
-          wiringType: 'Wiring Type',
-          homeFloor: 'Home Floor',
-          walkway: 'Walkway',
-          ladder: 'Ladder',
-          hdgiPipeMake: 'HDGI Pipe Make',
-          paymentMode: 'Payment Mode',
-          projectAmount: 'Project Amount',
-          subsidyLessProject: 'Subsidy Less Project'
-        };
-        newErrors[field] = `${fieldNames[field] || field} is required`;
+    if (section === 'project') {
+      const projectFields = [
+        'leadRefrance', 'panelMake', 'panelWp', 'noOfPanel',
+        'inverterMake', 'inverterKw', 'inverterPhase', 'installationRoof',
+        'discom', 'consumerConnectionType', 'elcbInstalled', 'elcbProvideBy',
+        'wiringType', 'homeFloor', 'walkway', 'walkwayLengthFeet', 'ladder', 'ladderLengthFeet', 'hdgiPipeMake'
+      ];
+      projectFields.forEach(f => delete newErrors[f]);
+
+      const requiredFields: (keyof FormState)[] = [
+        'leadRefrance', 'panelMake', 'panelWp', 'noOfPanel',
+        'inverterMake', 'inverterKw', 'inverterPhase', 'installationRoof',
+        'discom', 'consumerConnectionType', 'elcbInstalled', 'elcbProvideBy',
+        'wiringType', 'homeFloor', 'walkway', 'ladder', 'hdgiPipeMake'
+      ];
+
+      requiredFields.forEach(field => {
+        if (!form[field]) {
+          const fieldNames: Record<string, string> = {
+            leadRefrance: 'Lead Reference',
+            panelMake: 'Panel Make',
+            panelWp: 'Panel WP',
+            noOfPanel: 'No. of Panels',
+            inverterMake: 'Inverter Make',
+            inverterKw: 'Inverter KW',
+            inverterPhase: 'Inverter Phase',
+            installationRoof: 'Installation Roof',
+            discom: 'DISCOM',
+            consumerConnectionType: 'Consumer Connection Type',
+            elcbInstalled: 'ELCB / RCCB Installed',
+            elcbProvideBy: 'ELCB / RCCB Provide By',
+            wiringType: 'Wiring Type',
+            homeFloor: 'Home Floor',
+            walkway: 'Walkway',
+            ladder: 'Ladder',
+            hdgiPipeMake: 'HDGI Pipe Make'
+          };
+          newErrors[field] = `${fieldNames[field] || field} is required`;
+        }
+      });
+
+      if (form.walkway === 'yes' && !form.walkwayLengthFeet) {
+        newErrors.walkwayLengthFeet = 'Walkway Length is required';
       }
-    });
-
-    if (form.walkway === 'yes' && !form.walkwayLengthFeet) {
-      newErrors.walkwayLengthFeet = 'Walkway Length is required';
-    }
-    if (form.ladder === 'yes' && !form.ladderLengthFeet) {
-      newErrors.ladderLengthFeet = 'Ladder Length is required';
+      if (form.ladder === 'yes' && !form.ladderLengthFeet) {
+        newErrors.ladderLengthFeet = 'Ladder Length is required';
+      }
+    } else if (section === 'photos') {
+      PHOTO_FIELDS.forEach(f => delete newErrors[f.key]);
+      PHOTO_FIELDS.forEach(f => {
+        if (!existingFiles[f.key] && !files[f.key]) {
+          newErrors[f.key] = `${f.label} is required`;
+        }
+      });
+    } else if (section === 'regDocs') {
+      REG_DOC_FIELDS.forEach(f => delete newErrors[f.key]);
+      REG_DOC_FIELDS.forEach(f => {
+        if (!existingFiles[f.key] && !files[f.key]) {
+          newErrors[f.key] = `${f.label} is required`;
+        }
+      });
+    } else if (section === 'payment') {
+      const paymentFields: (keyof FormState)[] = ['paymentMode', 'projectAmount', 'subsidyLessProject'];
+      paymentFields.forEach(f => delete newErrors[f]);
+      paymentFields.forEach(field => {
+        if (!form[field]) {
+          const fieldNames: Record<string, string> = {
+            paymentMode: 'Payment Mode',
+            projectAmount: 'Project Amount',
+            subsidyLessProject: 'Subsidy Less Project'
+          };
+          newErrors[field] = `${fieldNames[field] || field} is required`;
+        }
+      });
+    } else if (section === 'loanDocs') {
+      LOAN_DOC_FIELDS.forEach(f => delete newErrors[f.key]);
+      LOAN_DOC_FIELDS.forEach(f => {
+        if (!existingFiles[f.key] && !files[f.key]) {
+          newErrors[f.key] = `${f.label} is required`;
+        }
+      });
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+
+    if (section === 'project') {
+      const projectFields = [
+        'leadRefrance', 'panelMake', 'panelWp', 'noOfPanel',
+        'inverterMake', 'inverterKw', 'inverterPhase', 'installationRoof',
+        'discom', 'consumerConnectionType', 'elcbInstalled', 'elcbProvideBy',
+        'wiringType', 'homeFloor', 'walkway', 'walkwayLengthFeet', 'ladder', 'ladderLengthFeet', 'hdgiPipeMake'
+      ];
+      return !projectFields.some(f => !!newErrors[f]);
+    } else if (section === 'photos') {
+      return !PHOTO_FIELDS.some(f => !!newErrors[f.key]);
+    } else if (section === 'regDocs') {
+      return !REG_DOC_FIELDS.some(f => !!newErrors[f.key]);
+    } else if (section === 'payment') {
+      const paymentFields = ['paymentMode', 'projectAmount', 'subsidyLessProject'];
+      return !paymentFields.some(f => !!newErrors[f]);
+    } else if (section === 'loanDocs') {
+      return !LOAN_DOC_FIELDS.some(f => !!newErrors[f.key]);
+    }
+
+    return true;
+  };
+
+  const validateWholeForm = (): boolean => {
+    const isProjValid = validateSection('project');
+    const isPhotosValid = validateSection('photos');
+    const isRegDocsValid = validateSection('regDocs');
+    const isPaymentValid = validateSection('payment');
+    const isLoanDocsValid = validateSection('loanDocs');
+
+    return isProjValid && isPhotosValid && isRegDocsValid && isPaymentValid && isLoanDocsValid;
+  };
+
+  const handleSectionSwitch = (target: SectionKey) => {
+    if (target !== 'project') {
+      const isProjValid = validateSection('project');
+      if (!isProjValid) {
+        toast.error('Please fill all required fields in Project Info first');
+        return;
+      }
+    }
+    setActiveSection(target);
+  };
+
+  const handleNextOrSave = () => {
+    if (activeSection === 'project') {
+      if (validateSection('project')) {
+        setActiveSection('photos');
+      } else {
+        toast.error('Please fill all required fields in Project Info first');
+      }
+    } else if (activeSection === 'photos') {
+      if (validateSection('photos')) {
+        setActiveSection('regDocs');
+      } else {
+        toast.error('Please upload all required Site Photos first');
+      }
+    } else if (activeSection === 'regDocs') {
+      if (validateSection('regDocs')) {
+        setActiveSection('payment');
+      } else {
+        toast.error('Please upload all required Registration Documents first');
+      }
+    } else if (activeSection === 'payment') {
+      if (validateSection('payment')) {
+        setActiveSection('loanDocs');
+      } else {
+        toast.error('Please fill all required Payment Details first');
+      }
+    } else if (activeSection === 'loanDocs') {
+      if (validateSection('loanDocs')) {
+        handleSubmit();
+      } else {
+        toast.error('Please upload all required Loan Documents first');
+      }
+    }
   };
 
   const handleSubmit = async () => {
     if (!lead) return;
     
-    if (!validateForm()) {
-      toast.error('Please fill all required fields');
-      setActiveSection('project');
+    if (!validateWholeForm()) {
+      toast.error('Please fill all required fields across all sections');
+      if (!validateSection('project')) {
+        setActiveSection('project');
+      } else if (!validateSection('photos')) {
+        setActiveSection('photos');
+      } else if (!validateSection('regDocs')) {
+        setActiveSection('regDocs');
+      } else if (!validateSection('payment')) {
+        setActiveSection('payment');
+      } else if (!validateSection('loanDocs')) {
+        setActiveSection('loanDocs');
+      }
       return;
     }
 
@@ -385,7 +511,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
           {sections.map((s) => (
             <button
               key={s.key}
-              onClick={() => setActiveSection(s.key)}
+              onClick={() => handleSectionSwitch(s.key)}
               className={`flex flex-1 min-w-[80px] flex-col items-center gap-1 px-3 py-3 text-xs font-medium transition whitespace-nowrap ${
                 activeSection === s.key
                   ? 'border-b-2 border-orange-500 text-orange-600 bg-white'
@@ -770,7 +896,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
             {sections.map((s) => (
               <button
                 key={s.key}
-                onClick={() => setActiveSection(s.key)}
+                onClick={() => handleSectionSwitch(s.key)}
                 className={`h-2 rounded-full transition-all ${activeSection === s.key ? 'bg-orange-500 w-5' : 'w-2 bg-gray-300 hover:bg-gray-400'}`}
               />
             ))}
@@ -784,7 +910,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
               Cancel
             </button>
             <button
-              onClick={handleSubmit}
+              onClick={handleNextOrSave}
               disabled={saving}
               className="flex items-center gap-2 rounded-lg bg-orange-500 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-orange-600 active:scale-95 transition disabled:opacity-60"
             >
@@ -793,7 +919,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
               ) : (
                 <ChevronRight className="h-4 w-4" />
               )}
-              {saving ? 'Saving...' : 'Save Details'}
+              {saving ? 'Saving...' : activeSection === 'loanDocs' ? 'Save Details' : 'Next >'}
             </button>
           </div>
         </div>

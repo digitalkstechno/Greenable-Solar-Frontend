@@ -83,8 +83,7 @@ export function FieldSettingsContent() {
   return (
     <div className="space-y-8">
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Field Settings</h2>
+        <div className="flex items-center justify-end mb-4">
           <button
             onClick={handleSave}
             className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm"

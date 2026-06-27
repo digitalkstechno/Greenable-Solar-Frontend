@@ -45,6 +45,8 @@ export type ApiLead = {
   address?: string;
   locationLink?: string;
   leadStatus?: ApiStatus;
+  note?: string;
+  leadLabel?: any[];
   assignedTo?: ApiUser;
   isActive?: boolean;
   followUps?: ApiFollowUp[];
@@ -81,6 +83,7 @@ export type ApiLead = {
       title: string;
       values: string[];
     }[];
+    
   };
 };
 

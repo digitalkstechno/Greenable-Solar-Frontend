@@ -225,7 +225,6 @@ export const generateQuotationPdf = (q: any, lead: any) => {
 
   // Row 6: Mobile No (left)
   currY += 14;
-  doc.text('MO. NO. -', 40, currY);
 
   currY += 18; // Reduced space above description paragraph (desc ni upper space remove kr)
   doc.setFontSize(8.0); // Sized slightly down to fit on one line perfectly with indent
@@ -249,7 +248,10 @@ export const generateQuotationPdf = (q: any, lead: any) => {
 
   // Draw yellow rectangle highlight under the kWp text
   doc.setFillColor(255, 255, 0); // Yellow
-  doc.rect(40 + wStart, currY - 7.5, wKw, 9.5, 'F');
+  if (kwValue) {
+    doc.setFillColor(255, 255, 0);
+    doc.rect(40 + wStart, currY - 7.5, wKw, 9.5, 'F');
+  }
   doc.setFont('helvetica', 'bold');
   doc.text(kwText, 40 + wStart, currY);
   doc.setFont('helvetica', 'normal'); // Restore back to normal

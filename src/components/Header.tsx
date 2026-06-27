@@ -39,11 +39,24 @@ export default function Header({ toggleSidebar }: HeaderProps) {
 
   const getLabel = () => {
     if (pathName === "/") return "Dashboard"
-    if (pathName === "/leads") return "Leads"
-    if (pathName === "/leads/list") return "Leads List"
+    if (pathName === "/leads" || pathName?.startsWith("/leads/")) return "Leads"
+    if (pathName === "/leads/list") return "Leads"
     if (pathName === "/leads/kanban") return "Leads Kanban"
-    if (pathName === "/setup") return "Setup"
+    if (pathName === "/roles") return "Department Management"
+    if (pathName === "/user-list") return "User Management"
+    if (pathName === "/lead-status") return "Lead Status"
+    if (pathName === "/lead-sources") return "Lead Sources"
+    if (pathName === "/lead-labels") return "Lead Labels"
+    if (pathName === "/category") return "Category"
+    if (pathName === "/product") return "Product Management"
+    if (pathName === "/stock-in") return "Stock In"
+    if (pathName === "/stock-out") return "Stock Out"
     if (pathName === "/tasks") return "Tasks"
+    if (pathName === "/task-status") return "Task Status"
+    if (pathName === "/teams") return "Teams"
+    if (pathName === "/organizations") return "Organizations"
+    if (pathName === "/setup") return "Setup"
+    if (pathName === "/field-settings") return "Field Settings"
     return ""
   }
 
@@ -423,7 +436,7 @@ export default function Header({ toggleSidebar }: HeaderProps) {
           <Menu className="h-6 w-6 text-gray-600" />
         </button>
         <h1 className="text-xl md:text-3xl font-bold text-gray-900 truncate">
-          {getLabel() || "Default Title"}
+          {getLabel()}
         </h1>
       </div>
       <div className="flex items-center gap-1 md:gap-3">

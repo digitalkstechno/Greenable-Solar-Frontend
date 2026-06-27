@@ -329,10 +329,11 @@ export default function LeadAddDialog({
                     }}
                     onBlur={formik.handleBlur}
                     placeholder="9876543210"
-                    className={`w-full px-3 py-2.5 rounded-xl bg-white/90 text-gray-800 text-sm outline-none transition-all duration-200 border-2 ${formik.touched.contact && formik.errors.contact
-                      ? 'border-red-500 ring-2 ring-red-50 focus:border-red-500 focus:ring-red-50'
-                      : 'border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
-                      }`}
+                    className={`w-full px-3 py-2.5 rounded-xl bg-white/90 text-gray-800 text-sm outline-none transition-all duration-200 border-2 ${
+                      formik.touched.contact && formik.errors.contact
+                        ? 'border-error ring-2 ring-red-100 focus:border-error focus:ring-red-100'
+                        : 'border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
+                    }`}
                   />
 
                 </div>

@@ -481,6 +481,7 @@ import LeadQuotationDialog from './LeadQuotationDialog';
 import { FormSelect } from '../ui/FormSelect';
 import { generateQuotationPdf } from '@/components/leads/generateQuotationPdf';
 
+
 interface Props {
   lead: ApiLead | null;
   statuses: ApiStatus[];
@@ -1073,11 +1074,11 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
             </div>
 
             {/* Labels */}
-            {lead.leadLabel && lead.leadLabel.length > 0 && (
+            {lead.leadLabel && Array.isArray(lead.leadLabel) && lead.leadLabel.length > 0 && (
               <div className="rounded-lg bg-gray-50 p-4">
                 <div className="mb-2 text-sm font-medium text-gray-600">Labels</div>
                 <div className="flex flex-wrap gap-2">
-                  {lead.leadLabel.map((l) => (
+                  {(Array.isArray(lead.leadLabel) ? lead.leadLabel : []).map((l) => (
                     <span
                       key={l._id}
                       style={{ backgroundColor: l.color }}

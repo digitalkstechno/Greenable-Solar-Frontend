@@ -190,9 +190,6 @@ export function ProductContent() {
 
   return (
     <div className="space-y-6">
-      <div className="mb-6 flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Product Management</h1>
-      </div>
 
       <DataTable
         data={allData}

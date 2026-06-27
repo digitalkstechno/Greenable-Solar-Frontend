@@ -209,15 +209,18 @@ export function UserContent() {
     {
       key: 'status',
       label: 'STATUS',
-      render: (value) => (
-        <span
-          className={`rounded-full px-3 py-1 text-xs font-semibold ${
-            value === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-          }`}
-        >
-          {value}
-        </span>
-      ),
+      render: (value) => {
+        const isActive = value?.toLowerCase() === 'active';
+        return (
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${
+              isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+            }`}
+          >
+            {isActive ? 'Active' : 'Inactive'}
+          </span>
+        );
+      },
     },
     {
       key: 'department',
@@ -246,7 +249,7 @@ export function UserContent() {
         number: item.phone || '',
         email: item.email || '',
         password: '',
-        status: item.status || 'Active',
+        status: item.status || 'active',
         department: item.role?._id || item.role || '',
       };
 
@@ -297,9 +300,6 @@ export function UserContent() {
   return (
     <>
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">User</h1>
-        </div>
 
         <DataTable
           data={staffManagementData}

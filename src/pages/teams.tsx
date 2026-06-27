@@ -183,12 +183,6 @@ export function TeamsContent() {
 
   return (
     <div className="space-y-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Teams</h1>
-        <p className="text-gray-600">
-          Manage teams and their members. Teams help organize staff members into groups.
-        </p>
-      </div>
 
       <DataTable
         data={data}
