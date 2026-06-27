@@ -31,8 +31,6 @@ interface SalesExecutiveFormProps {
   initialData?: SalesExecutive | null;
 }
 
-
-
 export default function SalesExecutiveForm({
   isOpen,
   onClose,
@@ -65,13 +63,19 @@ export default function SalesExecutiveForm({
 
         email: Yup.string()
           .required('Email is required')
-          .email('Invalid email format'),
+          .email('Invalid email format')
+          .max(50, 'Email must not exceed 50 characters')
+          .matches(
+            /^[^\s@]+@[^\s@]+\.(com|in|ac\.in|org|net|edu|co\.in)$/i,
+            'Invalid email format'
+          ),
 
+        department: Yup.string().required('Department is required'),
         password: isUpdate
           ? Yup.string().notRequired()
           : Yup.string()
-              .required('Password is required')
-              .min(6, 'Password must be at least 6 characters'),
+            .required('Password is required')
+            .min(6, 'Password must be at least 6 characters'),
       }),
     [isUpdate]
   );
@@ -90,6 +94,7 @@ export default function SalesExecutiveForm({
     },
     validationSchema,
     validateOnChange: true,
+    validateOnMount: true,
     validateOnBlur: true,
     onSubmit: async (values) => {
       await handleSubmit(values);
@@ -142,6 +147,12 @@ export default function SalesExecutiveForm({
       .catch(() => setDepartment([]));
 
   }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      formik.validateForm();
+    }
+  }, [isOpen]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -207,6 +218,10 @@ export default function SalesExecutiveForm({
         toast.success('User created successfully');
       }
 
+      if (values.department) {
+        payload.append('role', values.department);
+      }
+
       // ✅ reset only when creating
       if (!isUpdate) {
         resetForm();
@@ -243,7 +258,7 @@ export default function SalesExecutiveForm({
             type="submit"
             form="sales-executive-form"
             className="px-4 py-2 cursor-pointer rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={loading || !formik.isValid}
+            disabled={loading || !formik.isValid || Object.keys(formik.errors).length > 0}
           >
             {loading ? 'Saving...' : isUpdate ? 'Update' : 'Add'}
           </button>
@@ -321,6 +336,7 @@ export default function SalesExecutiveForm({
                 const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
                 formik.setFieldValue('number', digitsOnly);
                 formik.setFieldTouched('number', true, true);
+                formik.validateForm();
               }}
               onKeyDown={(e) => {
                 const allowed = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
@@ -329,11 +345,10 @@ export default function SalesExecutiveForm({
               }}
               onBlur={formik.handleBlur}
               placeholder="Enter mobile number"
-              className={`w-full px-3 py-2.5 rounded-xl bg-white text-gray-800 text-sm outline-none transition-all duration-200 border-2 ${
-                formik.touched.number && formik.errors.number
-                  ? 'border-error ring-2 ring-red-100 focus:border-error focus:ring-red-100'
-                  : 'border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
-              }`}
+              className={`w-full px-3 py-2.5 rounded-xl bg-white text-gray-800 text-sm outline-none transition-all duration-200 border-2 ${formik.touched.number && formik.errors.number
+                ? 'border-error ring-2 ring-red-100 focus:border-error focus:ring-red-100'
+                : 'border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
+                }`}
             />
             {formik.touched.number && formik.errors.number && (
               <div className="mt-2 flex items-center gap-1.5">
@@ -375,6 +390,7 @@ export default function SalesExecutiveForm({
           <FormSelect
             label="Department"
             name="department"
+            required
             value={formik.values.department}
             onChange={(e) => { formik.setFieldValue('department', e); formik.setFieldTouched('department', true, false); }}
             onBlur={formik.handleBlur}

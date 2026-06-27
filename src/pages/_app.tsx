@@ -7,6 +7,11 @@ import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import { usePathname } from "next/navigation";
 import Header from "@/components/Header";
+import { useEffect } from "react";
+import axios from "axios";
+import { useRouter } from "next/router";
+import { clearAuthToken } from "@/config";
+
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -15,6 +20,7 @@ const poppins = Poppins({
 });
 
 export default function App({ Component, pageProps }: AppProps) {
+  const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const pathName = usePathname()
   const isLoginPage = pathName === "/login";
@@ -29,6 +35,20 @@ export default function App({ Component, pageProps }: AppProps) {
     return ""
   }
 
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          clearAuthToken();
+          router.push('/login');
+        }
+        return Promise.reject(error);
+      }
+    );
+    return () => axios.interceptors.response.eject(interceptor);
+  }, []);
+
   return (
     <div className={poppins.className}>
       <div className="flex min-h-screen bg-white">
@@ -39,9 +59,8 @@ export default function App({ Component, pageProps }: AppProps) {
           />
         )}
         <div
-          className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${
-            !isLoginPage ? (isSidebarOpen ? 'md:ml-64' : 'md:ml-20') : ''
-          }`}
+          className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${!isLoginPage ? (isSidebarOpen ? 'md:ml-64' : 'md:ml-20') : ''
+            }`}
         >
           <main className="animate-in fade-in duration-300">
             {/* Only show header for non-login pages */}

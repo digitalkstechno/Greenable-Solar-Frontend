@@ -807,34 +807,52 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
     }
   };
 
+  // const handleDownload = async (attachment: any) => {
+  //   try {
+  //     const fileUrl = attachment.path?.startsWith('http') ? attachment.path : `${process.env.NEXT_PUBLIC_IMAGE_URL}${attachment.path}`;
+
+  //     // External URLs block CORS on fetch, so just open in new tab for them
+  //     if (attachment.path?.startsWith('http')) {
+  //       window.open(fileUrl, '_blank');
+  //       return;
+  //     }
+
+  //     const response = await fetch(fileUrl, {
+  //       headers: { Authorization: `Bearer ${getAuthToken()}` }
+  //     });
+
+  //     if (!response.ok) throw new Error('Download failed');
+
+  //     const blob = await response.blob();
+  //     const blobUrl = window.URL.createObjectURL(blob);
+  //     const link = document.createElement('a');
+  //     link.href = blobUrl;
+  //     link.download = attachment.originalName;
+  //     document.body.appendChild(link);
+  //     link.click();
+  //     document.body.removeChild(link);
+  //     window.URL.revokeObjectURL(blobUrl);
+  //     toast.success('Download started');
+  //   } catch (error) {
+  //     console.error('Download error:', error);
+  //     toast.error('Failed to download file');
+  //   }
+  // };
+
   const handleDownload = async (attachment: any) => {
     try {
-      const fileUrl = attachment.path?.startsWith('http') ? attachment.path : `${process.env.NEXT_PUBLIC_IMAGE_URL}${attachment.path}`;
+      const fileUrl = attachment.path?.startsWith('http')
+        ? attachment.path
+        : `${process.env.NEXT_PUBLIC_IMAGE_URL}${attachment.path}`;
 
-      // External URLs block CORS on fetch, so just open in new tab for them
-      if (attachment.path?.startsWith('http')) {
-        window.open(fileUrl, '_blank');
-        return;
-      }
-
-      const response = await fetch(fileUrl, {
-        headers: { Authorization: `Bearer ${getAuthToken()}` }
-      });
-
-      if (!response.ok) throw new Error('Download failed');
-
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
+      const proxyUrl = `/api/download?url=${encodeURIComponent(fileUrl)}`;
       const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = attachment.originalName;
+      link.href = proxyUrl;
+      link.download = attachment.originalName || 'download';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
-      toast.success('Download started');
     } catch (error) {
-      console.error('Download error:', error);
       toast.error('Failed to download file');
     }
   };
@@ -876,7 +894,16 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
               <InfoCard label="Discom Name" value={lead.discomName} />
               <InfoCard label="Lead Reference" value={lead.leadrefrance} />
               <InfoCard label="Project Type" value={lead.projecttype} />
-              <InfoCard label="Last Follow-Up" value={lead.lastFollowUp} />
+              {/* <InfoCard label="Last Follow-Up" value={lead.lastFollowUp ? new Date(lead.lastFollowUp).toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : '-'} /> */}
+              <InfoCard label="Last Follow-Up" value={lead.lastFollowUp ? new Date(lead.lastFollowUp).toLocaleString('en-IN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+                timeZone: 'Asia/Kolkata',
+              }) : '-'} />
               <InfoCard label="Active" value={lead.isActive ? 'Yes' : 'No'} />
             </div>
 
@@ -951,6 +978,7 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
                     <input
                       type="date"
                       value={editNextDate}
+                      min={new Date().toISOString().split('T')[0]}
                       onChange={(e) => setEditNextDate(e.target.value)}
                       className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 transition-all outline-none"
                     />

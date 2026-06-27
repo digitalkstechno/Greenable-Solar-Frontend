@@ -59,6 +59,7 @@ export function StockInContent() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<TransactionType | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [setupPermissions, setSetupPermissions] = useState<any>(null);
 
   const token = typeof window !== 'undefined' ? getAuthToken() : null;
   const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
@@ -68,6 +69,7 @@ export function StockInContent() {
     validationSchema,
     validateOnChange: true,
     validateOnBlur: true,
+    validateOnMount: true,
     onSubmit: async (values) => { await saveTransaction(values); },
     enableReinitialize: true,
   });
@@ -103,13 +105,13 @@ export function StockInContent() {
 
       let filteredItems = items;
       if (debouncedSearch) {
-        filteredItems = items.filter(item => 
+        filteredItems = items.filter(item =>
           item.productName.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
           item.categoryName.toLowerCase().includes(debouncedSearch.toLowerCase())
         );
       }
       setAllData(filteredItems);
-      setTotalRecords(filteredItems.length); 
+      setTotalRecords(filteredItems.length);
     } catch (err) {
       console.error('Failed to load transactions', err);
       setAllData([]);
@@ -119,14 +121,20 @@ export function StockInContent() {
   useEffect(() => { fetchCategoriesAndProducts(); }, []);
   useEffect(() => { fetchData(); }, [debouncedSearch, currentPage, pageSize]);
 
+  useEffect(() => {
+    if (isDialogOpen) {
+      formik.validateForm();
+    }
+  }, [isDialogOpen]);
+
   const saveTransaction = async (values: any) => {
     setIsSubmitting(true);
-    const payload = { 
-      categoryId: values.categoryId, 
-      productId: values.productId, 
-      type: 'IN', 
-      quantity: Number(values.quantity), 
-      note: values.note 
+    const payload = {
+      categoryId: values.categoryId,
+      productId: values.productId,
+      type: 'IN',
+      quantity: Number(values.quantity),
+      note: values.note
     };
 
     try {
@@ -187,6 +195,23 @@ export function StockInContent() {
     { key: 'createdAt', label: 'DATE' },
   ];
 
+  // roles & permission
+  useEffect(() => {
+    if (!token) return;
+    axios.get(baseUrl.currentStaff, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then((res) => {
+      const role = res.data?.data?.role || {};
+      const rawPerms = Array.isArray(role.permissions) ? role.permissions[0] : role.permissions || {};
+      setSetupPermissions(rawPerms.stock || null);
+    }).catch(() => setSetupPermissions(null));
+  }, [token]);
+
+  const canCreate = !!setupPermissions?.create;
+  const canUpdate = !!setupPermissions?.update;
+  const canDelete = !!setupPermissions?.delete;
+
+
   return (
     <div className="space-y-6">
 
@@ -202,7 +227,7 @@ export function StockInContent() {
         onSearch={(v) => { setSearch(v); setCurrentPage(1); }}
         onPageChange={setCurrentPage}
         onPageSizeChange={(s) => { setPageSize(s); setCurrentPage(1); }}
-        onEdit={(row) => {
+        onEdit={canUpdate ? (row) => {
           formik.setValues({
             _id: row._id,
             categoryId: row.categoryId,
@@ -211,12 +236,12 @@ export function StockInContent() {
             note: row.note === '-' ? '' : row.note,
           });
           setIsDialogOpen(true);
-        }}
-        onDelete={handleDeleteClick}
-        addButton={{
+        } : undefined}
+        onDelete={canDelete ? handleDeleteClick : undefined}
+        addButton={canCreate ? {
           label: 'Add Stock In',
           onClick: () => { formik.resetForm(); setIsDialogOpen(true); },
-        }}
+        } : undefined}
       />
 
       <DeleteDialog
@@ -261,7 +286,7 @@ export function StockInContent() {
             <button
               type="submit"
               form="stock-in-form"
-              className="px-6 py-2 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white font-medium transition-colors cursor-pointer disabled:opacity-50"
+              className="px-6 py-2 rounded-lg bg-[#d87612] text-white font-medium transition-colors cursor-pointer disabled:opacity-50"
               disabled={isSubmitting || !formik.isValid}
             >
               Add Stock In
@@ -275,7 +300,7 @@ export function StockInContent() {
             required
             name="categoryId"
             value={formik.values.categoryId}
-            onChange={(e) => { 
+            onChange={(e) => {
               formik.setValues({ ...formik.values, categoryId: e, productId: '' });
             }}
             onBlur={() => formik.setFieldTouched('categoryId', true)}

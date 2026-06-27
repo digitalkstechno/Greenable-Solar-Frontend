@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import Dialog from '@/components/Dialog';
@@ -31,32 +31,38 @@ type LeadItem = {
   order: number;
 };
 
-// Validation schema
-const validationSchema = Yup.object({
-  name: Yup.string()
-    .required('Status name is required')
-    .min(2, 'Status name must be at least 2 characters')
-    .max(100, 'Status name must be at most 100 characters')
-    .matches(/^[a-zA-Z0-9\s&-]+$/, 'Status name can only contain letters, numbers, spaces, &, and -')
-    .test('not-reserved', 'This is a reserved status name and cannot be modified', function(value) {
-      const reservedNames = ['new lead', 'won', 'lost'];
-      // Only validate for edit mode if the original name wasn't reserved
-      const originalName = this.parent.originalName;
-      if (originalName && reservedNames.includes(originalName.toLowerCase())) {
-        return true; // Skip validation for reserved names being edited
-      }
-      return !reservedNames.includes(value?.toLowerCase());
-    }),
-  
-  order: Yup.number()
-    .required('Order is required')
-    .integer('Order must be a whole number')
-    .min(1, 'Order must be at least 1')
-    .max(9999, 'Order must be at most 9999'),
-});
 
 export function LeadStatusContent() {
+
   const [allData, setAllData] = useState<LeadItem[]>([]);
+  // Validation schema
+  const validationSchema = useMemo(() => Yup.object({
+    name: Yup.string()
+      .required('Status name is required')
+      .min(2, 'Status name must be at least 2 characters')
+      .max(100, 'Status name must be at most 100 characters')
+      .matches(/^[a-zA-Z0-9\s&-]+$/, 'Status name can only contain letters, numbers, spaces, &, and -')
+      .test('not-reserved', 'This is a reserved status name and cannot be modified', function (value) {
+        const reservedNames = ['new lead', 'won', 'lost'];
+        // Only validate for edit mode if the original name wasn't reserved
+        const originalName = this.parent.originalName;
+        if (originalName && reservedNames.includes(originalName.toLowerCase())) {
+          return true; // Skip validation for reserved names being edited
+        }
+        return !reservedNames.includes(value?.toLowerCase());
+      }),
+
+    order: Yup.number()
+      .required('Order is required')
+      .integer('Order must be a whole number')
+      .min(1, 'Order must be at least 1')
+      .max(9999, 'Order must be at most 9999')
+      .test('unique-order', 'This order number already exists', function (value) {
+        const currentId = this.parent._id;
+        return !allData.some(item => item.order === value && item._id !== currentId);
+      }),
+  }), [allData]);
+  
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 600);
 
@@ -360,7 +366,7 @@ export function LeadStatusContent() {
             placeholder="Enter status name"
             disabled={isSubmitting || (formik.values._id && isReserved(formik.values.originalName))}
           />
-          
+
           <FormInput
             label="Order"
             name="order"

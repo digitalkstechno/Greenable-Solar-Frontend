@@ -51,15 +51,7 @@ export default function KanbanCard({
                             <FiEdit className="h-3.5 w-3.5" />
                         </button>
                     )}
-                    {onMarkWon && (
-                        <button
-                            onClick={onMarkWon}
-                            title="Mark as Won"
-                            className="h-7 w-7 cursor-pointer rounded-full bg-emerald-500 text-white flex items-center justify-center hover:-translate-y-0.5 hover:shadow transition-all"
-                        >
-                            <Trophy className="h-3.5 w-3.5" />
-                        </button>
-                    )}
+                    
                     {onMarkLost && (
                         <button
                             onClick={onMarkLost}

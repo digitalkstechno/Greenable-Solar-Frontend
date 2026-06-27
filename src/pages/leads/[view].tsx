@@ -328,21 +328,7 @@ export default function LeadsPage() {
           <div className="flex items-center justify-between">
             <h1 className="text-xl md:text-2xl font-bold text-gray-900">Leads</h1>
             
-            {/* Mobile View Toggle */}
-            <div className="md:hidden relative flex items-center bg-gray-100 p-1 rounded-md w-fit">
-              <button
-                onClick={() => switchView('list')}
-                className={`relative z-10 cursor-pointer flex items-center justify-center w-8 h-8 rounded-md transition-colors ${viewMode === 'list' ? 'bg-secondary text-white shadow-sm' : 'text-gray-700'}`}
-              >
-                <ListCollapse className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => switchView('kanban')}
-                className={`relative z-10 cursor-pointer flex items-center justify-center w-8 h-8 rounded-md transition-colors ${viewMode === 'kanban' ? 'bg-secondary text-white shadow-sm' : 'text-gray-700'}`}
-              >
-                <Kanban className="h-4 w-4" />
-              </button>
-            </div>
+          
           </div>
 
           {/* Search Bar */}
@@ -362,23 +348,6 @@ export default function LeadsPage() {
           )}
 
           <div className="flex flex-wrap items-center gap-2 md:gap-3 md:ml-auto">
-            {/* Tab Toggle (All/My) */}
-            {canReadAll && canReadOwn && (
-              <div className="flex items-center bg-gray-100 p-1 rounded-md">
-                <button
-                  onClick={() => setActiveTab('all')}
-                  className={`px-3 py-1.5 text-xs md:text-sm font-medium rounded-md transition-all ${activeTab === 'all' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setActiveTab('my')}
-                  className={`px-3 py-1.5 text-xs md:text-sm font-medium rounded-md transition-all ${activeTab === 'my' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
-                >
-                  My
-                </button>
-              </div>
-            )}
 
             {/* Advanced Filter Button */}
             <button

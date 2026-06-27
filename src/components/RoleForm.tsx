@@ -95,6 +95,8 @@ export default function RoleForm({
     return base;
   };
 
+  const isSuperAdmin = initialData?.roleName?.toLowerCase() === 'super admin';
+
   // Validation schema
   const validationSchema = Yup.object({
     roleName: Yup.string()
@@ -214,17 +216,19 @@ export default function RoleForm({
             <div className="">
               {features.map((feature) => {
                 const caps = formik.values.permissions[feature] || defaultCaps;
+                const isDisabled = isSuperAdmin && feature === 'role';
                 return (
                   <div key={feature} className="grid grid-cols-12 items-center border-t border-gray-200 px-4 py-4 hover:bg-gray-50 transition-colors">
                     <div className="col-span-5 text-gray-800 font-medium">{featureLabels[feature]}</div>
                     <div className="col-span-7">
                       <div className="flex flex-wrap gap-4">
                         {(['readAll', 'readOwn', 'create', 'update', 'delete'] as CapabilityKey[]).map((cap) => (
-                          <label key={cap} className="inline-flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+                          <label key={cap} className={`inline-flex cursor-pointer items-center gap-2 text-sm text-gray-700 ${isDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}>
                             <input
                               type="checkbox"
                               checked={caps[cap]}
-                              onChange={() => toggleCapability(feature, cap)}
+                              onChange={() => { if (!isDisabled) toggleCapability(feature, cap); }}
+                              disabled={isDisabled}
                               className="h-4 w-4 rounded cursor-pointer border-gray-300 text-sky-950 focus:ring-sky-200"
                             />
                             <span>

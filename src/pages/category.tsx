@@ -51,6 +51,7 @@ export function CategoryContent() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<CategoryItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [setupPermissions, setSetupPermissions] = useState<any>(null);
 
   const token = typeof window !== 'undefined' ? getAuthToken() : null;
   const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
@@ -91,7 +92,7 @@ export function CategoryContent() {
       // Filter locally if search is present (if backend doesn't support search yet)
       let filteredItems = items;
       if (debouncedSearch) {
-        filteredItems = items.filter(item => 
+        filteredItems = items.filter(item =>
           item.name.toLowerCase().includes(debouncedSearch.toLowerCase())
         );
       }
@@ -114,7 +115,7 @@ export function CategoryContent() {
 
   const saveCategory = async (values: { _id?: string; name: string }) => {
     setIsSubmitting(true);
-    
+
     const payload = { name: values.name.trim() };
 
     try {
@@ -124,7 +125,7 @@ export function CategoryContent() {
         await axios.post(baseUrl.category, payload, { headers });
       }
       await fetchData();
-      
+
       setIsDialogOpen(false);
       formik.resetForm();
     } catch (err) {
@@ -159,6 +160,22 @@ export function CategoryContent() {
     { key: 'createdAt', label: 'CREATED DATE' },
   ];
 
+  // Roles & Permission
+  useEffect(() => {
+    if (!token) return;
+    axios.get(baseUrl.currentStaff, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then((res) => {
+      const role = res.data?.data?.role || {};
+      const rawPerms = Array.isArray(role.permissions) ? role.permissions[0] : role.permissions || {};
+      setSetupPermissions(rawPerms.category || null);
+    }).catch(() => setSetupPermissions(null));
+  }, [token]);
+
+  const canCreate = !!setupPermissions?.create;
+  const canUpdate = !!setupPermissions?.update;
+  const canDelete = !!setupPermissions?.delete;
+
   return (
     <div className="space-y-6">
       <DataTable
@@ -179,21 +196,9 @@ export function CategoryContent() {
           setPageSize(s);
           setCurrentPage(1);
         }}
-        onEdit={(row) => {
-          formik.setValues({
-            _id: row._id,
-            name: row.name,
-          });
-          setIsDialogOpen(true);
-        }}
-        onDelete={handleDeleteClick}
-        addButton={{
-          label: 'Add Category',
-          onClick: () => {
-            formik.resetForm();
-            setIsDialogOpen(true);
-          },
-        }}
+        onEdit={canUpdate ? (row) => { formik.setValues({ _id: row._id, name: row.name }); setIsDialogOpen(true); } : undefined}
+        onDelete={canDelete ? handleDeleteClick : undefined}
+        addButton={canCreate ? { label: 'Add Category', onClick: () => { formik.resetForm(); setIsDialogOpen(true); } } : undefined}
       />
 
       <DeleteDialog
@@ -228,7 +233,7 @@ export function CategoryContent() {
       >
         <div className="py-4 text-slate-700">
           <p>
-            Are you sure you want to delete the category "{categoryToDelete?.name}"? 
+            Are you sure you want to delete the category "{categoryToDelete?.name}"?
             This action cannot be undone.
           </p>
         </div>
@@ -257,13 +262,13 @@ export function CategoryContent() {
             <button
               type="submit"
               form="category-form"
-              className="px-6 py-2 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 rounded-lg bg-[#d87612] text-white font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isSubmitting || !formik.isValid}
             >
-              {isSubmitting 
-                ? 'Wait...' 
-                : formik.values._id 
-                  ? 'Update' 
+              {isSubmitting
+                ? 'Wait...'
+                : formik.values._id
+                  ? 'Update'
                   : 'Add'
               }
             </button>

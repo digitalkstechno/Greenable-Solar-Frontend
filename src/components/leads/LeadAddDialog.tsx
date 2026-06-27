@@ -75,7 +75,11 @@ export default function LeadAddDialog({
         .length(10, 'Mobile number must be exactly 10 digits'),
       email: Yup.string()
         .email('Invalid email format')
-        .max(100, 'Email must not exceed 100 characters'),
+        .max(50, 'Email must not exceed 50 characters')
+        .matches(
+          /^[^\s@]+@[^\s@]+\.(com|in|ac\.in|org|net|edu|co\.in)$/i,
+          'Invalid email format'
+      ),
       kwRequirement: Yup.string(),
       discomName: Yup.string(),
       leadrefrance: Yup.string(),
@@ -268,7 +272,7 @@ export default function LeadAddDialog({
             <button
               type="submit"
               form="lead-form"
-              disabled={formik.isSubmitting || loading || !formik.isValid}
+              disabled={!formik.isValid || !formik.dirty || loading}
               className="min-w-[80px] cursor-pointer rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {formik.isSubmitting ? 'Saving...' : mode === 'edit' ? 'Update Lead' : 'Save Lead'}
@@ -329,11 +333,10 @@ export default function LeadAddDialog({
                     }}
                     onBlur={formik.handleBlur}
                     placeholder="9876543210"
-                    className={`w-full px-3 py-2.5 rounded-xl bg-white/90 text-gray-800 text-sm outline-none transition-all duration-200 border-2 ${
-                      formik.touched.contact && formik.errors.contact
-                        ? 'border-error ring-2 ring-red-100 focus:border-error focus:ring-red-100'
-                        : 'border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
-                    }`}
+                    className={`w-full px-3 py-2.5 rounded-xl bg-white/90 text-gray-800 text-sm outline-none transition-all duration-200 border-2 ${formik.touched.contact && formik.errors.contact
+                      ? 'border-error ring-2 ring-red-100 focus:border-error focus:ring-red-100'
+                      : 'border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
+                      }`}
                   />
 
                 </div>

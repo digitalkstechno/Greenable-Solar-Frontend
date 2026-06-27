@@ -59,6 +59,7 @@ export function ProductContent() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [productToDelete, setProductToDelete] = useState<ProductItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [setupPermissions, setSetupPermissions] = useState<any>(null);
 
   const token = typeof window !== 'undefined' ? getAuthToken() : null;
   const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
@@ -110,14 +111,14 @@ export function ProductContent() {
 
       let filteredItems = items;
       if (debouncedSearch) {
-        filteredItems = items.filter(item => 
+        filteredItems = items.filter(item =>
           item.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
           item.categoryName.toLowerCase().includes(debouncedSearch.toLowerCase())
         );
       }
 
       setAllData(filteredItems);
-      setTotalRecords(filteredItems.length); 
+      setTotalRecords(filteredItems.length);
     } catch (err) {
       console.error('Failed to load products', err);
       setAllData([]);
@@ -136,10 +137,10 @@ export function ProductContent() {
 
   const saveProduct = async (values: { _id?: string; categoryId: string; name: string }) => {
     setIsSubmitting(true);
-    
-    const payload = { 
+
+    const payload = {
       categoryId: values.categoryId,
-      name: values.name.trim() 
+      name: values.name.trim()
     };
 
     try {
@@ -150,7 +151,7 @@ export function ProductContent() {
       }
 
       await fetchData();
-      
+
       setIsDialogOpen(false);
       formik.resetForm();
     } catch (err) {
@@ -180,12 +181,27 @@ export function ProductContent() {
     }
   };
 
-
   const columns: Column<ProductItem>[] = [
     { key: 'categoryName', label: 'CATEGORY' },
     { key: 'name', label: 'PRODUCT NAME' },
     { key: 'createdAt', label: 'DATE' },
   ];
+
+  // Roles & Permission
+  useEffect(() => {
+    if (!token) return;
+    axios.get(baseUrl.currentStaff, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then((res) => {
+      const role = res.data?.data?.role || {};
+      const rawPerms = Array.isArray(role.permissions) ? role.permissions[0] : role.permissions || {};
+      setSetupPermissions(rawPerms.product || null);
+    }).catch(() => setSetupPermissions(null));
+  }, [token]);
+
+  const canCreate = !!setupPermissions?.create;
+  const canUpdate = !!setupPermissions?.update;
+  const canDelete = !!setupPermissions?.delete;
 
 
   return (
@@ -209,22 +225,15 @@ export function ProductContent() {
           setPageSize(s);
           setCurrentPage(1);
         }}
-        onEdit={(row) => {
-          formik.setValues({
-            _id: row._id,
-            categoryId: row.categoryId,
-            name: row.name,
-          });
+        onEdit={canUpdate ? (row) => {
+          formik.setValues({ _id: row._id, categoryId: row.categoryId, name: row.name });
           setIsDialogOpen(true);
-        }}
-        onDelete={handleDeleteClick}
-        addButton={{
+        } : undefined}
+        onDelete={canDelete ? handleDeleteClick : undefined}
+        addButton={canCreate ? {
           label: 'Add Product',
-          onClick: () => {
-            formik.resetForm();
-            setIsDialogOpen(true);
-          },
-        }}
+          onClick: () => { formik.resetForm(); setIsDialogOpen(true); },
+        } : undefined}
       />
 
       <DeleteDialog
@@ -259,7 +268,7 @@ export function ProductContent() {
       >
         <div className="py-4 text-slate-700">
           <p>
-            Are you sure you want to delete the product "{productToDelete?.name}"? 
+            Are you sure you want to delete the product "{productToDelete?.name}"?
             This action cannot be undone.
           </p>
         </div>
@@ -288,13 +297,13 @@ export function ProductContent() {
             <button
               type="submit"
               form="product-form"
-              className="px-6 py-2 rounded-lg bg-[#0F172A] hover:bg-slate-800 text-white font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 rounded-lg bg-[#d87612] text-white font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isSubmitting || !formik.isValid}
             >
-              {isSubmitting 
-                ? 'Wait...' 
-                : formik.values._id 
-                  ? 'Update' 
+              {isSubmitting
+                ? 'Wait...'
+                : formik.values._id
+                  ? 'Update'
                   : 'Add'
               }
             </button>
@@ -302,7 +311,7 @@ export function ProductContent() {
         }
       >
         <form id="product-form" onSubmit={formik.handleSubmit} className="space-y-4 pt-2">
-          
+
           <FormSelect
             label="Category"
             required

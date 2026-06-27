@@ -293,8 +293,8 @@ export default function Setup() {
               {activeTab === 'Organizations' && <OrganizationsContent />}
               {activeTab === 'Task Status' && <TaskStatusContent />}
               {activeTab === 'Field Settings' && <FieldSettingsContent />}
-              {activeTab === 'Category' && <CategoryContent />}
               {activeTab === 'Product' && <ProductContent />}
+              {activeTab === 'Category' && <CategoryContent />}
               {activeTab === 'Stock In' && <StockInContent />}
               {activeTab === 'Stock Out' && <StockOutContent />}
               {activeTab === 'Kanban Status' && (
