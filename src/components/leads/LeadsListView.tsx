@@ -74,6 +74,11 @@ interface Props {
     handleRowsPerPageChange: (rows: number) => void;
   };
   onSearch?: (value: string) => void;
+  newLeadCount?: number;
+  wonCount?: number;
+  lostCount?: number;
+  onStatusFilter?: (status: string) => void;
+  activeStatusFilter?: string;
 }
 
 function mapLead(item: any): TableLead {
@@ -110,6 +115,11 @@ export default function LeadsListView({
   loading: loadingProp,
   pagination, // Receive pagination from parent
   onSearch,
+  newLeadCount = 0,
+  wonCount = 0,
+  lostCount = 0,
+  onStatusFilter,
+  activeStatusFilter = '',
 }: Props) {
   const router = useRouter();
   const [leads, setLeads] = useState<TableLead[]>([]);
@@ -291,6 +301,47 @@ export default function LeadsListView({
 
   return (
     <div className="space-y-4">
+
+      {/* Status Filter Buttons */}
+      <div className="flex items-center gap-2 mb-3">
+        <button
+          onClick={() => onStatusFilter?.('new lead')}
+          className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors border ${activeStatusFilter === 'new lead'
+            ? 'border-orange-400 text-orange-600 bg-white'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent'
+            }`}
+        >
+          New Lead
+          <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-gray-200 text-gray-700">
+            {newLeadCount}
+          </span>
+        </button>
+        <button
+          onClick={() => onStatusFilter?.('won')}
+          className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors border ${activeStatusFilter === 'won'
+            ? 'border-orange-400 text-orange-600 bg-white'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent'
+            }`}
+        >
+          Won Leads
+          <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">
+            {wonCount}
+          </span>
+        </button>
+        <button
+          onClick={() => onStatusFilter?.('lost')}
+          className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors border ${activeStatusFilter === 'lost'
+            ? 'border-orange-400 text-orange-600 bg-white'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent'
+            }`}
+        >
+          Lost Leads
+          <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">
+            {lostCount}
+          </span>
+        </button>
+      </div>
+
       {/* Data table */}
       <DataTable
         data={leads}

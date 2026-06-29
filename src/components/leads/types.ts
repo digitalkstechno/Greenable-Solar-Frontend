@@ -108,4 +108,5 @@ export type LeadCountSummary = {
   totalLeads: number;
   totalLost: number;
   totalWon: number;
+  statusWiseCounts?: { statusId: string; statusName: string; count: number }[];
 };

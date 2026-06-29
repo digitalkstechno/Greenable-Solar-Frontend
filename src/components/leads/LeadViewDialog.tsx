@@ -480,7 +480,7 @@ import { getFileIcon } from '@/utills/utill';
 import LeadQuotationDialog from './LeadQuotationDialog';
 import { FormSelect } from '../ui/FormSelect';
 import { generateQuotationPdf } from '@/components/leads/generateQuotationPdf';
-
+import Calendar from '@/components/ui/Calendar';
 
 interface Props {
   lead: ApiLead | null;
@@ -530,8 +530,10 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
   useEffect(() => {
     if (lead) {
       setEditStatus(lead.leadStatus?._id || '');
-      setEditNextDate(lead.nextFollowupDate || '');
-      setEditNextTime(lead.nextFollowupTime || '');
+      // setEditNextDate(lead.nextFollowupDate || '');
+      // setEditNextTime(lead.nextFollowupTime || '');
+      setEditNextDate('');
+      setEditNextTime('');
       setLocalFollowUps(lead.followUps || []);
       setLocalAttachments(lead.attachments || []);
       setLocalActivities(lead.activities || []);
@@ -975,12 +977,24 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-gray-500">Date</label>
-                    <input
+                    {/* <input
                       type="date"
                       value={editNextDate}
                       min={new Date().toISOString().split('T')[0]}
                       onChange={(e) => setEditNextDate(e.target.value)}
                       className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 transition-all outline-none"
+                    /> */}
+                    <Calendar
+                      value={editNextDate ? new Date(editNextDate + 'T00:00:00') : null}
+                      onChange={(date) => {
+                        if (!date) { setEditNextDate(''); return; }
+                        const y = date.getFullYear();
+                        const m = String(date.getMonth() + 1).padStart(2, '0');
+                        const d = String(date.getDate()).padStart(2, '0');
+                        setEditNextDate(`${y}-${m}-${d}`);
+                      }}
+                      minDate={new Date(new Date().setHours(0, 0, 0, 0))}
+                      placeholder="Select date"
                     />
                   </div>
                   <div className="space-y-1">

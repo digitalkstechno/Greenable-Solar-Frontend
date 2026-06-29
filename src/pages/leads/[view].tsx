@@ -318,6 +318,10 @@ export default function LeadsPage() {
     );
   }
 
+  const newLeadStatus = statuses.find(s => s.name.match(/^new lead$/i));
+  const wonStatus = statuses.find(s => s.name.match(/^won$/i));
+  const lostStatus = statuses.find(s => s.name.match(/^lost$/i));
+
   // ── Main render ───────────────────────────────────────────────────────────
   return (
     <div className="flex min-h-full flex-col gap-4 relative">
@@ -327,8 +331,8 @@ export default function LeadsPage() {
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <div className="flex items-center justify-between">
             <h1 className="text-xl md:text-2xl font-bold text-gray-900">Leads</h1>
-            
-          
+
+
           </div>
 
           {/* Search Bar */}
@@ -352,11 +356,10 @@ export default function LeadsPage() {
             {/* Advanced Filter Button */}
             <button
               onClick={() => setShowFilterDrawer(!showFilterDrawer)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs md:text-sm font-medium transition-all cursor-pointer ${
-                showFilterDrawer || hasActiveFilters
-                  ? 'bg-primary-50 text-primary-600 border border-primary-200 hover:bg-primary-100'
-                  : 'bg-gray-100 text-gray-700 border border-transparent hover:bg-gray-200'
-              }`}
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs md:text-sm font-medium transition-all cursor-pointer ${showFilterDrawer || hasActiveFilters
+                ? 'bg-primary-50 text-primary-600 border border-primary-200 hover:bg-primary-100'
+                : 'bg-gray-100 text-gray-700 border border-transparent hover:bg-gray-200'
+                }`}
             >
               <Filter className="h-4 w-4" />
               <span className="hidden sm:inline">Filters</span>
@@ -421,11 +424,10 @@ export default function LeadsPage() {
 
         {/* ── Filter Section (Inline Expandable) ────────────────────────────── */}
         <div
-          className={`grid transition-all duration-300 ease-in-out ${
-            showFilterDrawer
-              ? 'grid-rows-[1fr] opacity-100 mt-4 pt-4 border-t border-gray-100'
-              : 'grid-rows-[0fr] opacity-0 overflow-hidden'
-          }`}
+          className={`grid transition-all duration-300 ease-in-out ${showFilterDrawer
+            ? 'grid-rows-[1fr] opacity-100 mt-4 pt-4 border-t border-gray-100'
+            : 'grid-rows-[0fr] opacity-0 overflow-hidden'
+            }`}
         >
           <div className="overflow-hidden">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -525,6 +527,24 @@ export default function LeadsPage() {
             }}
             pagination={listPagination}
             onSearch={setSearch}
+            newLeadCount={counts?.statusWiseCounts?.find((s: any) => s.statusId === newLeadStatus?._id)?.count || 0}
+            wonCount={counts?.statusWiseCounts?.find((s: any) => s.statusId === wonStatus?._id)?.count || 0}
+            lostCount={counts?.statusWiseCounts?.find((s: any) => s.statusId === lostStatus?._id)?.count || 0}
+            onStatusFilter={(status) => {
+              const found = statuses.find(s => s.name.toLowerCase() === status);
+              if (found && statusFilter.length === 1 && statusFilter[0] === found._id) {
+                setStatusFilter([]);
+              } else if (found) {
+                setStatusFilter([found._id]);
+              } else {
+                setStatusFilter([]);
+              }
+            }}
+            activeStatusFilter={
+              statusFilter.length === 1
+                ? statuses.find(s => s._id === statusFilter[0])?.name.toLowerCase()
+                : ''
+            }
           />
         ) : (
           <LeadsKanbanView

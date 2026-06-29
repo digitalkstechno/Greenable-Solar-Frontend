@@ -13,6 +13,8 @@ import KanbanCard from './KanbanCard';
 import Swal from 'sweetalert2';
 import ProjectDetailDrawer from './ProjectDetailDrawer';
 import PaymentModal from './PaymentModal';
+import Calendar from '@/components/ui/Calendar';
+import Dialog from '@/components/Dialog';
 
 type PaginationShape = {
     currentPage: number;
@@ -105,7 +107,7 @@ export default function LeadsKanbanView({
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const [projectDetailLead, setProjectDetailLead] = useState<ApiLead | null>(null);
     const [paymentLead, setPaymentLead] = useState<ApiLead | null>(null);
-    
+
     // Board state
     const [boardLeads, setBoardLeads] = useState<Record<string, ApiLead[]>>({});
     const [columnLoading, setColumnLoading] = useState<Record<string, boolean>>({});
@@ -113,6 +115,11 @@ export default function LeadsKanbanView({
     const [hasMoreMap, setHasMoreMap] = useState<Record<string, boolean>>({});
     const [loadingMoreMap, setLoadingMoreMap] = useState<Record<string, boolean>>({});
     const [columnCounts, setColumnCounts] = useState<Record<string, number>>({});
+
+    const [lostModalLeadId, setLostModalLeadId] = useState<string | null>(null);
+    const [lostReason, setLostReason] = useState('');
+    const [lostDate, setLostDate] = useState<string>('');
+    const [markingLost, setMarkingLost] = useState(false);
 
     const [kanbanVisibleStatusNames, setKanbanVisibleStatusNames] = useState<string[] | null>(null);
 
@@ -230,11 +237,11 @@ export default function LeadsKanbanView({
 
         const targetStatus = statuses.find((s) => s._id === newStatusId);
         if (!targetStatus) return;
-        
+
         const currentDropId = draggingId;
         setDraggingId(null);
         setUpdatingId(currentDropId);
-        
+
         // Optimistic UI update
         setBoardLeads(prev => {
             const next = { ...prev };
@@ -256,11 +263,11 @@ export default function LeadsKanbanView({
                 { headers: { Authorization: `Bearer ${token()}` } }
             );
             toast.success(`Lead moved to ${targetStatus.name}`);
-            
+
             // SILENT RE-FETCH: sync counts/order etc in background without showing loaders
             fetchStatusLeads(sourceStatusId, 1, false, true);
             fetchStatusLeads(newStatusId, 1, false, true);
-            
+
             onRefresh();
         } catch {
             toast.error('Failed to update lead status');
@@ -297,51 +304,81 @@ export default function LeadsKanbanView({
         });
     };
 
-    const markLost = async (id: string) => {
-        const { value: formValues } = await Swal.fire({
-            title: 'Mark Lead as Lost?',
-            html: `
-                <div style="text-align: left; margin-bottom: 10px;">
-                    <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 5px;">
-                        <span style="color: #F28522; margin-right: 5px;">✖</span> Remove Reason
-                    </label>
-                    <input id="swal-input1" class="swal2-input" placeholder="Enter reason for marking lead as lost" style="width: 100%; box-sizing: border-box; height: 40px; margin: 0; font-size: 14px;">
-                </div>
-                <div style="text-align: left;">
-                    <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 5px;">
-                        <span style="color: #F28522; margin-right: 5px;">📅</span> Lost Date
-                    </label>
-                    <input id="swal-input2" type="date" class="swal2-input" style="width: 100%; box-sizing: border-box; height: 40px; margin: 0; font-size: 14px;">
-                </div>
-            `,
-            focusConfirm: false,
-            showCancelButton: true,
-            confirmButtonText: 'Yes, Confirm',
-            cancelButtonText: 'Cancel',
-            confirmButtonColor: '#F28522',
-            cancelButtonColor: '#6D7A86',
-            preConfirm: () => {
-                const reason = (document.getElementById('swal-input1') as HTMLInputElement).value;
-                const date = (document.getElementById('swal-input2') as HTMLInputElement).value;
-                if (!reason || !date) {
-                    Swal.showValidationMessage('Both reason and date are required');
-                    return false;
-                }
-                return { reason, date };
-            }
-        });
-        
-        if (formValues) {
-            try {
-                const lostStatusId = statuses.find(s => s.name.match(/^lost$/i))?._id;
-                await axios.put(`${baseUrl.updateLead}/${id}`, 
-                    { leadStatus: lostStatusId, lostReason: formValues.reason, lostDate: formValues.date }, 
-                    { headers: { Authorization: `Bearer ${token()}` } }
-                );
-                toast.success('Lead marked as lost');
-                removeLeadFromBoard(id);
-                onRefresh();
-            } catch { toast.error('Failed to update lead'); }
+    // const markLost = async (id: string) => {
+    //     const { value: formValues } = await Swal.fire({
+    //         title: 'Mark Lead as Lost?',
+    //         html: `
+    //             <div style="text-align: left; margin-bottom: 10px;">
+    //                 <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 5px;">
+    //                     <span style="color: #F28522; margin-right: 5px;">✖</span> Remove Reason
+    //                 </label>
+    //                 <input id="swal-input1" class="swal2-input" placeholder="Enter reason for marking lead as lost" style="width: 100%; box-sizing: border-box; height: 40px; margin: 0; font-size: 14px;">
+    //             </div>
+    //             <div style="text-align: left;">
+    //                 <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 5px;">
+    //                     <span style="color: #F28522; margin-right: 5px;">📅</span> Lost Date
+    //                 </label>
+    //                 <input id="swal-input2" type="date" class="swal2-input" style="width: 100%; box-sizing: border-box; height: 40px; margin: 0; font-size: 14px;">
+    //             </div>
+    //         `,
+    //         focusConfirm: false,
+    //         showCancelButton: true,
+    //         confirmButtonText: 'Yes, Confirm',
+    //         cancelButtonText: 'Cancel',
+    //         confirmButtonColor: '#F28522',
+    //         cancelButtonColor: '#6D7A86',
+    //         preConfirm: () => {
+    //             const reason = (document.getElementById('swal-input1') as HTMLInputElement).value;
+    //             const date = (document.getElementById('swal-input2') as HTMLInputElement).value;
+    //             if (!reason || !date) {
+    //                 Swal.showValidationMessage('Both reason and date are required');
+    //                 return false;
+    //             }
+    //             return { reason, date };
+    //         }
+    //     });
+
+    //     if (formValues) {
+    //         try {
+    //             const lostStatusId = statuses.find(s => s.name.match(/^lost$/i))?._id;
+    //             await axios.put(`${baseUrl.updateLead}/${id}`,
+    //                 { leadStatus: lostStatusId, lostReason: formValues.reason, lostDate: formValues.date },
+    //                 { headers: { Authorization: `Bearer ${token()}` } }
+    //             );
+    //             toast.success('Lead marked as lost');
+    //             removeLeadFromBoard(id);
+    //             onRefresh();
+    //         } catch { toast.error('Failed to update lead'); }
+    //     }
+    // };
+
+    const markLost = (id: string) => {
+        setLostModalLeadId(id);
+        setLostReason('');
+        setLostDate('');
+    };
+
+    const handleConfirmMarkLost = async () => {
+        if (!lostModalLeadId) return;
+        if (!lostReason.trim() || !lostDate) {
+            toast.error('Both reason and date are required');
+            return;
+        }
+        setMarkingLost(true);
+        try {
+            const lostStatusId = statuses.find(s => s.name.match(/^lost$/i))?._id;
+            await axios.put(`${baseUrl.updateLead}/${lostModalLeadId}`,
+                { leadStatus: lostStatusId, lostReason, lostDate },
+                { headers: { Authorization: `Bearer ${token()}` } }
+            );
+            toast.success('Lead marked as lost');
+            removeLeadFromBoard(lostModalLeadId);
+            onRefresh();
+            setLostModalLeadId(null);
+        } catch {
+            toast.error('Failed to update lead');
+        } finally {
+            setMarkingLost(false);
         }
     };
 
@@ -366,14 +403,59 @@ export default function LeadsKanbanView({
             cancelButtonColor: '#6D7A86',
         });
 
+        // if (result.isConfirmed) {
+        //     try {
+        //         const newLeadStatusId = statuses.find(s => s.name.match(/^new lead$/i))?._id;
+
+        //         // Optimistically remove from won/lost board
+        //         removeLeadFromBoard(id);
+
+        //         await axios.put(`${baseUrl.updateLead}/${id}`, { leadStatus: newLeadStatusId }, { headers: { Authorization: `Bearer ${token()}` } });
+        //         toast.success('Lead reactivated');
+
+        //         // Board refresh
+        //         if (newLeadStatusId) {
+        //             fetchStatusLeads(newLeadStatusId, 1, false, true);
+        //         }
+        //         onRefresh();
+        //     } catch {
+        //         toast.error('Failed to reactivate lead');
+        //         onRefresh();
+        //     }
+        // }
+
         if (result.isConfirmed) {
             try {
                 const newLeadStatusId = statuses.find(s => s.name.match(/^new lead$/i))?._id;
+
+                // Optimistically remove from won/lost board
+                removeLeadFromBoard(id);
+
+                // Optimistically update column counts
+                const wonStatusId = statuses.find(s => s.name.match(/^won$/i))?._id;
+                const lostStatusId = statuses.find(s => s.name.match(/^lost$/i))?._id;
+                setColumnCounts(prev => {
+                    const next = { ...prev };
+                    if (wonStatusId && next[wonStatusId]) next[wonStatusId] -= 1;
+                    if (lostStatusId && next[lostStatusId]) next[lostStatusId] -= 1;
+                    if (newLeadStatusId && next[newLeadStatusId] !== undefined) next[newLeadStatusId] += 1;
+                    return next;
+                });
+
                 await axios.put(`${baseUrl.updateLead}/${id}`, { leadStatus: newLeadStatusId }, { headers: { Authorization: `Bearer ${token()}` } });
                 toast.success('Lead reactivated');
+
+                if (newLeadStatusId) {
+                    fetchStatusLeads(newLeadStatusId, 1, false, true);
+                }
                 onRefresh();
-            } catch { toast.error('Failed to reactivate lead'); }
+            } catch {
+                toast.error('Failed to reactivate lead');
+                onRefresh();
+            }
         }
+
+
     };
 
     const lostLeadsColumns: Column<ApiLead>[] = [
@@ -408,28 +490,26 @@ export default function LeadsKanbanView({
                         const label = v === 'board' ? 'Kanban View' : v === 'lost' ? 'Lost Leads' : 'Won Leads';
                         const count = v === 'lost' ? lostCount : v === 'won' ? wonCount : null;
                         return (
-                        <button
-                            key={v}
-                            onClick={() => handleSubViewChange(v)}
-                            className={`flex items-center gap-2 rounded-lg cursor-pointer px-4 py-1.5 text-sm font-medium capitalize transition-colors ${
-                                subView === v
+                            <button
+                                key={v}
+                                onClick={() => handleSubViewChange(v)}
+                                className={`flex items-center gap-2 rounded-lg cursor-pointer px-4 py-1.5 text-sm font-medium capitalize transition-colors ${subView === v
                                     ? 'border border-[#F28522] text-[#F28522] bg-white'
                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-transparent'
-                            }`}
-                        >
-                            {label}
-                            {count !== null && (
-                                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${
-                                    subView === v
+                                    }`}
+                            >
+                                {label}
+                                {count !== null && (
+                                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${subView === v
                                         ? 'bg-[#F28522] text-white'
                                         : v === 'lost'
                                             ? 'bg-red-100 text-red-700'
                                             : 'bg-green-100 text-green-700'
-                                }`}>
-                                    {count}
-                                </span>
-                            )}
-                        </button>
+                                        }`}>
+                                        {count}
+                                    </span>
+                                )}
+                            </button>
                         );
                     })}
                 </div>
@@ -468,61 +548,60 @@ export default function LeadsKanbanView({
                                     : 'bg-[#f4f7fb]';
 
                             return (
-                            <div key={group.id} className="w-80 flex-shrink-0 flex flex-col">
-                                <div className={`rounded-t-xl ${headerBg} px-5 py-3`}>
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <h3 className="font-semibold text-white capitalize">{group.title}</h3>
+                                <div key={group.id} className="w-80 flex-shrink-0 flex flex-col">
+                                    <div className={`rounded-t-xl ${headerBg} px-5 py-3`}>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="font-semibold text-white capitalize">{group.title}</h3>
+                                            </div>
+                                            <span className={`rounded-full bg-white px-3 py-0.5 text-sm font-semibold ${headerCountColor}`}>
+                                                {group.count}
+                                            </span>
                                         </div>
-                                        <span className={`rounded-full bg-white px-3 py-0.5 text-sm font-semibold ${headerCountColor}`}>
-                                            {group.count}
-                                        </span>
+                                    </div>
+
+                                    <div
+                                        className={`flex-1 overflow-y-auto rounded-b-lg ${bodyBg} p-3 space-y-3`}
+                                        onDragOver={(e) => e.preventDefault()}
+                                        onDrop={() => handleDrop(group.id)}
+                                        onScroll={(e) => {
+                                            const t = e.target as HTMLDivElement;
+                                            if (Math.ceil(t.scrollTop + t.clientHeight) >= t.scrollHeight - 20) {
+                                                loadMore(group.id);
+                                            }
+                                        }}
+                                    >
+                                        {group.isLoading ? (
+                                            <div className="flex h-full items-center justify-center py-10">
+                                                <div className={`h-8 w-8 animate-spin rounded-full border-4 border-t-transparent ${group.isWon ? 'border-emerald-500' : group.isLost ? 'border-red-400' : 'border-secondary'
+                                                    }`} />
+                                            </div>
+                                        ) : group.leads.length === 0 ? (
+                                            <div className="flex h-full items-center justify-center text-sm text-gray-400">
+                                                {group.isWon ? 'No won leads' : group.isLost ? 'No lost leads' : 'No leads'}
+                                            </div>
+                                        ) : (
+                                            group.leads.map((lead: ApiLead) => (
+                                                <KanbanCard
+                                                    key={lead._id}
+                                                    lead={lead}
+                                                    isUpdating={updatingId === lead._id}
+                                                    onDragStart={() => { if (permissions?.update && !group.isWon && !group.isLost) setDraggingId(lead._id); }}
+                                                    onView={() => onView?.(lead)}
+                                                    onEdit={permissions?.update ? () => onEdit?.(lead) : undefined}
+                                                    onMarkLost={permissions?.update && !group.isLost ? () => markLost(lead._id) : undefined}
+                                                    onMarkWon={permissions?.update && !group.isWon ? () => markWon(lead._id) : undefined}
+                                                    onReactivate={permissions?.update && (group.isLost || group.isWon) ? () => reactivate(lead._id) : undefined}
+                                                />
+                                            ))
+                                        )}
+                                        {loadingMoreMap[group.id] && (
+                                            <div className="flex justify-center py-2">
+                                                <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-
-                                <div
-                                    className={`flex-1 overflow-y-auto rounded-b-lg ${bodyBg} p-3 space-y-3`}
-                                    onDragOver={(e) => e.preventDefault()}
-                                    onDrop={() => handleDrop(group.id)}
-                                    onScroll={(e) => {
-                                        const t = e.target as HTMLDivElement;
-                                        if (Math.ceil(t.scrollTop + t.clientHeight) >= t.scrollHeight - 20) {
-                                            loadMore(group.id);
-                                        }
-                                    }}
-                                >
-                                    {group.isLoading ? (
-                                        <div className="flex h-full items-center justify-center py-10">
-                                            <div className={`h-8 w-8 animate-spin rounded-full border-4 border-t-transparent ${
-                                                group.isWon ? 'border-emerald-500' : group.isLost ? 'border-red-400' : 'border-secondary'
-                                            }`} />
-                                        </div>
-                                    ) : group.leads.length === 0 ? (
-                                        <div className="flex h-full items-center justify-center text-sm text-gray-400">
-                                            {group.isWon ? 'No won leads' : group.isLost ? 'No lost leads' : 'No leads'}
-                                        </div>
-                                    ) : (
-                                        group.leads.map((lead: ApiLead) => (
-                                            <KanbanCard
-                                                key={lead._id}
-                                                lead={lead}
-                                                isUpdating={updatingId === lead._id}
-                                                onDragStart={() => { if (permissions?.update && !group.isWon && !group.isLost) setDraggingId(lead._id); }}
-                                                onView={() => onView?.(lead)}
-                                                onEdit={permissions?.update ? () => onEdit?.(lead) : undefined}
-                                                onMarkLost={permissions?.update && !group.isLost ? () => markLost(lead._id) : undefined}
-                                                onMarkWon={permissions?.update && !group.isWon ? () => markWon(lead._id) : undefined}
-                                                onReactivate={permissions?.update && (group.isLost || group.isWon) ? () => reactivate(lead._id) : undefined}
-                                            />
-                                        ))
-                                    )}
-                                    {loadingMoreMap[group.id] && (
-                                        <div className="flex justify-center py-2">
-                                            <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
                             );
                         })}
                     </div>
@@ -627,6 +706,76 @@ export default function LeadsKanbanView({
                 onClose={() => setPaymentLead(null)}
                 onPaymentAdded={onRefresh}
             />
+
+            {/* Mark Lost Modal */}
+            {lostModalLeadId && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+                    <div
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                        onClick={() => !markingLost && setLostModalLeadId(null)}
+                    />
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4">
+                        <div className="bg-[#F28522] px-5 py-4 flex items-center justify-between rounded-t-2xl">
+                            <h3 className="text-white font-bold text-base">Mark Lead as Lost?</h3>
+                            <button onClick={() => !markingLost && setLostModalLeadId(null)} className="text-white hover:opacity-80">
+                                <span className="text-xl leading-none">×</span>
+                            </button>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            <div>
+                                <label className="text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
+                                    <span className="text-[#F28522]">✖</span> Remove Reason
+                                </label>
+                                <input
+                                    type="text"
+                                    value={lostReason}
+                                    onChange={(e) => setLostReason(e.target.value)}
+                                    placeholder="Enter reason for marking lead as lost"
+                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#F28522] focus:ring-1 focus:ring-[#F28522]"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-sm font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
+                                    <span className="text-[#F28522]">📅</span> Lost Date
+                                </label>
+                                <Calendar
+                                    value={lostDate ? new Date(lostDate + 'T00:00:00') : null}
+                                    onChange={(date) => {
+                                        if (!date) { setLostDate(''); return; }
+                                        const y = date.getFullYear();
+                                        const m = String(date.getMonth() + 1).padStart(2, '0');
+                                        const d = String(date.getDate()).padStart(2, '0');
+                                        setLostDate(`${y}-${m}-${d}`);
+                                    }}
+                                    minDate={new Date(new Date().setHours(0, 0, 0, 0))}
+                                    placeholder="Select date"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex gap-3 px-5 pb-5">
+                            <button
+                                onClick={() => setLostModalLeadId(null)}
+                                disabled={markingLost}
+                                className="flex-1 px-4 py-2 rounded-xl border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleConfirmMarkLost}
+                                disabled={markingLost}
+                                className="flex-1 px-4 py-2 rounded-xl bg-[#F28522] text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60 flex items-center justify-center gap-2"
+                            >
+                                {markingLost ? (
+                                    <>
+                                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        Saving...
+                                    </>
+                                ) : 'Yes, Confirm'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
