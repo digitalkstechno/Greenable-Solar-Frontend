@@ -358,37 +358,164 @@ export default function LeadsKanbanView({
         setLostDate('');
     };
 
+    // const handleConfirmMarkLost = async () => {
+    //     if (!lostModalLeadId) return;
+    //     if (!lostReason.trim() || !lostDate) {
+    //         toast.error('Both reason and date are required');
+    //         return;
+    //     }
+    //     setMarkingLost(true);
+    //     try {
+    //         const lostStatusId = statuses.find(s => s.name.match(/^lost$/i))?._id;
+    //         await axios.put(`${baseUrl.updateLead}/${lostModalLeadId}`,
+    //             { leadStatus: lostStatusId, lostReason, lostDate },
+    //             { headers: { Authorization: `Bearer ${token()}` } }
+    //         );
+    //         toast.success('Lead marked as lost');
+    //         removeLeadFromBoard(lostModalLeadId);
+    //         onRefresh();
+    //         setLostModalLeadId(null);
+    //     } catch {
+    //         toast.error('Failed to update lead');
+    //     } finally {
+    //         setMarkingLost(false);
+    //     }
+    // };
+
     const handleConfirmMarkLost = async () => {
         if (!lostModalLeadId) return;
         if (!lostReason.trim() || !lostDate) {
             toast.error('Both reason and date are required');
             return;
         }
+
+        const lostStatusId = statuses.find(s => s.name.match(/^lost$/i))?._id;
+
+        // Find source status of the lead on the board
+        let sourceStatusId = '';
+        const entries = Object.entries(boardLeads);
+        for (let i = 0; i < entries.length; i++) {
+            const [sId, leadsArr] = entries[i];
+            if (leadsArr.some(l => l._id === lostModalLeadId)) {
+                sourceStatusId = sId;
+                break;
+            }
+        }
+
         setMarkingLost(true);
         try {
-            const lostStatusId = statuses.find(s => s.name.match(/^lost$/i))?._id;
+            // Optimistic UI update on the board
+            setBoardLeads(prev => {
+                const next = { ...prev };
+                if (sourceStatusId) {
+                    const sourceLeads = [...(next[sourceStatusId] || [])];
+                    const leadIndex = sourceLeads.findIndex(l => l._id === lostModalLeadId);
+                    if (leadIndex > -1) {
+                        const [lead] = sourceLeads.splice(leadIndex, 1);
+                        next[sourceStatusId] = sourceLeads;
+                        if (lostStatusId) {
+                            const updatedLead = {
+                                ...lead,
+                                leadStatus: statuses.find(s => s._id === lostStatusId),
+                                lostReason,
+                                lostDate
+                            };
+                            next[lostStatusId] = [updatedLead, ...(next[lostStatusId] || [])];
+                        }
+                    }
+                }
+                return next;
+            });
+
+            // Optimistically update column counts
+            setColumnCounts(prev => {
+                const next = { ...prev };
+                if (sourceStatusId && next[sourceStatusId]) next[sourceStatusId] -= 1;
+                if (lostStatusId && next[lostStatusId] !== undefined) next[lostStatusId] += 1;
+                return next;
+            });
+
             await axios.put(`${baseUrl.updateLead}/${lostModalLeadId}`,
                 { leadStatus: lostStatusId, lostReason, lostDate },
                 { headers: { Authorization: `Bearer ${token()}` } }
             );
             toast.success('Lead marked as lost');
-            removeLeadFromBoard(lostModalLeadId);
-            onRefresh();
+
+            // Silent background re-fetch to sync
+            if (sourceStatusId) fetchStatusLeads(sourceStatusId, 1, false, true);
+            if (lostStatusId) fetchStatusLeads(lostStatusId, 1, false, true);
+
+            await onRefresh();
             setLostModalLeadId(null);
         } catch {
             toast.error('Failed to update lead');
+            // Re-fetch columns to revert on error
+            if (sourceStatusId) fetchStatusLeads(sourceStatusId, 1);
+            if (lostStatusId) fetchStatusLeads(lostStatusId, 1);
         } finally {
             setMarkingLost(false);
         }
     };
 
     const markWon = async (id: string) => {
+        const wonStatusId = statuses.find(s => s.name.match(/^won$/i))?._id;
+
+        let sourceStatusId = '';
+        const entries = Object.entries(boardLeads);
+        for (let i = 0; i < entries.length; i++) {
+            const [sId, leadsArr] = entries[i];
+            if (leadsArr.some(l => l._id === id)) {
+                sourceStatusId = sId;
+                break;
+            }
+        }
+
         try {
-            await axios.put(`${baseUrl.updateLead}/${id}`, { isWon: true, wonDate: new Date().toISOString() }, { headers: { Authorization: `Bearer ${token()}` } });
+            // Optimistic UI update on the board
+            setBoardLeads(prev => {
+                const next = { ...prev };
+                if (sourceStatusId) {
+                    const sourceLeads = [...(next[sourceStatusId] || [])];
+                    const leadIndex = sourceLeads.findIndex(l => l._id === id);
+                    if (leadIndex > -1) {
+                        const [lead] = sourceLeads.splice(leadIndex, 1);
+                        next[sourceStatusId] = sourceLeads;
+                        if (wonStatusId) {
+                            const updatedLead = {
+                                ...lead,
+                                leadStatus: statuses.find(s => s._id === wonStatusId),
+                                isWon: true,
+                                wonDate: new Date().toISOString()
+                            };
+                            next[wonStatusId] = [updatedLead, ...(next[wonStatusId] || [])];
+                        }
+                    }
+                }
+                return next;
+            });
+
+            // Optimistically update column counts
+            setColumnCounts(prev => {
+                const next = { ...prev };
+                if (sourceStatusId && next[sourceStatusId]) next[sourceStatusId] -= 1;
+                if (wonStatusId && next[wonStatusId] !== undefined) next[wonStatusId] += 1;
+                return next;
+            });
+
+            await axios.put(`${baseUrl.updateLead}/${id}`, { leadStatus: wonStatusId, isWon: true, wonDate: new Date().toISOString() }, { headers: { Authorization: `Bearer ${token()}` } });
             toast.success('Lead marked as won');
-            removeLeadFromBoard(id);
+
+            // Silent background re-fetch to sync
+            if (sourceStatusId) fetchStatusLeads(sourceStatusId, 1, false, true);
+            if (wonStatusId) fetchStatusLeads(wonStatusId, 1, false, true);
+
             onRefresh();
-        } catch { toast.error('Failed to update lead'); }
+        } catch {
+            toast.error('Failed to update lead');
+            // Re-fetch columns to revert on error
+            if (sourceStatusId) fetchStatusLeads(sourceStatusId, 1);
+            if (wonStatusId) fetchStatusLeads(wonStatusId, 1);
+        }
     };
 
     const reactivate = async (id: string) => {
@@ -591,7 +718,8 @@ export default function LeadsKanbanView({
                                                     onEdit={permissions?.update ? () => onEdit?.(lead) : undefined}
                                                     onMarkLost={permissions?.update && !group.isLost ? () => markLost(lead._id) : undefined}
                                                     onMarkWon={permissions?.update && !group.isWon ? () => markWon(lead._id) : undefined}
-                                                    onReactivate={permissions?.update && (group.isLost || group.isWon) ? () => reactivate(lead._id) : undefined}
+                                                    // onReactivate={permissions?.update && (group.isLost || group.isWon) ? () => reactivate(lead._id) : undefined}
+                                                    onReactivate={permissions?.update && group.isLost ? () => reactivate(lead._id) : undefined}
                                                 />
                                             ))
                                         )}

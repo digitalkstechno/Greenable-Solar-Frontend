@@ -20,9 +20,8 @@ export default function KanbanCard({
         <div
             draggable={!isUpdating && !onReactivate}
             onDragStart={(!isUpdating && !onReactivate) ? onDragStart : undefined}
-            className={`relative rounded-xl bg-white p-3 shadow-sm transition-shadow ${
-                isUpdating ? "opacity-60 pointer-events-none" : onReactivate ? "cursor-default hover:shadow-md" : "cursor-move hover:shadow-md"
-            }`}
+            className={`relative rounded-xl bg-white p-3 shadow-sm transition-shadow ${isUpdating ? "opacity-60 pointer-events-none" : onReactivate ? "cursor-default hover:shadow-md" : "cursor-move hover:shadow-md"
+                }`}
         >
             {isUpdating && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-white/40">
@@ -51,7 +50,7 @@ export default function KanbanCard({
                             <FiEdit className="h-3.5 w-3.5" />
                         </button>
                     )}
-                    
+
                     {onMarkLost && (
                         <button
                             onClick={onMarkLost}

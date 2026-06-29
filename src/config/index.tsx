@@ -1,4 +1,5 @@
 const API = process.env.NEXT_PUBLIC_API_URL;
+import axios from "axios";
 
 export const baseUrl = {
   userSignup: `${API}users/signup`,
@@ -93,3 +94,30 @@ export function clearAuthToken() {
   if (typeof document === "undefined") return;
   document.cookie = `${TOKEN_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
 }
+
+// axios.interceptors.response.use(
+//   (response) => response,
+//   (error) => {
+//     if (error?.response?.status === 401) {
+//       clearAuthToken();
+//       if (typeof window !== "undefined") {
+//         window.location.href = "/login";
+//       }
+//     }
+//     return Promise.reject(error);
+//   }
+// );
+
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      console.error("🔴 401 Unauthorized on API:", error?.config?.url, error?.config?.method);
+      clearAuthToken();
+      if (typeof window !== "undefined") {
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  }
+);

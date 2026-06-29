@@ -413,7 +413,7 @@ export default function LeadsPage() {
             {canCreate && (
               <button
                 onClick={handleOpenAdd}
-                className="flex cursor-pointer items-center gap-2 rounded-md bg-[#F28522] px-6 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-[#E67E22] hover:shadow-lg active:scale-95 transition-all"
+                className="flex cursor-pointer items-center gap-2 rounded-md bg-[#d87612] px-6 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-[#E67E22] hover:shadow-lg active:scale-95 transition-all"
               >
                 <Plus className="h-4 w-4" />
                 Add Lead

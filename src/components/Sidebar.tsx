@@ -21,11 +21,14 @@ import {
   PackagePlus,
   PackageMinus,
   Building2,
+  X,
 } from 'lucide-react';
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { baseUrl, clearAuthToken, getAuthToken } from "@/config";
 import Swal from 'sweetalert2';
+import { CenterDialog } from "./Dialog";
+import FormInput from "./ui/Input";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -53,6 +56,71 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
   const [canViewCategory, setCanViewCategory] = useState(false);
   const [canViewProduct, setCanViewProduct] = useState(false);
   const [canViewStock, setCanViewStock] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [profileName, setProfileName] = useState('');
+  const [profileEmail, setProfileEmail] = useState('');
+  const [profilePassword, setProfilePassword] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState('');
+
+  const handleOpenProfileDialog = () => {
+    if (currentUser) {
+      setProfileName(currentUser.fullName || '');
+      setProfileEmail(currentUser.email || '');
+      setProfilePassword('');
+      setProfileError('');
+      setIsProfileDialogOpen(true);
+    }
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profileName.trim()) {
+      setProfileError("Full name is required");
+      return;
+    }
+    if (!profileEmail.trim()) {
+      setProfileError("Email is required");
+      return;
+    }
+    setIsSavingProfile(true);
+    setProfileError('');
+    try {
+      const token = getAuthToken();
+      const payload = new FormData();
+      payload.append('fullName', profileName.trim());
+      payload.append('email', profileEmail.trim());
+      if (profilePassword.trim()) {
+        payload.append('password', profilePassword.trim());
+      }
+      
+      const res = await axios.put(`${baseUrl.userUpdate}/${currentUser._id}`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        }
+      });
+      
+      if (res.data?.status === 'Success') {
+        Swal.fire({
+          title: 'Success!',
+          text: 'Profile updated successfully',
+          icon: 'success',
+          timer: 1500,
+          showConfirmButton: false,
+        });
+        setCurrentUser(res.data.data);
+        setIsProfileDialogOpen(false);
+      } else {
+        setProfileError(res.data?.message || 'Failed to update profile');
+      }
+    } catch (err: any) {
+      setProfileError(err.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
 
   useEffect(() => {
     const token = getAuthToken();
@@ -88,6 +156,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
         setCanViewCategory(!!(categoryPerms.readAll || categoryPerms.readOwn || setupPerms.readAll));
         setCanViewProduct(!!(productPerms.readAll || productPerms.readOwn || setupPerms.readAll));
         setCanViewStock(!!(stockPerms.readAll || stockPerms.readOwn || setupPerms.readAll));
+        setCurrentUser(res.data?.data);
       })
       .catch(() => {
         setCanViewLead(false);
@@ -128,11 +197,11 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
   const hasAnySetupPerm = true; // Still show Setup if needed for remaining items like Kanban Status
 
   // if (hasAnySetupPerm) {
-    menuItems.push({
-      icon: Settings,
-      label: "Setup",
-      path: "/setup",
-    });
+  menuItems.push({
+    icon: Settings,
+    label: "Setup",
+    path: "/setup",
+  });
   // }
 
   const isActive = (path?: string) => {
@@ -181,14 +250,14 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
             Swal.showLoading();
           }
         });
-        
+
         // Perform logout
         clearAuthToken();
         if (typeof window !== "undefined") {
           localStorage.removeItem("token");
           localStorage.removeItem("auth");
         }
-        
+
         // Show success message
         Swal.fire({
           title: 'Logged Out!',
@@ -225,23 +294,23 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-40 h-screen bg-[#d87612] text-white shadow-2xl transition-all duration-300 ease-in-out ${
-          isOpen 
-            ? 'w-64 translate-x-0' 
-            : 'w-64 -translate-x-full md:w-20 md:translate-x-0'
-        }`}
+        className={`fixed top-0 left-0 z-40 h-screen bg-[#d87612] text-white shadow-2xl transition-all duration-300 ease-in-out ${isOpen
+          ? 'w-64 translate-x-0'
+          : 'w-64 -translate-x-full md:w-20 md:translate-x-0'
+          }`}
       >
         <div className="flex h-full flex-col">
           {/* Header with Logo */}
           <div className={`flex items-center h-20 px-4 border-b border-white/10 ${isOpen ? 'justify-between' : 'justify-center'}`}>
             <div className={`flex items-center gap-3 ${!isOpen && 'hidden md:flex'}`}>
-              {/* <img src="/logo/greeneable-logo.png" alt="Greeneable Logo" className={`object-contain ${isOpen ? 'h-12' : 'h-10 w-10'}`} /> */}
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#30cdb2] to-[#23abed] flex items-center justify-center font-bold text-white shadow-lg">
-                LF
-              </div>
+              {isOpen && (
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#30cdb2] to-[#23abed] flex items-center justify-center font-bold text-white shadow-lg">
+                  LF
+                </div>
+              )}
               {isOpen && <span className="text-lg font-semibold text-white tracking-wide">LeadFlow</span>}
             </div>
-            
+
             <button
               onClick={toggleSidebar}
               className={`p-2 rounded-lg hover:bg-white/10 transition-all duration-200 group ${!isOpen && 'md:block'}`}
@@ -270,15 +339,13 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
                       <div>
                         <button
                           onClick={() => toggleExpand(item.label)}
-                          className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 group ${
-                            expanded
-                              ? 'bg-white/10 text-white'
-                              : 'text-white/70 hover:bg-white/5 hover:text-white'
-                          }`}
+                          className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 group ${expanded
+                            ? 'bg-white/10 text-white'
+                            : 'text-white/70 hover:bg-white/5 hover:text-white'
+                            }`}
                         >
-                          <Icon className={`h-5 w-5 flex-shrink-0 transition-transform group-hover:scale-110 ${
-                            expanded ? 'text-white' : 'text-white/70'
-                          }`} />
+                          <Icon className={`h-5 w-5 flex-shrink-0 transition-transform group-hover:scale-110 ${expanded ? 'text-white' : 'text-white/70'
+                            }`} />
                           {isOpen && (
                             <>
                               <span className="flex-1 text-sm font-medium text-left">{item.label}</span>
@@ -293,20 +360,18 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
                             {item.children?.map((child) => {
                               const ChildIcon = child.icon;
                               const isChildActive = isActive(child.path);
-                              
+
                               return (
                                 <li key={child.label}>
                                   <button
                                     onClick={() => handleNavigation(child.path)}
-                                    className={`flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm transition-all duration-200 group ${
-                                      isChildActive
-                                        ? 'bg-gradient-to-r from-[#0f3c70]/20 to-[#0f2f5a]/20 text-white border border-white/10'
-                                        : 'text-white/60 hover:bg-white/5 hover:text-white'
-                                    }`}
+                                    className={`flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm transition-all duration-200 group ${isChildActive
+                                      ? 'bg-gradient-to-r from-[#0f3c70]/20 to-[#0f2f5a]/20 text-white border border-white/10'
+                                      : 'text-white/60 hover:bg-white/5 hover:text-white'
+                                      }`}
                                   >
-                                    <ChildIcon className={`h-4 w-4 flex-shrink-0 transition-transform group-hover:scale-110 ${
-                                      isChildActive ? 'text-[#9f7cff]' : 'text-white/60'
-                                    }`} />
+                                    <ChildIcon className={`h-4 w-4 flex-shrink-0 transition-transform group-hover:scale-110 ${isChildActive ? 'text-[#9f7cff]' : 'text-white/60'
+                                      }`} />
                                     <span className="text-sm">{child.label}</span>
                                   </button>
                                 </li>
@@ -318,15 +383,13 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
                     ) : (
                       <button
                         onClick={() => handleNavigation(item.path)}
-                        className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 group ${
-                          isItemActive
-                            ? 'bg-[#f4f7fb] text-green-600 shadow-md'
-                            : 'text-white/80 hover:bg-white/10 hover:text-white'
-                        }`}
+                        className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 group ${isItemActive
+                          ? 'bg-[#f4f7fb] text-green-600 shadow-md'
+                          : 'text-white/80 hover:bg-white/10 hover:text-white'
+                          }`}
                       >
-                        <Icon className={`h-5 w-5 flex-shrink-0 transition-transform group-hover:scale-110 ${
-                          isItemActive ? 'text-green-600' : 'text-white/80'
-                        }`} />
+                        <Icon className={`h-5 w-5 flex-shrink-0 transition-transform group-hover:scale-110 ${isItemActive ? 'text-green-600' : 'text-white/80'
+                          }`} />
                         {isOpen && (
                           <span className="text-sm font-medium text-left flex-1 whitespace-nowrap truncate">{item.label}</span>
                         )}
@@ -338,9 +401,108 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
             </ul>
           </nav>
 
+          {/* User Info */}
+          {currentUser && (
+            <div 
+              onClick={handleOpenProfileDialog}
+              className={`p-3 border-t border-white/10 flex items-center gap-3 cursor-pointer hover:bg-white/10 transition-colors ${!isOpen && 'justify-center'}`}
+            >
+              <div className="h-9 w-9 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                {currentUser.fullName?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+              {isOpen && (
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-white truncate">{currentUser.fullName}</p>
+                  <p className="text-xs text-white/60 truncate">{currentUser.email}</p>
+                </div>
+              )}
+            </div>
+          )}
+
 
         </div>
       </aside>
+
+      {/* Profile Update Dialog */}
+      {isProfileDialogOpen && (
+        <CenterDialog
+          isOpen={isProfileDialogOpen}
+          onClose={() => setIsProfileDialogOpen(false)}
+        >
+          <div className="flex flex-col space-y-4">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <h3 className="text-lg font-bold text-gray-800">Update Profile</h3>
+              <button
+                type="button"
+                onClick={() => setIsProfileDialogOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-100"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Form Body */}
+            <form id="profile-update-form" onSubmit={handleUpdateProfile} className="space-y-4">
+              {profileError && (
+                <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
+                  {profileError}
+                </div>
+              )}
+              
+              <FormInput
+                label="Full Name"
+                name="profileName"
+                type="text"
+                value={profileName}
+                onChange={(e: any) => setProfileName(e.target.value)}
+                required
+                placeholder="Enter full name"
+              />
+              
+              <FormInput
+                label="Email"
+                name="profileEmail"
+                type="email"
+                value={profileEmail}
+                onChange={(e: any) => setProfileEmail(e.target.value)}
+                required
+                placeholder="Enter email"
+              />
+              
+              <FormInput
+                label="New Password"
+                name="profilePassword"
+                type="password"
+                value={profilePassword}
+                onChange={(e: any) => setProfilePassword(e.target.value)}
+                placeholder="Leave blank to keep current password"
+              />
+            </form>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setIsProfileDialogOpen(false)}
+                className="px-4 py-2 cursor-pointer rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 text-sm font-medium"
+                disabled={isSavingProfile}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="profile-update-form"
+                className="px-4 py-2 cursor-pointer rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                disabled={isSavingProfile}
+              >
+                {isSavingProfile ? 'Saving...' : 'Update'}
+              </button>
+            </div>
+          </div>
+        </CenterDialog>
+      )}
     </>
   );
 }

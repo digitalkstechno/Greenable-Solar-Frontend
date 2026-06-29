@@ -4,6 +4,7 @@ import Dialog from '@/components/Dialog';
 import { baseUrl, getAuthToken } from '@/config';
 import { toast } from 'react-toastify';
 import { FormSelect } from '../ui/FormSelect';
+import TimePicker from '@/components/ui/TimePicker';
 
 interface ApiLead {
   _id: string;
@@ -224,11 +225,9 @@ export default function DashboardLeadUpdateDialog({ isOpen, onClose, lead, onSuc
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-gray-700">Next Followup Time</label>
-                  <input
-                    type="time"
+                  <TimePicker
                     value={nextTime}
-                    onChange={(e) => setNextTime(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                    onChange={(time) => setNextTime(time)}
                   />
                 </div>
               </div>

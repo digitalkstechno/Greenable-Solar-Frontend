@@ -303,3 +303,12 @@ button {
   background-color: rgba(255, 255, 255, 0.1) !important;
   border-radius: 4px !important;
 }
+
+/* Hide scrollbars for TimePicker columns */
+.scrollbar-none {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}

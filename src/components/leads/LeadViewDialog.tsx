@@ -475,12 +475,13 @@ import { toast } from 'react-toastify';
 import Dialog, { CenterDialog } from '@/components/Dialog';
 import { baseUrl, getAuthToken } from '@/config';
 import { ApiLead, ApiStatus } from './types';
-import { Eye, Download, FileText, Image, File, FileSpreadsheet, Search, Trash2, Pencil } from 'lucide-react';
+import { Eye, Download, FileText, Image, File, FileSpreadsheet, Search, Trash2, Pencil, X } from 'lucide-react';
 import { getFileIcon } from '@/utills/utill';
 import LeadQuotationDialog from './LeadQuotationDialog';
 import { FormSelect } from '../ui/FormSelect';
 import { generateQuotationPdf } from '@/components/leads/generateQuotationPdf';
 import Calendar from '@/components/ui/Calendar';
+import TimePicker from '@/components/ui/TimePicker';
 
 interface Props {
   lead: ApiLead | null;
@@ -999,11 +1000,9 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-gray-500">Time</label>
-                    <input
-                      type="time"
+                    <TimePicker
                       value={editNextTime}
-                      onChange={(e) => setEditNextTime(e.target.value)}
-                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 transition-all outline-none"
+                      onChange={(time) => setEditNextTime(time)}
                     />
                   </div>
                 </div>
@@ -1458,61 +1457,63 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
               className="max-w-full max-h-[70vh] object-contain mx-auto"
             />
             <div className="absolute top-4 right-4 flex gap-2">
-              <a
-                href={previewAttachment.url}
-                download={previewAttachment.name}
-                className="bg-white rounded-full p-2 hover:bg-gray-100 shadow-lg transition-colors"
-                title="Download"
+              <button
+                onClick={() => setPreviewAttachment(null)}
+                className="bg-white rounded-full p-1 hover:bg-gray-100 shadow-lg transition-colors"
+                title="Close"
               >
-                <Download className="h-5 w-5 text-gray-700" />
-              </a>
+                <X className="h-5 w-5 text-gray-700" />
+              </button>
             </div>
           </div>
-        </CenterDialog>
-      )}
+        </CenterDialog >
+      )
+      }
 
       {/* Quotation Delete Confirmation Popup */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => !deletingQuotation && setDeleteConfirm(null)}
-          />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 flex flex-col items-center gap-4" style={{ animation: 'fadeInScale 0.2s ease' }}>
-            <div className="flex items-center justify-center w-14 h-14 rounded-full bg-[#f9e9d9]">
-              <Trash2 className="h-7 w-7 text-[#d87612]" />
-            </div>
-            <div className="text-center">
-              <h3 className="text-base font-bold text-gray-800 mb-1">Delete Quotation?</h3>
-              <p className="text-sm text-gray-500">
-                Are you sure you want to delete the quotation for{' '}
-                <span className="font-semibold text-gray-800">{deleteConfirm.solarModule}</span>?
-              </p>
-            </div>
-            <div className="flex gap-3 w-full mt-1">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                disabled={deletingQuotation}
-                className="flex-1 px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDeleteQuotation(deleteConfirm.id)}
-                disabled={deletingQuotation}
-                className="flex-1 px-4 py-2 rounded-xl bg-[#d87612] text-sm font-semibold text-white transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
-              >
-                {deletingQuotation ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Deleting...
-                  </>
-                ) : 'Delete'}
-              </button>
+      {
+        deleteConfirm && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+            <div
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => !deletingQuotation && setDeleteConfirm(null)}
+            />
+            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 flex flex-col items-center gap-4" style={{ animation: 'fadeInScale 0.2s ease' }}>
+              <div className="flex items-center justify-center w-14 h-14 rounded-full bg-[#f9e9d9]">
+                <Trash2 className="h-7 w-7 text-[#d87612]" />
+              </div>
+              <div className="text-center">
+                <h3 className="text-base font-bold text-gray-800 mb-1">Delete Quotation?</h3>
+                <p className="text-sm text-gray-500">
+                  Are you sure you want to delete the quotation for{' '}
+                  <span className="font-semibold text-gray-800">{deleteConfirm.solarModule}</span>?
+                </p>
+              </div>
+              <div className="flex gap-3 w-full mt-1">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  disabled={deletingQuotation}
+                  className="flex-1 px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDeleteQuotation(deleteConfirm.id)}
+                  disabled={deletingQuotation}
+                  className="flex-1 px-4 py-2 rounded-xl bg-[#d87612] text-sm font-semibold text-white transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                  {deletingQuotation ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Deleting...
+                    </>
+                  ) : 'Delete'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
     </>
   );
 }
