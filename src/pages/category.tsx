@@ -9,6 +9,7 @@ import axios from 'axios';
 import { baseUrl, getAuthToken } from '@/config';
 import DeleteDialog from '@/components/DeleteDialog';
 import FormInput from '@/components/ui/Input';
+import { toast } from 'react-toastify';
 
 function useDebounce<T>(value: T, delay: number = 500): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -121,16 +122,18 @@ export function CategoryContent() {
     try {
       if (values._id) {
         await axios.patch(`${baseUrl.category}/${values._id}`, payload, { headers });
+        toast.success('Category updated successfully');
       } else {
         await axios.post(baseUrl.category, payload, { headers });
+        toast.success('Category created successfully');
       }
       await fetchData();
 
       setIsDialogOpen(false);
       formik.resetForm();
-    } catch (err) {
-      console.error('Failed to save category', err);
-      alert('Operation failed');
+    } catch (err: any) {
+       console.error('Failed to save category', err?.response?.data || err?.message);
+      toast.error(err?.response?.data?.message || 'Operation failed');
     } finally {
       setIsSubmitting(false);
     }
@@ -146,12 +149,13 @@ export function CategoryContent() {
 
     try {
       await axios.delete(`${baseUrl.category}/${categoryToDelete._id}`, { headers });
+      toast.success('Category deleted successfully');
       await fetchData();
       setShowDeleteDialog(false);
       setCategoryToDelete(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to delete', err);
-      alert('Delete failed');
+      toast.error(err?.response?.data?.message || 'Delete failed');
     }
   };
 

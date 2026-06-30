@@ -20,16 +20,7 @@ export default function DeleteDialog({
   footer,
   size = 'md',
 }: DialogProps) {
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen]);
+  // Body overflow hidden is removed to prevent layout shifting scrollbar gaps at the bottom.
 
   if (!isOpen) return null;
 
@@ -42,15 +33,17 @@ export default function DeleteDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center"
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200" />
+      <div 
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200" 
+        onClick={onClose}
+      />
 
       {/* Dialog */}
       <div
-        className={`relative w-full ${sizeClasses[size]} bg-white rounded-xl shadow-2xl transform transition-all duration-300`}
+        className={`relative w-full ${sizeClasses[size]} bg-white rounded-xl shadow-2xl transform transition-all duration-300 mx-4 z-10`}
         onClick={(e) => e.stopPropagation()}
         style={{
           animation: 'fadeInScale 0.3s ease-out',

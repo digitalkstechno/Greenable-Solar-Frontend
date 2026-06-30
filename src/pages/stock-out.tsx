@@ -11,6 +11,7 @@ import DeleteDialog from '@/components/DeleteDialog';
 import FormInput from '@/components/ui/Input';
 import FormSelect from '@/components/ui/FormSelect';
 import { PackageOpen } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 function useDebounce<T>(value: T, delay: number = 500): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -150,7 +151,7 @@ export function StockOutContent() {
     setIsSubmitting(true);
 
     if (Number(values.quantity) > selectedProductCurrentStock && !values._id) {
-      alert('Quantity cannot exceed current stock');
+      toast.error('Quantity cannot exceed current stock');
       setIsSubmitting(false);
       return;
     }
@@ -166,15 +167,18 @@ export function StockOutContent() {
     try {
       if (values._id) {
         await axios.patch(`${baseUrl.stock}/${values._id}`, payload, { headers });
+        toast.success('Stock Out transaction updated successfully');
       } else {
         await axios.post(baseUrl.stock, payload, { headers });
+        toast.success('Stock Out transaction created successfully');
       }
       await fetchData();
       await fetchCategoriesAndProducts();
       setIsDialogOpen(false);
       formik.resetForm();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Operation failed');
+      console.error('Failed to save stock transaction', err?.response?.data || err?.message);
+      toast.error(err.response?.data?.message || 'Operation failed');
     } finally {
       setIsSubmitting(false);
     }
@@ -189,12 +193,14 @@ export function StockOutContent() {
     if (!transactionToDelete) return;
     try {
       await axios.delete(`${baseUrl.stock}/${transactionToDelete._id}`, { headers });
+      toast.success('Stock Out transaction deleted successfully');
       await fetchData();
       await fetchCategoriesAndProducts();
       setShowDeleteDialog(false);
       setTransactionToDelete(null);
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Delete failed');
+      console.error('Failed to delete stock transaction', err?.response?.data || err?.message);
+      toast.error(err.response?.data?.message || 'Delete failed');
     }
   };
 

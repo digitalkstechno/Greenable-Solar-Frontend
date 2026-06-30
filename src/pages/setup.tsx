@@ -134,12 +134,16 @@ export default function Setup() {
     const loadKanbanStatuses = () => {
       if (typeof window === 'undefined') return;
 
+      const validNames = leadStatuses.map((s) => s.name);
+      if (validNames.length === 0) return;
+
       const stored = window.localStorage.getItem('kanbanVisibleStatusNames');
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed)) {
-            setKanbanStatusNames(parsed.filter((x) => typeof x === 'string'));
+            const filtered = parsed.filter((x) => typeof x === 'string' && validNames.includes(x));
+            setKanbanStatusNames(filtered);
             return;
           }
         } catch {
@@ -148,9 +152,7 @@ export default function Setup() {
       }
 
       // If no stored data and we have lead statuses, use all of them as default
-      if (leadStatuses.length > 0) {
-        setKanbanStatusNames(leadStatuses.map((s) => s.name));
-      }
+      setKanbanStatusNames(validNames);
     };
 
     loadKanbanStatuses();

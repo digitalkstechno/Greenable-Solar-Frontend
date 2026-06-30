@@ -26,17 +26,7 @@ export default function Dialog({
     lg: 'md:w-1/2 md:max-w-[50vw]',
     xl: 'md:w-2/3 md:max-w-[75vw]',
   };
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen]);
+  // Body overflow hidden is removed to prevent layout shifting scrollbar gaps at the bottom.
 
   return (
     <div
@@ -46,7 +36,7 @@ export default function Dialog({
     >
       {/* Backdrop */}
       <div
-        className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
           isOpen ? 'opacity-100' : 'opacity-0'
         }`}
         onClick={onClose}
@@ -101,17 +91,7 @@ export function CenterDialog({
   onClose,
   children,
 }: CenterDialogProps) {
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen]);
+  // Body overflow hidden is removed to prevent layout shifting scrollbar gaps at the bottom.
 
   return (
     <div
@@ -121,7 +101,7 @@ export function CenterDialog({
     >
       {/* Backdrop */}
       <div
-        className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
           isOpen ? 'opacity-100' : 'opacity-0'
         }`}
         onClick={onClose}

@@ -62,7 +62,7 @@ export function LeadStatusContent() {
         return !allData.some(item => item.order === value && item._id !== currentId);
       }),
   }), [allData]);
-  
+
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 600);
 
@@ -96,7 +96,11 @@ export function LeadStatusContent() {
     validateOnChange: true,
     validateOnBlur: true,
     onSubmit: async (values) => {
-      await saveStatus(values);
+      try {
+        await saveStatus(values);
+      } catch (e) {
+        console.error(e);
+      }
     },
     enableReinitialize: true,
   });
@@ -163,7 +167,7 @@ export function LeadStatusContent() {
       setIsDialogOpen(false);
       formik.resetForm();
     } catch (err: any) {
-      console.error('Failed to save', err);
+      console.error('Failed to save', err?.response?.data || err?.message);
       toast.error(err?.response?.data?.message || 'Operation failed');
     } finally {
       setIsSubmitting(false);
