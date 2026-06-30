@@ -120,7 +120,7 @@ export default function LeadAddDialog({
     validationSchema: leadValidationSchema,
     validateOnChange: true,
     validateOnBlur: true,
-    onSubmit: async (values, { setSubmitting, setStatus }) => {
+    onSubmit: async (values, { setSubmitting, setStatus, setErrors }) => {
       setStatus(null);
       try {
         const payload: any = {
@@ -166,8 +166,14 @@ export default function LeadAddDialog({
         onClose();
       } catch (error: any) {
         const msg = error.response?.data?.message || `Failed to ${mode} lead`;
-        setStatus(msg);
-        toast.error(msg);
+        if (msg.includes('Mobile Number already exists')) {
+          setErrors({ contact: 'Mobile Number already exists' });
+        } else if (msg.includes('Email Address already exists')) {
+          setErrors({ email: 'Email Address already exists' });
+        } else {
+          setStatus(msg);
+          toast.error(msg);
+        }
       } finally {
         setSubmitting(false);
       }
@@ -389,8 +395,8 @@ export default function LeadAddDialog({
                 placeholder="Select Discom Name"
               />
               <FormSelect
-                label="Lead Refrance"
-                name="leadrefrance"
+                label="Lead Refrence"
+                name="leadrefrence"
                 value={formik.values.leadrefrance || ''}
                 onChange={(val) => { formik.setFieldValue('leadrefrance', val); }}
                 onBlur={() => formik.setFieldTouched('leadrefrance')}
@@ -400,7 +406,7 @@ export default function LeadAddDialog({
                   { value: 'data', label: 'Data' },
                 ]}
                 error={getFieldError('leadrefrance')}
-                placeholder="Select Lead Refrance"
+                placeholder="Select Lead Refrence"
               />
             </div>
 

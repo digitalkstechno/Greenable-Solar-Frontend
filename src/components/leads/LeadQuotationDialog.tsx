@@ -274,22 +274,54 @@ export default function LeadQuotationDialog({ isOpen, onClose, lead, onRefresh, 
       return;
     }
 
+    // Validate that no row has values without a title
+    const hasInvalidRow = rows.some(row => {
+      const hasValues = row.values && row.values.some(v => v && v.trim() !== "");
+      const hasTitle = row.title && row.title.trim() !== "";
+      return hasValues && !hasTitle;
+    });
+
+    if (hasInvalidRow) {
+      toast.error("Please enter a Row Title for all rows with values.");
+      return;
+    }
+
     setErrors({});
     setSaving(true);
     try {
       const idToUse = editQuotationData?.id || editingId;
       const existingQuotations = lead.quotations || [];
       const existingQ = existingQuotations.find((q: any) => q.id === idToUse);
+      const cleanedRows = rows.filter(row => {
+        const hasTitle = row.title && row.title.trim() !== "";
+        const hasValues = row.values && row.values.some(v => v && v.trim() !== "");
+        return hasTitle || hasValues;
+      });
+
+      const cleanedBomItems = bomItems
+        .filter(item => {
+          return (
+            (item.description && item.description.trim() !== "") ||
+            (item.uom && item.uom.trim() !== "") ||
+            (item.qty && item.qty.trim() !== "") ||
+            (item.size && item.size.trim() !== "") ||
+            (item.make && item.make.trim() !== "")
+          );
+        })
+        .map((item, idx) => ({
+          ...item,
+          srNo: String(idx + 1)
+        }));
+
       const newQuotation = {
         id: idToUse || Date.now().toString(),
         date,
-        // createdAt: existingQ?.createdAt || new Date().toISOString(),
         createdAt: new Date().toISOString(),
         solarModule,
         inverter,
         options,
-        rows,
-        bomItems,
+        rows: cleanedRows,
+        bomItems: cleanedBomItems,
       };
       const updatedQuotations = idToUse
         ? existingQuotations.map((q: any) => (q.id === idToUse ? newQuotation : q))

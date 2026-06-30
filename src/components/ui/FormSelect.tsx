@@ -57,7 +57,7 @@ interface FormSelectProps {
   name?: string;
   value: string;
   onChange: (value: string) => void;
-  onBlur?: () => void;
+  onBlur?: (e?: any) => void;
   options: SelectOption[];
   placeholder?: string;
   error?: string;
@@ -100,7 +100,10 @@ export const FormSelect: React.FC<FormSelectProps> = ({
 
         setIsOpen(false);
         setIsFocused(false);
-        onBlur?.();
+        onBlur?.({
+          target: { name: name || "" },
+          persist: () => {},
+        } as any);
       }
     };
     if (isOpen) document.addEventListener("mousedown", handler);
@@ -153,6 +156,7 @@ export const FormSelect: React.FC<FormSelectProps> = ({
           tabIndex={disabled ? -1 : 0}
           onClick={handleToggle}
           className={triggerClasses}
+          style={{ height: '46px' }}
         >
           <span className={`block truncate text-sm ${selected ? "text-gray-900 font-medium" : "text-gray-400"}`}>
             {selected ? (
@@ -233,7 +237,7 @@ interface FormMultiSelectProps {
   name?: string;
   value: string[];
   onChange: (values: string[]) => void;
-  onBlur?: () => void;
+  onBlur?: (e?: any) => void;
   options: SelectOption[];
   placeholder?: string;
   error?: string;
@@ -259,6 +263,7 @@ export const FormMultiSelect: React.FC<FormMultiSelectProps> = ({
   icon,
   className = "",
   maxSelected,
+  onBlur,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -275,11 +280,15 @@ export const FormMultiSelect: React.FC<FormMultiSelectProps> = ({
         if (portal && portal.contains(e.target as Node)) return;
         setIsOpen(false);
         setIsFocused(false);
+        onBlur?.({
+          target: { name: name || "" },
+          persist: () => {},
+        } as any);
       }
     };
     if (isOpen) document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [isOpen, name]);
+  }, [isOpen, name, onBlur]);
 
   const handleToggle = () => {
     if (disabled) return;
@@ -305,7 +314,7 @@ export const FormMultiSelect: React.FC<FormMultiSelectProps> = ({
 
   const triggerClasses = `
     w-full flex items-center justify-between gap-2
-    px-3 py-1.5 rounded-xl border min-h-[46px]
+    px-3 rounded-xl border
     bg-white transition-all duration-300
     outline-none ring-offset-1
     ${disabled ? "" : "cursor-pointer"}
@@ -335,15 +344,16 @@ export const FormMultiSelect: React.FC<FormMultiSelectProps> = ({
           tabIndex={disabled ? -1 : 0}
           onClick={handleToggle}
           className={triggerClasses}
+          style={{ height: '46px' }}
         >
-          <div className="flex flex-wrap gap-1.5 flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-1 min-w-0 overflow-x-auto scrollbar-none py-0.5" style={{ height: '100%' }}>
             {selectedOptions.length === 0 ? (
               <span className="text-gray-400 text-sm">{placeholder}</span>
             ) : (
               selectedOptions.map((option) => (
                 <span
                   key={option.value}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all hover:scale-105 active:scale-95"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-bold transition-all hover:scale-105 active:scale-95 flex-shrink-0"
                   style={{
                     backgroundColor: option.color ? `${option.color}15` : "#f1f5f9",
                     color: option.color || "#475569",

@@ -503,6 +503,17 @@ interface FollowUp {
   createdAt?: string;
 }
 
+const formatTime12h = (timeStr?: string) => {
+  if (!timeStr) return '';
+  const [hStr, mStr] = timeStr.split(':');
+  let h = parseInt(hStr, 10);
+  if (isNaN(h)) return timeStr;
+  const m = mStr || '00';
+  h = h % 12;
+  if (h === 0) h = 12;
+  return `${String(h).padStart(2, '0')}:${m}`;
+};
+
 export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: Props) {
   const [editStatus, setEditStatus] = useState('');
   const [editNextDate, setEditNextDate] = useState('');
@@ -965,11 +976,8 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
 
             {/* Follow-up History */}
             <div className="rounded-lg bg-gray-50 p-4">
-              <div className="mb-3 text-sm font-bold text-gray-800 flex items-center justify-between">
+              <div className="mb-3 text-sm font-bold text-gray-800">
                 <span>Follow-Up History</span>
-                <span className="bg-gray-200 text-gray-700 px-2.5 py-0.5 rounded-full text-xs font-normal">
-                  {localFollowUps.length} Records
-                </span>
               </div>
 
               {/* Add New Follow-up Section */}
@@ -1037,8 +1045,8 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
               {localFollowUps && localFollowUps.length > 0 ? (
                 <div className="rounded-xl border border-gray-200 bg-white">
                   {/* Search Bar */}
-                  <div className="border-b border-gray-200 px-4 py-3">
-                    <div className="relative max-w-md">
+                  <div className="border-b border-gray-200 px-4 py-3 flex items-center justify-between gap-4">
+                    <div className="relative w-full max-w-md">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 pointer-events-none" />
                       <input
                         type="text"
@@ -1048,21 +1056,28 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
                         className="w-full rounded-lg border border-gray-200 bg-gray-50 pl-10 pr-4 py-2 text-sm text-gray-700 placeholder:text-gray-400 transition-all duration-200 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 hover:border-gray-300"
                       />
                     </div>
-                    {followUpSearch && (
-                      <p className="mt-2 text-xs text-gray-500">
+                    <div className="flex-shrink-0">
+                      <span className="bg-gray-200 text-gray-700 px-2.5 py-0.5 rounded-full text-xs font-normal">
+                        {localFollowUps.length} Records
+                      </span>
+                    </div>
+                  </div>
+                  {followUpSearch && (
+                    <div className="px-4 py-1.5 border-b border-gray-100">
+                      <p className="text-xs text-gray-500">
                         Showing {filteredFollowUps.length} of {localFollowUps.length} records
                       </p>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   {/* Table */}
-                  <div className="overflow-x-auto">
+                  <div className="overflow-auto max-h-[250px] orange-scrollbar">
                     <table className="w-full text-left text-sm">
                       <thead>
                         <tr className="bg-gray-100 border-b border-gray-200">
-                          <th className="px-4 py-3 font-semibold text-gray-600">Date & Time</th>
-                          <th className="px-4 py-3 font-semibold text-gray-600">Note</th>
-                          <th className="px-4 py-3 font-semibold text-gray-600">Staff</th>
+                          <th className="sticky top-0 z-10 bg-gray-100 px-4 py-3 font-semibold text-gray-600">Date & Time</th>
+                          <th className="sticky top-0 z-10 bg-gray-100 px-4 py-3 font-semibold text-gray-600">Note</th>
+                          <th className="sticky top-0 z-10 bg-gray-100 px-4 py-3 font-semibold text-gray-600">Staff</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-50">
@@ -1073,11 +1088,11 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
                                 {f.date ? new Date(f.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
                               </div>
                               {f.time && (
-                                <div className="text-xs text-gray-500">{f.time}</div>
+                                <div className="text-xs text-gray-500">{formatTime12h(f.time)}</div>
                               )}
                             </td>
                             <td className="px-4 py-3 max-w-xs overflow-hidden">
-                              <p className="text-gray-700 break-words leading-relaxed">{f.note}</p>
+                              <p className="text-gray-700 break-words leading-relaxed line-clamp-2" title={f.note}>{f.note}</p>
                               {f._id?.startsWith('temp_') && (
                                 <span className="inline-flex items-center gap-1 mt-1 text-xs text-blue-600">
                                   <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -1270,15 +1285,15 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
                 </button>
               </div>
               {localQuotations && localQuotations.length > 0 ? (
-                <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+                <div className="overflow-auto rounded-xl border border-gray-200 bg-white max-h-[250px] orange-scrollbar">
                   <table className="w-full text-left text-sm">
                     <thead>
                       <tr className="bg-gray-100 border-b border-gray-200">
-                        <th className="px-4 py-3 font-semibold text-gray-600 w-12">#</th>
-                        <th className="px-4 py-3 font-semibold text-gray-600">Date</th>
-                        <th className="px-4 py-3 font-semibold text-gray-600">Solar Module</th>
-                        <th className="px-4 py-3 font-semibold text-gray-600">Inverter</th>
-                        <th className="px-4 py-3 font-semibold text-gray-600">Actions</th>
+                        <th className="sticky top-0 z-10 bg-gray-100 px-4 py-3 font-semibold text-gray-600 w-12">#</th>
+                        <th className="sticky top-0 z-10 bg-gray-100 px-4 py-3 font-semibold text-gray-600">Date</th>
+                        <th className="sticky top-0 z-10 bg-gray-100 px-4 py-3 font-semibold text-gray-600">Solar Module</th>
+                        <th className="sticky top-0 z-10 bg-gray-100 px-4 py-3 font-semibold text-gray-600">Inverter</th>
+                        <th className="sticky top-0 z-10 bg-gray-100 px-4 py-3 font-semibold text-gray-600">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -1357,21 +1372,23 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
             <div className="rounded-lg bg-gray-50 p-4">
               <div className="mb-3 text-sm font-bold text-gray-800">Activity Log</div>
               {localActivities && localActivities.length > 0 ? (
-                <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+                <div className="overflow-auto rounded-xl border border-gray-200 bg-white max-h-[250px] orange-scrollbar">
                   <table className="w-full text-left text-sm">
                     <thead>
                       <tr className="bg-secondary text-white">
-                        <th className="px-4 py-3 font-semibold w-12 text-center">#</th>
-                        <th className="px-4 py-3 font-semibold">MESSAGE</th>
-                        <th className="px-4 py-3 font-semibold">BY</th>
-                        <th className="px-4 py-3 font-semibold">DATE</th>
+                        <th className="sticky top-0 z-10 bg-secondary text-white px-4 py-3 font-semibold w-12 text-center">#</th>
+                        <th className="sticky top-0 z-10 bg-secondary text-white px-4 py-3 font-semibold">MESSAGE</th>
+                        <th className="sticky top-0 z-10 bg-secondary text-white px-4 py-3 font-semibold">BY</th>
+                        <th className="sticky top-0 z-10 bg-secondary text-white px-4 py-3 font-semibold">DATE</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {[...localActivities].reverse().map((act, i) => (
                         <tr key={i} className="hover:bg-gray-50/50 transition-colors">
                           <td className="px-4 py-3 text-center text-gray-500">{localActivities.length - i}</td>
-                          <td className="px-4 py-3 text-gray-700">{act.message}</td>
+                          <td className="px-4 py-3 text-gray-700 max-w-xl overflow-hidden">
+                            <p className="break-words line-clamp-2" title={act.message}>{act.message}</p>
+                          </td>
                           <td className="px-4 py-3 text-gray-600">{act.by?.fullName || 'System'}</td>
                           <td className="px-4 py-3 text-gray-500">
                             {new Date(act.date).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', '')}
@@ -1408,7 +1425,7 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
         isOpen={reassignOpen}
         onClose={() => setReassignOpen(false)}
         title={
-          <div className="bg-secondary  p-4 rounded-t-lg text-white font-bold uppercase">
+          <div className="bg-secondary rounded-t-lg text-white font-bold uppercase">
             REASSIGN
           </div>
         }

@@ -319,7 +319,7 @@ export default function LeadsListView({
         <button
           onClick={() => onStatusFilter?.('won')}
           className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors border ${activeStatusFilter === 'won'
-            ? 'border-orange-400 text-orange-600 bg-white'
+            ? 'border-green-200 text-green-600 bg-white'
             : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent'
             }`}
         >
@@ -331,7 +331,7 @@ export default function LeadsListView({
         <button
           onClick={() => onStatusFilter?.('lost')}
           className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors border ${activeStatusFilter === 'lost'
-            ? 'border-orange-400 text-orange-600 bg-white'
+            ? 'border-red-200 text-red-600 bg-white'
             : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent'
             }`}
         >

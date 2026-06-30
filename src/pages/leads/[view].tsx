@@ -15,6 +15,8 @@ import LeadAddDialog from '@/components/leads/LeadAddDialog';
 import LeadViewDialog from '@/components/leads/LeadViewDialog';
 import LeadBulkImportDialog from '@/components/leads/LeadBulkImportDialog';
 import { PageSkeleton, KanbanColumnSkeleton } from '@/components/ui/Skeleton';
+import Calendar from '@/components/ui/Calendar';
+
 
 // ── Types ────────────────────────────────────────────────────────────────────
 import {
@@ -69,6 +71,8 @@ export default function LeadsPage() {
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [boardRefreshKey, setBoardRefreshKey] = useState(0);
 
+  const [editNextDate, setEditNextDate] = useState('');
+
   // ── Permissions ──────────────────────────────────────────────────────────
   const [leadPermissions, setLeadPermissions] = useState<{
     create?: boolean;
@@ -113,13 +117,13 @@ export default function LeadsPage() {
   const filters = useMemo(
     () => ({
       search: debouncedSearch,
-      status: statusFilter.length > 0 ? statusFilter.join(',') : '',
+      status: (viewMode === 'kanban' || statusFilter.length === 0) ? '' : statusFilter.join(','),
       source: sourceFilter.length > 0 ? sourceFilter.join(',') : '',
       staff: staffFilter.length > 0 ? staffFilter.join(',') : '',
       from: fromDate,
       to: toDate,
     }),
-    [debouncedSearch, statusFilter, sourceFilter, staffFilter, fromDate, toDate]
+    [debouncedSearch, statusFilter, sourceFilter, staffFilter, fromDate, toDate, viewMode]
   );
 
   // ── Data — pass kanbanSubView so hook fetches only what's needed ──────────
@@ -363,9 +367,9 @@ export default function LeadsPage() {
             >
               <Filter className="h-4 w-4" />
               <span className="hidden sm:inline">Filters</span>
-              {hasActiveFilters && (
+              {/* {hasActiveFilters && (
                 <span className="h-2 w-2 bg-primary-500 rounded-full"></span>
-              )}
+              )} */}
             </button>
 
             {/* Excel Export Button */}
@@ -429,16 +433,18 @@ export default function LeadsPage() {
             : 'grid-rows-[0fr] opacity-0 overflow-hidden'
             }`}
         >
-          <div className="overflow-hidden">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div className="space-y-2">
-                <FormMultiSelect
-                  label="Lead Status"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e)}
-                  options={statuses.map((s) => ({ value: s._id, label: s.name }))}
-                />
-              </div>
+          <div className={`min-h-0 ${showFilterDrawer ? 'overflow-visible' : 'overflow-hidden'}`}>
+            <div className={`grid grid-cols-1 sm:grid-cols-2 ${viewMode === 'kanban' ? 'lg:grid-cols-4' : 'lg:grid-cols-5'} gap-4`}>
+              {viewMode !== 'kanban' && (
+                <div className="space-y-2">
+                  <FormMultiSelect
+                    label="Lead Status"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e)}
+                    options={statuses.map((s) => ({ value: s._id, label: s.name }))}
+                  />
+                </div>
+              )}
 
               <div className="space-y-2">
                 <FormMultiSelect
@@ -458,28 +464,40 @@ export default function LeadsPage() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <FormInput
-                  label="From Date"
-                  name="fromDate"
-                  type="date"
-                  value={fromDate}
-                  onChange={(e) => setFromDate(e.target.value)}
-                  className="bg-white"
+              <div className="space-y-2 ">
+                <label className="block text-sm font-bold text-gray-700 mb-1.5 px-1">From Date</label>
+                <Calendar
+                  value={fromDate ? new Date(fromDate + 'T00:00:00') : null}
+                  onChange={(date) => {
+                    if (!date) { setFromDate(''); return; }
+                    const y = date.getFullYear();
+                    const m = String(date.getMonth() + 1).padStart(2, '0');
+                    const d = String(date.getDate()).padStart(2, '0');
+                    setFromDate(`${y}-${m}-${d}`);
+                  }}
+                  minDate={new Date(new Date().setHours(0, 0, 0, 0))}
+                  placeholder="dd-mm-yyyy"
+                  className="min-h-[46px]"
                 />
               </div>
 
               <div className="space-y-2">
-                <FormInput
-                  label="To Date"
-                  name="toDate"
-                  type="date"
-                  value={toDate}
-                  min={fromDate || undefined}
-                  onChange={(e) => setToDate(e.target.value)}
-                  className="bg-white"
+                <label className="block text-sm font-bold text-gray-700 mb-1.5 px-1">To Date</label>
+                <Calendar
+                  value={toDate ? new Date(toDate + 'T00:00:00') : null}
+                  onChange={(date) => {
+                    if (!date) { setToDate(''); return; }
+                    const y = date.getFullYear();
+                    const m = String(date.getMonth() + 1).padStart(2, '0');
+                    const d = String(date.getDate()).padStart(2, '0');
+                    setToDate(`${y}-${m}-${d}`);
+                  }}
+                  minDate={new Date(new Date().setHours(0, 0, 0, 0))}
+                  placeholder="dd-mm-yyyy"
+                  className="min-h-[46px]"
                 />
               </div>
+
             </div>
 
             <div className="flex justify-end gap-3 mt-4">

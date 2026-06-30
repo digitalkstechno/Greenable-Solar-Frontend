@@ -96,19 +96,19 @@ const toBackendRole = (r: Role): BackendRole => {
   const category = serializeCaps(r.permissions?.category);
   const product = serializeCaps(r.permissions?.product);
   const stock = serializeCaps(r.permissions?.stock);
-  
+
   return {
     roleName: r.roleName,
-    permissions: [{ 
-      lead, 
-      task, 
+    permissions: [{
+      lead,
+      task,
       taskStatus,
-      staff, 
-      role, 
-      leadStatus, 
-      leadSource, 
-      leadLabel, 
-      teams, 
+      staff,
+      role,
+      leadStatus,
+      leadSource,
+      leadLabel,
+      teams,
       organizations,
       category,
       product,
@@ -256,6 +256,32 @@ export function RolesContent() {
     setIsFormOpen(true);
   };
 
+  // const handleSubmit = async (role: Role) => {
+  //   try {
+  //     const payload = toBackendRole(role);
+
+  //     if (editingRole) {
+  //       await axios.put(`${baseUrl.updateRole}/${editingRole.id}`, payload, {
+  //         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  //       });
+  //       toast.success('Role updated successfully');
+  //     } else {
+  //       await axios.post(baseUrl.addRole, payload, {
+  //         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  //       });
+  //       toast.success('Role created successfully');
+  //     }
+
+  //     refreshAfterMutation();
+  //   } catch (err) {
+  //     console.error('Failed to save role:', err);
+  //     toast.error('Failed to save role');
+  //   } finally {
+  //     setIsFormOpen(false);
+  //     setEditingRole(null);
+  //   }
+  // };
+
   const handleSubmit = async (role: Role) => {
     try {
       const payload = toBackendRole(role);
@@ -273,14 +299,15 @@ export function RolesContent() {
       }
 
       refreshAfterMutation();
-    } catch (err) {
-      console.error('Failed to save role:', err);
-      toast.error('Failed to save role');
+    } catch (err: any) {
+      console.error('Failed to save role:', err?.response?.data || err?.message);
+      const errorMessage = err?.response?.data?.message || 'Failed to save role';
+      toast.error(errorMessage);
     } finally {
       setIsFormOpen(false);
       setEditingRole(null);
     }
-  };
+  }
 
   // Show delete confirmation dialog
   const handleDeleteClick = (role: Role) => {
@@ -298,7 +325,7 @@ export function RolesContent() {
       });
       refreshAfterMutation();
       toast.success('Role deleted successfully');
-      
+
       // Close dialog
       setShowDeleteDialog(false);
       setRoleToDelete(null);
@@ -341,9 +368,9 @@ export function RolesContent() {
           addButton={
             canCreate
               ? {
-                  label: "Add Department",
-                  onClick: handleAdd,
-                }
+                label: "Add Department",
+                onClick: handleAdd,
+              }
               : undefined
           }
         />
@@ -380,7 +407,7 @@ export function RolesContent() {
       >
         <div className="py-4">
           <p className="text-gray-700">
-            Are you sure you want to delete the department "{roleToDelete?.roleName}"? 
+            Are you sure you want to delete the department "{roleToDelete?.roleName}"?
             This action cannot be undone.
           </p>
         </div>

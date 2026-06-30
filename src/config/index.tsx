@@ -5,9 +5,9 @@ export const baseUrl = {
   userSignup: `${API}users/signup`,
   userLogin: `${API}users/login`,
   userAdd: `${API}users/add-user`,
-  userUpdate: `${API}users`,
   getAllUsers: `${API}users`,
   findUserById: `${API}users`,
+  userUpdate: `${API}users`,
   deleteUser: `${API}users`,
   currentStaff: `${API}users/me`,
   addRole: `${API}role`,
@@ -16,11 +16,11 @@ export const baseUrl = {
   updateRole: `${API}role`,
   deleteRole: `${API}role`,
   department: `${API}role`,
-  addStaff: `${API}staff/create`,
-  getAllStaff: `${API}staff`,
-  findStaffById: `${API}staff`,
-  updateStaff: `${API}staff`,
-  deleteStaff: `${API}staff`,
+  // addStaff: `${API}staff/create`,
+  // getAllStaff: `${API}staff`,
+  // findStaffById: `${API}staff`,
+  // updateStaff: `${API}staff`,
+  // deleteStaff: `${API}staff`,
   addLead: `${API}lead/create`,
   getAllLeads: `${API}lead`,
   myLeads: `${API}lead/my`,
@@ -95,24 +95,10 @@ export function clearAuthToken() {
   document.cookie = `${TOKEN_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
 }
 
-// axios.interceptors.response.use(
-//   (response) => response,
-//   (error) => {
-//     if (error?.response?.status === 401) {
-//       clearAuthToken();
-//       if (typeof window !== "undefined") {
-//         window.location.href = "/login";
-//       }
-//     }
-//     return Promise.reject(error);
-//   }
-// );
-
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error?.response?.status === 401) {
-      console.error("🔴 401 Unauthorized on API:", error?.config?.url, error?.config?.method);
       clearAuthToken();
       if (typeof window !== "undefined") {
         window.location.href = "/login";
@@ -121,3 +107,17 @@ axios.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// axios.interceptors.response.use(
+//   (response) => response,
+//   (error) => {
+//     if (error?.response?.status === 401) {
+//       console.error("🔴 401 Unauthorized on API:", error?.config?.url, error?.config?.method);
+//       clearAuthToken();
+//       if (typeof window !== "undefined") {
+//         window.location.href = "/login";
+//       }
+//     }
+//     return Promise.reject(error);
+//   }
+// );

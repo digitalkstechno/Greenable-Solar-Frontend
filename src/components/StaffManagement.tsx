@@ -231,8 +231,16 @@ export default function SalesExecutiveForm({
 
     } catch (err: any) {
       const message = err.response?.data?.message || 'Something went wrong';
-      setError(message);
-      toast.error(message);
+      if (message.toLowerCase().includes('phone')) {
+        formik.setFieldTouched('number', true, false);
+        formik.setErrors({ number: message });
+      } else if (message.toLowerCase().includes('email')) {
+        formik.setFieldTouched('email', true, false);
+        formik.setErrors({ email: message });
+      } else {
+        setError(message);
+        toast.error(message);
+      }
     } finally {
       setLoading(false);
     }

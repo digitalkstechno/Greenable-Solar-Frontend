@@ -609,7 +609,7 @@ export default function LeadsKanbanView({
 
     return (
         <div className="flex h-full flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+            {/* <div className="flex flex-wrap items-center justify-between gap-3 px-1">
                 <div className="flex items-center gap-2">
                     {(['board', 'lost', 'won'] as SubView[]).map((v) => {
                         const lostCount = lostPagination?.totalItems ?? lostLeads.length;
@@ -633,6 +633,51 @@ export default function LeadsKanbanView({
                                             ? 'bg-red-100 text-red-700'
                                             : 'bg-green-100 text-green-700'
                                         }`}>
+                                        {count}
+                                    </span>
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div> */}
+
+            <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+                <div className="flex items-center gap-2">
+                    {(['board', 'lost', 'won'] as SubView[]).map((v) => {
+                        const lostCount = lostPagination?.totalItems ?? lostLeads.length;
+                        const wonCount = wonPagination?.totalItems ?? wonLeads.length;
+                        const label = v === 'board' ? 'Kanban View' : v === 'lost' ? 'Lost Leads' : 'Won Leads';
+                        const count = v === 'lost' ? lostCount : v === 'won' ? wonCount : null;
+
+                        const activeClasses =
+                            v === 'lost'
+                                ? 'border border-red-500 text-red-600 bg-white'
+                                : v === 'won'
+                                    ? 'border border-green-500 text-green-600 bg-white'
+                                    : 'border border-[#F28522] text-[#F28522] bg-white';
+
+                        return (
+                            <button
+                                key={v}
+                                onClick={() => handleSubViewChange(v)}
+                                className={`flex items-center gap-2 rounded-lg cursor-pointer px-4 py-1.5 text-sm font-medium capitalize transition-colors ${subView === v
+                                        ? activeClasses
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-transparent'
+                                    }`}
+                            >
+                                {label}
+                                {count !== null && (
+                                    <span
+                                        className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${subView === v
+                                                ? v === 'lost'
+                                                    ? 'bg-red-500 text-white'
+                                                    : 'bg-green-500 text-white'
+                                                : v === 'lost'
+                                                    ? 'bg-red-100 text-red-700'
+                                                    : 'bg-green-100 text-green-700'
+                                            }`}
+                                    >
                                         {count}
                                     </span>
                                 )}
@@ -700,8 +745,8 @@ export default function LeadsKanbanView({
                                     >
                                         {group.isLoading ? (
                                             <div className="flex h-full items-center justify-center py-10">
-                                                <div className={`h-8 w-8 animate-spin rounded-full border-4 border-t-transparent ${group.isWon ? 'border-emerald-500' : group.isLost ? 'border-red-400' : 'border-secondary'
-                                                    }`} />
+                                                 <div className={`h-8 w-8 animate-spin rounded-full border-4 border-t-transparent ${group.isWon ? 'border-black' : group.isLost ? 'border-black' : 'border-secondary'
+                                                     }`} />
                                             </div>
                                         ) : group.leads.length === 0 ? (
                                             <div className="flex h-full items-center justify-center text-sm text-gray-400">

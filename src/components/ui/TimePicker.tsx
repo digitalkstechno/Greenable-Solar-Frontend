@@ -16,7 +16,16 @@ export default function TimePicker({ value = '', onChange, placeholder = '--:-- 
 
   // Parse value "HH:mm" into 12-hour format
   const getParsedTime = () => {
-    if (!value) return { hour: '12', minute: '00', period: 'AM' };
+    if (!value) {
+      const now = new Date();
+      let h = now.getHours();
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const period = h >= 12 ? 'PM' : 'AM';
+      h = h % 12;
+      if (h === 0) h = 12;
+      const hour = String(h).padStart(2, '0');
+      return { hour, minute: m, period };
+    }
     const [hStr, mStr] = value.split(':');
     let h = parseInt(hStr, 10);
     const m = mStr || '00';

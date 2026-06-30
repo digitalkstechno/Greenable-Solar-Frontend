@@ -9,9 +9,10 @@ interface CalendarProps {
     onChange?: (date: Date | null) => void;
     minDate?: Date;
     placeholder?: string;
+    className?: string;
 }
 
-export default function Calendar({ value, onChange, minDate, placeholder = 'Select date' }: CalendarProps) {
+export default function Calendar({ value, onChange, minDate, placeholder = 'Select date', className }: CalendarProps) {
     const today = new Date();
     const [open, setOpen] = useState(false);
     const [cur, setCur] = useState({ y: value?.getFullYear() || today.getFullYear(), m: value?.getMonth() || today.getMonth() });
@@ -52,7 +53,7 @@ export default function Calendar({ value, onChange, minDate, placeholder = 'Sele
             {/* Input */}
             <div
                 onClick={() => setOpen(o => !o)}
-                className="w-full flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 text-sm cursor-pointer hover:border-gray-300 bg-white"
+                className={`w-full flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 text-sm cursor-pointer hover:border-gray-400 bg-white min-h-[40px] ${className || ''}`}
             >
                 <span className={value ? 'text-gray-800' : 'text-gray-400'}>
                     {value ? formatDate(value) : placeholder}
