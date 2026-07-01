@@ -4,11 +4,13 @@ import { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { baseUrl, clearAuthToken, getAuthToken } from '@/config';
 import { useRouter } from 'next/router';
-import { Bell, CheckCircle, CheckCheck, LogOut, Menu } from 'lucide-react';
+import { Bell, CheckCircle, CheckCheck, LogOut, Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { io } from 'socket.io-client';
 import Swal from 'sweetalert2';
+import { CenterDialog } from "./Dialog";
+import FormInput from "./ui/Input";
 
 interface Notification {
   _id: string;
@@ -31,6 +33,13 @@ export default function Header({ toggleSidebar }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
   const [markingAllRead, setMarkingAllRead] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [profileName, setProfileName] = useState('');
+  const [profileEmail, setProfileEmail] = useState('');
+  const [profilePassword, setProfilePassword] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState('');
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -70,6 +79,55 @@ export default function Header({ toggleSidebar }: HeaderProps) {
       }
     }
   }, []);
+
+  //profile
+  useEffect(() => {
+    const token = getAuthToken();
+    if (!token) return;
+    axios.get(baseUrl.currentStaff, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).then((res) => {
+      setCurrentUser(res.data?.data);
+    }).catch(() => { });
+  }, []);
+
+  const handleOpenProfileDialog = () => {
+    if (currentUser) {
+      setProfileName(currentUser.fullName || '');
+      setProfileEmail(currentUser.email || '');
+      setProfilePassword('');
+      setProfileError('');
+      setIsProfileDialogOpen(true);
+    }
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profileName.trim()) { setProfileError("Full name is required"); return; }
+    if (!profileEmail.trim()) { setProfileError("Email is required"); return; }
+    setIsSavingProfile(true);
+    setProfileError('');
+    try {
+      const token = getAuthToken();
+      const payload = new FormData();
+      payload.append('fullName', profileName.trim());
+      payload.append('email', profileEmail.trim());
+      if (profilePassword.trim()) payload.append('password', profilePassword.trim());
+      const res = await axios.put(`${baseUrl.userUpdate}/${currentUser._id}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data?.status === 'Success') {
+        setCurrentUser(res.data.data);
+        setIsProfileDialogOpen(false);
+      } else {
+        setProfileError(res.data?.message || 'Failed to update profile');
+      }
+    } catch (err: any) {
+      setProfileError(err.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
 
   // Request notification permission with user interaction
   const requestNotificationPermission = async () => {
@@ -309,11 +367,11 @@ export default function Header({ toggleSidebar }: HeaderProps) {
       await axios.put(`${base}/notification/mark-read/${notifId}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       // Update the notification to mark it as read
-      setNotifications(prev => prev.map(notification => 
-        notification._id === notifId 
-          ? { ...notification, isRead: true } 
+      setNotifications(prev => prev.map(notification =>
+        notification._id === notifId
+          ? { ...notification, isRead: true }
           : notification
       ));
     } catch (error) {
@@ -331,7 +389,7 @@ export default function Header({ toggleSidebar }: HeaderProps) {
       await axios.put(`${base}/notification/mark-all-read`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       // Mark all notifications as read in the state
       setNotifications(prev => prev.map(notification => ({
         ...notification,
@@ -353,9 +411,9 @@ export default function Header({ toggleSidebar }: HeaderProps) {
         await axios.put(`${base}/notification/mark-read/${notif._id}`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        
+
         // Update the state to mark this notification as read
-        setNotifications(prev => prev.map(n => 
+        setNotifications(prev => prev.map(n =>
           n._id === notif._id ? { ...n, isRead: true } : n
         ));
       }
@@ -425,135 +483,211 @@ export default function Header({ toggleSidebar }: HeaderProps) {
   const totalCount = notifications.length;
 
   return (
-    <header className="sticky top-0 z-20 flex h-20 items-center justify-between bg-white border-b border-gray-200 px-4 md:px-6 backdrop-blur-sm">
-      <div className="flex items-center gap-2 md:gap-4">
-        {/* Hamburger Menu for Mobile */}
-        <button
-          onClick={toggleSidebar}
-          className="p-2 rounded-lg hover:bg-gray-100 transition-all duration-200 md:hidden"
-          aria-label="Toggle sidebar"
-        >
-          <Menu className="h-6 w-6 text-gray-600" />
-        </button>
-        <h1 className="text-xl md:text-3xl font-bold text-gray-900 truncate">
-          {getLabel()}
-        </h1>
-      </div>
-      <div className="flex items-center gap-1 md:gap-3">
-
-        {/* Alerts / Notifications */}
-        <div className="relative" ref={dropdownRef}>
+    <>
+      <header className="sticky top-0 z-20 flex h-20 items-center justify-between bg-white border-b border-gray-200 px-4 md:px-6 backdrop-blur-sm">
+        <div className="flex items-center gap-2 md:gap-4">
+          {/* Hamburger Menu for Mobile */}
           <button
-            onClick={() => {
-              if (!showNotifications) {
-                fetchNotifications();
-              }
-              setShowNotifications(!showNotifications);
-            }}
-            className="relative flex items-center justify-center h-10 w-10 rounded-full hover:bg-gray-100 transition-colors"
+            onClick={toggleSidebar}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-all duration-200 md:hidden"
+            aria-label="Toggle sidebar"
           >
-            <Bell className="h-5 w-5 text-gray-600" />
-            {unreadCount > 0 && (
-              <span className="absolute top-1 max-w-[20px] max-h-[20px] overflow-hidden right-1 flex h-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
+            <Menu className="h-6 w-6 text-gray-600" />
           </button>
+          <h1 className="text-xl md:text-3xl font-bold text-gray-900 truncate">
+            {getLabel()}
+          </h1>
+        </div>
+        <div className="flex items-center gap-1 md:gap-3">
 
-          {showNotifications && (
-            <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-sm rounded-lg bg-white shadow-xl overflow-hidden z-50">
-              <div className="px-4 py-3 border-b border-gray-100 bg-[#0a2352] flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-semibold text-white">Notifications</h3>
-                  {/* Counter badge on the right side of the header */}
-                  <span className="bg-white text-primary text-xs font-medium px-2 py-0.5 rounded-full">
-                    {unreadCount}
-                  </span>
+          {/* Alerts / Notifications */}
+          <div className="relative" ref={dropdownRef}>
+
+            <button
+              onClick={() => {
+                if (!showNotifications) {
+                  fetchNotifications();
+                }
+                setShowNotifications(!showNotifications);
+              }}
+              className="relative flex items-center justify-center h-10 w-10 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <Bell className="h-5 w-5 text-gray-600" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 max-w-[20px] max-h-[20px] overflow-hidden right-1 flex h-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </button>
+
+
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-sm rounded-lg bg-white shadow-xl overflow-hidden z-50">
+                <div className="px-4 py-3 border-b border-gray-100 bg-[#0a2352] flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-white">Notifications</h3>
+                    {/* Counter badge on the right side of the header */}
+                    <span className="bg-white text-primary text-xs font-medium px-2 py-0.5 rounded-full">
+                      {unreadCount}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    {/* Permission status indicator and request button */}
+                    {notificationPermission !== 'granted' && (
+                      <button
+                        onClick={requestNotificationPermission}
+                        className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer bg-blue-50 px-2 py-1 rounded"
+                      >
+                        {notificationPermission === 'denied' ? 'Enable Notifications' : 'Allow Notifications'}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  {/* Permission status indicator and request button */}
-                  {notificationPermission !== 'granted' && (
-                    <button
-                      onClick={requestNotificationPermission}
-                      className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer bg-blue-50 px-2 py-1 rounded"
-                    >
-                      {notificationPermission === 'denied' ? 'Enable Notifications' : 'Allow Notifications'}
-                    </button>
+
+                {/* Permission denied message */}
+                {notificationPermission === 'denied' && (
+                  <div className="px-4 py-3 bg-yellow-50 border-b border-yellow-100">
+                    <p className="text-xs text-yellow-800">
+                      Notifications are blocked. Please enable them in your browser settings to receive real-time updates.
+                    </p>
+                  </div>
+                )}
+
+                <div className="max-h-[70vh] overflow-y-auto">
+                  {unreadNotifications.length === 0 ? (
+                    <div className="px-4 py-6 text-center text-sm text-gray-500">
+                      {totalCount === 0 ? 'No notifications' : 'No new notifications'}
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-100 max-h-[30vh] overflow-y-auto">
+                      {unreadNotifications.map(notif => (
+                        <div
+                          key={notif._id}
+                          onClick={() => handleNotificationClick(notif)}
+                          className="px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors bg-blue-50/30 group relative"
+                        >
+                          <div className="flex justify-between items-start mb-1">
+                            <h4 className="text-sm font-semibold text-gray-900 pr-6">
+                              {notif.title}
+                            </h4>
+                            <span className="text-[10px] text-gray-400 whitespace-nowrap ml-2">
+                              {notif.createdAt ? new Date(notif.createdAt).toLocaleDateString() : 'Just now'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-800 line-clamp-2 pr-6">
+                            {notif.message}
+                          </p>
+
+                          <button
+                            onClick={(e) => markAsReadSingle(e, notif._id)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-blue-500 hover:text-blue-700 bg-white shadow-sm rounded-full p-1 transition-all"
+                            title="Mark as read"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
-              </div>
 
-              {/* Permission denied message */}
-              {notificationPermission === 'denied' && (
-                <div className="px-4 py-3 bg-yellow-50 border-b border-yellow-100">
-                  <p className="text-xs text-yellow-800">
-                    Notifications are blocked. Please enable them in your browser settings to receive real-time updates.
-                  </p>
-                </div>
-              )}
-
-              <div className="max-h-[70vh] overflow-y-auto">
-                {unreadNotifications.length === 0 ? (
-                  <div className="px-4 py-6 text-center text-sm text-gray-500">
-                    {totalCount === 0 ? 'No notifications' : 'No new notifications'}
-                  </div>
-                ) : (
-                  <div className="divide-y divide-gray-100 max-h-[30vh] overflow-y-auto">
-                    {unreadNotifications.map(notif => (
-                      <div
-                        key={notif._id}
-                        onClick={() => handleNotificationClick(notif)}
-                        className="px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors bg-blue-50/30 group relative"
-                      >
-                        <div className="flex justify-between items-start mb-1">
-                          <h4 className="text-sm font-semibold text-gray-900 pr-6">
-                            {notif.title}
-                          </h4>
-                          <span className="text-[10px] text-gray-400 whitespace-nowrap ml-2">
-                            {notif.createdAt ? new Date(notif.createdAt).toLocaleDateString() : 'Just now'}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-800 line-clamp-2 pr-6">
-                          {notif.message}
-                        </p>
-
-                        <button
-                          onClick={(e) => markAsReadSingle(e, notif._id)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-blue-500 hover:text-blue-700 bg-white shadow-sm rounded-full p-1 transition-all"
-                          title="Mark as read"
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
+                {/* Full width Mark all as read button at the bottom */}
+                {unreadCount > 0 && (
+                  <div className="border-t border-gray-100">
+                    <button
+                      onClick={markAllAsRead}
+                      disabled={markingAllRead}
+                      className="w-full px-4 py-3 text-sm bg-[#0a2352] text-white font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <CheckCheck className="w-4 h-4" />
+                      {markingAllRead ? 'Marking all as read...' : `Mark all as read (${unreadCount})`}
+                    </button>
                   </div>
                 )}
               </div>
+            )}
+          </div>
 
-              {/* Full width Mark all as read button at the bottom */}
-              {unreadCount > 0 && (
-                <div className="border-t border-gray-100">
-                  <button
-                    onClick={markAllAsRead}
-                    disabled={markingAllRead}
-                    className="w-full px-4 py-3 text-sm bg-[#0a2352] text-white font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <CheckCheck className="w-4 h-4" />
-                    {markingAllRead ? 'Marking all as read...' : `Mark all as read (${unreadCount})`}
-                  </button>
-                </div>
-              )}
+          {currentUser && (
+            <div
+              className="hidden md:flex flex-col cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={handleOpenProfileDialog}
+            >
+              <span className="text-sm font-semibold text-gray-900 leading-tight">
+                {currentUser.fullName}
+              </span>
+              <span className="text-xs text-gray-500 leading-tight">
+                {currentUser.email}
+              </span>
             </div>
           )}
+
+          <button
+            onClick={handleLogout}
+            className="flex items-center justify-center h-10 w-10 rounded-full hover:bg-red-50 transition-all duration-200 text-gray-600 hover:text-red-600 focus:ring-red-500 focus:ring-offset-2"
+            title="Logout"
+          >
+            <LogOut className="h-5 w-5" />
+          </button>
         </div>
-        <button
-          onClick={handleLogout}
-          className="flex items-center justify-center h-10 w-10 rounded-full hover:bg-red-50 transition-all duration-200 text-gray-600 hover:text-red-600 focus:ring-red-500 focus:ring-offset-2"
-          title="Logout"
-        >
-          <LogOut className="h-5 w-5" />
-        </button>
-      </div>
-    </header>
+      </header>
+
+      {
+        isProfileDialogOpen && (
+          <CenterDialog
+            isOpen={isProfileDialogOpen}
+            onClose={() => setIsProfileDialogOpen(false)}
+          >
+            <div className="flex flex-col space-y-4">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <h3 className="text-lg font-bold text-gray-800">Update Profile</h3>
+                <button
+                  type="button"
+                  onClick={() => setIsProfileDialogOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-100"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <form id="header-profile-form" onSubmit={handleUpdateProfile} className="space-y-4">
+                {profileError && (
+                  <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
+                    {profileError}
+                  </div>
+                )}
+                <FormInput label="Full Name" name="profileName" type="text"
+                  value={profileName} onChange={(e: any) => setProfileName(e.target.value)}
+                  required placeholder="Enter full name"
+                />
+                <FormInput label="Email" name="profileEmail" type="email"
+                  value={profileEmail} onChange={(e: any) => setProfileEmail(e.target.value)}
+                  required placeholder="Enter email"
+                />
+                <FormInput label="New Password" name="profilePassword" type="password"
+                  value={profilePassword} onChange={(e: any) => setProfilePassword(e.target.value)}
+                  placeholder="Leave blank to keep current password"
+                />
+              </form>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
+                <button type="button" onClick={() => setIsProfileDialogOpen(false)}
+                  className="px-4 py-2 cursor-pointer rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 text-sm font-medium"
+                  disabled={isSavingProfile}
+                >
+                  Cancel
+                </button>
+                <button type="submit" form="header-profile-form"
+                  className="px-4 py-2 cursor-pointer rounded-lg bg-[#d87612] text-white hover:bg-[#E67E22] text-sm font-medium disabled:opacity-50"
+                  disabled={isSavingProfile}
+                >
+                  {isSavingProfile ? 'Saving...' : 'Update'}
+                </button>
+              </div>
+            </div>
+          </CenterDialog>
+        )
+      }
+    </>
   );
 }

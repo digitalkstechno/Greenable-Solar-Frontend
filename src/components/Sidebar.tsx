@@ -57,70 +57,6 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
   const [canViewProduct, setCanViewProduct] = useState(false);
   const [canViewStock, setCanViewStock] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
-  const [profileName, setProfileName] = useState('');
-  const [profileEmail, setProfileEmail] = useState('');
-  const [profilePassword, setProfilePassword] = useState('');
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [profileError, setProfileError] = useState('');
-
-  const handleOpenProfileDialog = () => {
-    if (currentUser) {
-      setProfileName(currentUser.fullName || '');
-      setProfileEmail(currentUser.email || '');
-      setProfilePassword('');
-      setProfileError('');
-      setIsProfileDialogOpen(true);
-    }
-  };
-
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!profileName.trim()) {
-      setProfileError("Full name is required");
-      return;
-    }
-    if (!profileEmail.trim()) {
-      setProfileError("Email is required");
-      return;
-    }
-    setIsSavingProfile(true);
-    setProfileError('');
-    try {
-      const token = getAuthToken();
-      const payload = new FormData();
-      payload.append('fullName', profileName.trim());
-      payload.append('email', profileEmail.trim());
-      if (profilePassword.trim()) {
-        payload.append('password', profilePassword.trim());
-      }
-      
-      const res = await axios.put(`${baseUrl.userUpdate}/${currentUser._id}`, payload, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        }
-      });
-      
-      if (res.data?.status === 'Success') {
-        Swal.fire({
-          title: 'Success!',
-          text: 'Profile updated successfully',
-          icon: 'success',
-          timer: 1500,
-          showConfirmButton: false,
-        });
-        setCurrentUser(res.data.data);
-        setIsProfileDialogOpen(false);
-      } else {
-        setProfileError(res.data?.message || 'Failed to update profile');
-      }
-    } catch (err: any) {
-      setProfileError(err.response?.data?.message || 'Failed to update profile');
-    } finally {
-      setIsSavingProfile(false);
-    }
-  };
-
 
   useEffect(() => {
     const token = getAuthToken();
@@ -302,26 +238,41 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
         <div className="flex h-full flex-col">
           {/* Header with Logo */}
           <div className={`flex items-center h-20 px-4 border-b border-white/10 ${isOpen ? 'justify-between' : 'justify-center'}`}>
-            <div className={`flex items-center gap-3 ${!isOpen && 'hidden md:flex'}`}>
-              {isOpen && (
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#30cdb2] to-[#23abed] flex items-center justify-center font-bold text-white shadow-lg">
-                  LF
-                </div>
-              )}
-              {isOpen && <span className="text-lg font-semibold text-white tracking-wide">LeadFlow</span>}
-            </div>
 
-            <button
-              onClick={toggleSidebar}
-              className={`p-2 rounded-lg hover:bg-white/10 transition-all duration-200 group ${!isOpen && 'md:block'}`}
-              aria-label="Toggle sidebar"
-            >
-              {isOpen ? (
-                <ChevronLeft className="h-5 w-5 text-white/70 group-hover:text-white transition-all" />
-              ) : (
-                <Menu className="h-6 w-6 text-white/70 group-hover:text-white transition-all" />
-              )}
-            </button>
+            {/* Closed state - GS icon */}
+            {!isOpen && (
+              <div
+                onClick={toggleSidebar}
+                className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#30cdb2] to-[#23abed] flex items-center justify-center font-bold text-white shadow-lg cursor-pointer"
+              >
+                GS
+              </div>
+            )}
+
+            {/* Open state - Logo text + close button */}
+
+            {isOpen && (
+              <>
+                {/* Logo only - no GS icon */}
+                <div className="flex flex-col leading-tight  px-3">
+                  <span className="font-bold text-base tracking-widest uppercase" style={{ color: '#30cdb2' }}>
+                    Greeneable
+                  </span>
+                  <span className="text-white text-[10px] tracking-widest uppercase opacity-80">
+                    Solar
+                  </span>
+                </div>
+
+                {/* Close arrow */}
+                <button
+                  onClick={toggleSidebar}
+                  className="p-2 rounded-lg hover:bg-white/10 transition-all duration-200"
+                  aria-label="Close sidebar"
+                >
+                  <ChevronLeft className="h-5 w-5 text-white/70 hover:text-white transition-all" />
+                </button>
+              </>
+            )}
           </div>
 
           {/* Navigation Menu */}
@@ -401,108 +352,10 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
             </ul>
           </nav>
 
-          {/* User Info */}
-          {currentUser && (
-            <div 
-              onClick={handleOpenProfileDialog}
-              className={`p-3 border-t border-white/10 flex items-center gap-3 cursor-pointer hover:bg-white/10 transition-colors ${!isOpen && 'justify-center'}`}
-            >
-              <div className="h-9 w-9 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                {currentUser.fullName?.charAt(0)?.toUpperCase() || 'U'}
-              </div>
-              {isOpen && (
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-white truncate">{currentUser.fullName}</p>
-                  <p className="text-xs text-white/60 truncate">{currentUser.email}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-
         </div>
       </aside>
 
-      {/* Profile Update Dialog */}
-      {isProfileDialogOpen && (
-        <CenterDialog
-          isOpen={isProfileDialogOpen}
-          onClose={() => setIsProfileDialogOpen(false)}
-        >
-          <div className="flex flex-col space-y-4">
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h3 className="text-lg font-bold text-gray-800">Update Profile</h3>
-              <button
-                type="button"
-                onClick={() => setIsProfileDialogOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-100"
-                aria-label="Close"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
 
-            {/* Form Body */}
-            <form id="profile-update-form" onSubmit={handleUpdateProfile} className="space-y-4">
-              {profileError && (
-                <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
-                  {profileError}
-                </div>
-              )}
-              
-              <FormInput
-                label="Full Name"
-                name="profileName"
-                type="text"
-                value={profileName}
-                onChange={(e: any) => setProfileName(e.target.value)}
-                required
-                placeholder="Enter full name"
-              />
-              
-              <FormInput
-                label="Email"
-                name="profileEmail"
-                type="email"
-                value={profileEmail}
-                onChange={(e: any) => setProfileEmail(e.target.value)}
-                required
-                placeholder="Enter email"
-              />
-              
-              <FormInput
-                label="New Password"
-                name="profilePassword"
-                type="password"
-                value={profilePassword}
-                onChange={(e: any) => setProfilePassword(e.target.value)}
-                placeholder="Leave blank to keep current password"
-              />
-            </form>
-
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
-              <button
-                type="button"
-                onClick={() => setIsProfileDialogOpen(false)}
-                className="px-4 py-2 cursor-pointer rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 text-sm font-medium"
-                disabled={isSavingProfile}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="profile-update-form"
-                className="px-4 py-2 cursor-pointer rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
-                disabled={isSavingProfile}
-              >
-                {isSavingProfile ? 'Saving...' : 'Update'}
-              </button>
-            </div>
-          </div>
-        </CenterDialog>
-      )}
     </>
   );
 }
