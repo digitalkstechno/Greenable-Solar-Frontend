@@ -21,7 +21,7 @@ function getBorderClasses(hasError: boolean, isFocused: boolean, disabled: boole
 }
 
 // ─── Portal Dropdown Hook ──────────────────────────────────────────────────────
-function useDropdownPosition(ref: React.RefObject<HTMLElement>, isOpen: boolean) {
+function useDropdownPosition(ref: React.RefObject<HTMLElement | null>, isOpen: boolean) {
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
 
   const updatePosition = () => {
@@ -66,6 +66,7 @@ interface FormSelectProps {
   helperText?: string;
   icon?: React.ReactNode;
   className?: string;
+  maxHeight?: string;
 }
 
 export const FormSelect: React.FC<FormSelectProps> = ({
@@ -82,10 +83,11 @@ export const FormSelect: React.FC<FormSelectProps> = ({
   helperText,
   icon,
   className = "",
+  maxHeight = "max-h-64",
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const triggerRef = useRef<HTMLElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
   const coords = useDropdownPosition(triggerRef, isOpen);
 
   const hasError = !!error;
@@ -185,7 +187,7 @@ export const FormSelect: React.FC<FormSelectProps> = ({
             }}
           >
             <div className="bg-white border border-gray-100 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] overflow-hidden">
-              <ul className="max-h-64 overflow-y-auto py-2 scrollbar-thin scrollbar-thumb-gray-200">
+              <ul className={`${maxHeight} overflow-y-auto py-2 scrollbar-thin scrollbar-thumb-gray-200`}>
                 {options.length === 0 ? (
                   <li className="px-4 py-6 text-sm text-gray-400 text-center">No options found</li>
                 ) : (
@@ -247,6 +249,7 @@ interface FormMultiSelectProps {
   icon?: React.ReactNode;
   className?: string;
   maxSelected?: number;
+  maxHeight?: string;
 }
 
 export const FormMultiSelect: React.FC<FormMultiSelectProps> = ({
@@ -264,10 +267,11 @@ export const FormMultiSelect: React.FC<FormMultiSelectProps> = ({
   className = "",
   maxSelected,
   onBlur,
+  maxHeight = "max-h-64",
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const triggerRef = useRef<HTMLElement>(null);
+  const triggerRef = useRef<HTMLDivElement>(null);
   const coords = useDropdownPosition(triggerRef, isOpen);
 
   const hasError = !!error;
@@ -409,7 +413,7 @@ export const FormMultiSelect: React.FC<FormMultiSelectProps> = ({
                   <span>{value.length}/{maxSelected}</span>
                 </div>
               )}
-              <ul className="max-h-64 overflow-y-auto py-2 scrollbar-thin scrollbar-thumb-gray-200">
+              <ul className={`${maxHeight} overflow-y-auto py-2 scrollbar-thin scrollbar-thumb-gray-200`}>
                 {options.length === 0 ? (
                   <li className="px-4 py-6 text-sm text-gray-400 text-center">No options available</li>
                 ) : (

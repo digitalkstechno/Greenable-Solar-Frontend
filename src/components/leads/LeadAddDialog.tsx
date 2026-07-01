@@ -454,6 +454,7 @@ export default function LeadAddDialog({
                 error={getFieldError('assignedTo')}
                 placeholder="Select User"
                 required={requiredFields.includes('assignedTo')}
+                maxHeight="max-h-44"
               />
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

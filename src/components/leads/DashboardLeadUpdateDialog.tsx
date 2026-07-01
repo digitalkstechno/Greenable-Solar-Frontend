@@ -5,6 +5,7 @@ import { baseUrl, getAuthToken } from '@/config';
 import { toast } from 'react-toastify';
 import { FormSelect } from '../ui/FormSelect';
 import TimePicker from '@/components/ui/TimePicker';
+import Calendar from '@/components/ui/Calendar';
 
 interface ApiLead {
   _id: string;
@@ -36,6 +37,7 @@ export default function DashboardLeadUpdateDialog({ isOpen, onClose, lead, onSuc
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
   const [staffId, setStaffId] = useState<string>('');
+
 
   useEffect(() => {
     if (!isOpen) return;
@@ -216,11 +218,17 @@ export default function DashboardLeadUpdateDialog({ isOpen, onClose, lead, onSuc
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-gray-700">Next Followup Date <span className="text-red-500">*</span></label>
-                  <input
-                    type="date"
-                    value={nextDate}
-                    onChange={(e) => setNextDate(e.target.value)}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                  <Calendar
+                    value={nextDate ? new Date(nextDate + 'T00:00:00') : null}
+                    onChange={(date) => {
+                      if (!date) { setNextDate(''); return; }
+                      const y = date.getFullYear();
+                      const m = String(date.getMonth() + 1).padStart(2, '0');
+                      const d = String(date.getDate()).padStart(2, '0');
+                      setNextDate(`${y}-${m}-${d}`);
+                    }}
+                    minDate={new Date(new Date().setHours(0, 0, 0, 0))}
+                    placeholder="Select date"
                   />
                 </div>
                 <div className="space-y-1">
