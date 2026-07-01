@@ -61,6 +61,7 @@ interface DataTableProps<T> {
     show?: (row: T) => boolean;
   }[];
   searchValue?: string;
+  footer?: React.ReactNode;
 }
 
 export default function DataTable<T extends Record<string, any>>({
@@ -90,6 +91,7 @@ export default function DataTable<T extends Record<string, any>>({
   onExport,
   extraActions,
   searchValue: searchValueProp = '',
+  footer,
 }: DataTableProps<T>) {
   const [searchValue, setSearchValue] = useState(searchValueProp);
   const [showFilters, setShowFilters] = useState(false);
@@ -418,6 +420,7 @@ export default function DataTable<T extends Record<string, any>>({
               ))
             )}
           </tbody>
+          {footer && <tfoot>{footer}</tfoot>}
         </table>
       </div>
 

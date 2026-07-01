@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { Phone, Mail, Plus } from 'lucide-react';
+import { Phone, Mail, Plus, FileText } from 'lucide-react';
 import { baseUrl, getAuthToken } from '@/config';
 import { ApiSource, ApiStatus, ApiUser, ApiLead } from './types';
 import DataTable, { Column } from '@/components/DataTable';
@@ -10,6 +10,7 @@ import DeleteDialog from '@/components/DeleteDialog';
 import Swal from 'sweetalert2';
 import ProjectDetailDrawer from './ProjectDetailDrawer';
 import PaymentModal from './PaymentModal';
+import LeadDocumentsDialog from './LeadDocumentsDialog';
 
 // ── Debounce helper ──────────────────────────────────────────────────────────
 function useDebounce<T>(value: T, delay = 500): T {
@@ -22,7 +23,7 @@ function useDebounce<T>(value: T, delay = 500): T {
 }
 
 // ── Table row type ───────────────────────────────────────────────────────────
-type TableLead = {
+interface TableLead extends Record<string, any> {
   id: string;
   name: string;
   contact: string;
@@ -34,9 +35,11 @@ type TableLead = {
   status: string;
   staff: string;
   lastFollowUp: string;
+  projectAmount?: number;
+  pendingAmount?: number;
   isActive?: boolean;
   _raw?: any;
-};
+}
 
 interface Props {
   statuses: ApiStatus[];
@@ -80,6 +83,9 @@ interface Props {
   lostCount?: number;
   onStatusFilter?: (status: string) => void;
   activeStatusFilter?: string;
+  totals?: any;
+  currentUser?: any;
+  fetchLeadsList?: any;
 }
 
 function mapLead(item: any): TableLead {
@@ -97,6 +103,8 @@ function mapLead(item: any): TableLead {
     lastFollowUp: item.updatedAt
       ? new Date(item.updatedAt).toLocaleDateString()
       : '-',
+    projectAmount: item.projectAmount,
+    pendingAmount: item.pendingAmount,
     isActive: item.isActive,
     _raw: item,
   };
@@ -121,6 +129,8 @@ export default function LeadsListView({
   lostCount = 0,
   onStatusFilter,
   activeStatusFilter = '',
+  totals,
+  currentUser,
 }: Props) {
   const router = useRouter();
   const [leads, setLeads] = useState<TableLead[]>([]);
@@ -129,6 +139,7 @@ export default function LeadsListView({
   const [localLoading, setLocalLoading] = useState(false);
   const [projectDetailLead, setProjectDetailLead] = useState<ApiLead | null>(null);
   const [paymentLead, setPaymentLead] = useState<ApiLead | null>(null);
+  const [documentsLead, setDocumentsLead] = useState<ApiLead | null>(null);
 
   // Use loading from prop or local state
   const loading = loadingProp !== undefined ? loadingProp : localLoading;
@@ -217,12 +228,27 @@ export default function LeadsListView({
     { key: 'status', label: 'STATUS' },
     { key: 'staff', label: 'ASSIGNED STAFF' },
     { key: 'lastFollowUp', label: 'LAST FOLLOW-UP' },
-    // { 
-    //   key: 'paymentAmount', 
-    //   label: 'AMOUNT',
-    //   render: (v) => (v ? <span className="font-bold text-emerald-600">₹{v.toLocaleString()}</span> : <span className="text-gray-400">-</span>)
-    // },
   ];
+
+  if (activeStatusFilter === 'won') {
+    columns.push({
+      key: 'projectAmount',
+      label: 'Total Amount',
+      render: (_v, row) => {
+        const projectAmt = row.projectAmount ?? row._raw?.projectDetail?.projectAmount ?? 0;
+        return projectAmt ? `₹${Number(projectAmt).toLocaleString()}` : '-';
+      },
+    });
+    columns.push({
+      key: 'pendingAmount',
+      label: 'Pending Amount',
+      render: (_v, row) => {
+        const projectAmt = row.projectAmount ?? row._raw?.projectDetail?.projectAmount ?? 0;
+        const pendingAmt = row.pendingAmount ?? (projectAmt - (row._raw?.paymentAmount || 0));
+        return pendingAmt ? `₹${Number(pendingAmt).toLocaleString()}` : '-';
+      },
+    });
+  }
 
   // ── Handlers ─────────────────────────────────────────────────────────────
   const handleView = async (row: TableLead) => {
@@ -362,27 +388,89 @@ export default function LeadsListView({
         onView={handleView}
         onEdit={permissions?.update ? handleEdit : undefined}
         onDelete={permissions?.delete ? (row) => { setDeleteTarget(row); setShowDelete(true); } : undefined}
-        extraActions={permissions?.update ? [
-          {
-            label: 'Add Details',
-            icon: <Plus className="h-3.5 w-3.5" />,
-            color: 'emerald',
-            onClick: (row) => {
-              const rawLead: ApiLead = row._raw || row;
-              setProjectDetailLead(rawLead);
-            },
-          },
-          {
-            label: 'Payment',
-            icon: <span className="text-xs font-bold">₹</span>,
-            color: 'emerald',
-            show: (row) => row.status?.toLowerCase() === 'won',
-            onClick: (row) => {
-              const rawLead: ApiLead = row._raw || row;
-              setPaymentLead(rawLead);
-            },
+        extraActions={(() => {
+          const actions: {
+            label: string;
+            onClick: (row: TableLead) => void;
+            icon?: React.ReactNode;
+            color?: 'blue' | 'green' | 'red' | 'orange' | 'purple' | 'emerald';
+            show?: (row: TableLead) => boolean;
+          }[] = [];
+          const roleName = currentUser?.role?.roleName || '';
+          if (roleName === 'admin' || roleName === 'Super Admin' || roleName.includes('document')) {
+            actions.push({
+              label: 'Documents',
+              icon: <FileText className="h-3.5 w-3.5" />,
+              color: 'emerald' as const,
+              show: (row: TableLead) => row.status?.toLowerCase() === 'won',
+              onClick: (row: TableLead) => {
+                const rawLead: ApiLead = row._raw || row;
+                setDocumentsLead(rawLead);
+              },
+            });
           }
-        ] : undefined}
+          if (permissions?.update) {
+            actions.push({
+              label: 'Add Details',
+              icon: <Plus className="h-3.5 w-3.5" />,
+              color: 'emerald' as const,
+              onClick: (row: TableLead) => {
+                const rawLead: ApiLead = row._raw || row;
+                setProjectDetailLead(rawLead);
+              },
+            });
+            actions.push({
+              label: 'Payment',
+              icon: <span className="text-xs font-bold">₹</span>,
+              color: 'emerald' as const,
+              show: (row: TableLead) => row.status?.toLowerCase() === 'won',
+              onClick: (row: TableLead) => {
+                const rawLead: ApiLead = row._raw || row;
+                setPaymentLead(rawLead);
+              },
+            });
+          }
+          return actions.length > 0 ? actions : undefined;
+        })()}
+        footer={activeStatusFilter === 'won' && totals ? (
+        <tr className="sticky bottom-0 z-30 bg-white border-t-2 border-emerald-500 shadow-[0_-6px_18px_rgba(16,185,129,0.15)]">
+  <td
+    colSpan={6}
+    className="px-6 py-5 text-right bg-emerald-50 font-bold text-gray-800 text-sm uppercase tracking-wider"
+  >
+    Grand Totals
+  </td>
+
+  <td className="px-6 py-5 text-center bg-emerald-50 border-l border-emerald-100">
+    <p className="text-[11px] font-medium uppercase text-gray-500">
+      KW Req
+    </p>
+    <p className="mt-1 text-lg font-bold text-emerald-600">
+      {totals.totalKwReq?.toLocaleString() || 0}
+    </p>
+  </td>
+
+  <td className="px-6 py-5 text-center bg-emerald-50 border-l border-emerald-100">
+    <p className="text-[11px] font-medium uppercase text-gray-500">
+      Total Amount
+    </p>
+    <p className="mt-1 text-lg font-bold text-green-600">
+      ₹{totals.totalAmount?.toLocaleString() || 0}
+    </p>
+  </td>
+
+  <td className="px-6 py-5 text-center bg-emerald-50 border-l border-emerald-100">
+    <p className="text-[11px] font-medium uppercase text-gray-500">
+      Pending
+    </p>
+    <p className="mt-1 text-lg font-bold text-red-500">
+      ₹{totals.totalPendingAmount?.toLocaleString() || 0}
+    </p>
+  </td>
+
+  <td className="bg-emerald-50"></td>
+</tr>
+        ) : undefined}
       />
 
       {/* Delete dialog */}
@@ -428,6 +516,13 @@ export default function LeadsListView({
         lead={paymentLead}
         onClose={() => setPaymentLead(null)}
         onPaymentAdded={onRefresh}
+      />
+
+      {/* Lead Documents Dialog */}
+      <LeadDocumentsDialog
+        isOpen={!!documentsLead}
+        lead={documentsLead}
+        onClose={() => setDocumentsLead(null)}
       />
     </div>
   );

@@ -33,11 +33,16 @@ export default function PaymentModal({ isOpen, lead, onClose, onPaymentAdded }: 
   const [totalReceived, setTotalReceived] = useState(0);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    amount: string;
+    date: string;
+    mode: 'Cash' | 'GPay' | 'Bank Transfer';
+    proof: File | null;
+  }>({
     amount: '',
     date: new Date().toISOString().split('T')[0],
-    mode: 'Cash' as const,
-    proof: null as File | null,
+    mode: 'Cash',
+    proof: null,
   });
 
   useEffect(() => {

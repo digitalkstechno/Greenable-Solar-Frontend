@@ -336,7 +336,7 @@ import React, { useState } from "react";
 import { Eye, EyeOff, AlertCircle, CheckCircle, Check } from "lucide-react";
 
 interface FormInputProps {
-  label?: string;
+  label?: React.ReactNode;
   name: string;
   type?: string;
   value: any;
@@ -352,6 +352,7 @@ interface FormInputProps {
   helperText?: string;
   icon?: React.ReactNode;
   className?: string;
+  labelClassName?: string;
   checked?: boolean; // For checkbox
   checkboxColor?: string; // Custom color for checkbox
   min?: string;

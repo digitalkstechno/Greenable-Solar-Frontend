@@ -1424,11 +1424,7 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
       <Dialog
         isOpen={reassignOpen}
         onClose={() => setReassignOpen(false)}
-        title={
-          <div className="bg-secondary rounded-t-lg text-white font-bold uppercase">
-            REASSIGN
-          </div>
-        }
+        title="REASSIGN"
         size="md"
         footer={
           <>

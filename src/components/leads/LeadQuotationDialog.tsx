@@ -474,12 +474,6 @@ export default function LeadQuotationDialog({ isOpen, onClose, lead, onRefresh, 
         <div>
           <div className="flex items-center gap-4 mb-2">
             <span className="text-sm font-medium text-gray-700">Options (Columns):</span>
-            <button
-              onClick={handleAddOption}
-              className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 border border-blue-200 rounded px-2 py-1 bg-blue-50"
-            >
-              + Add Option
-            </button>
             <span className="text-xs text-gray-400">Max 5 options</span>
           </div>
 
