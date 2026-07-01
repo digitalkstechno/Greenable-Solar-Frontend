@@ -8,6 +8,7 @@ import DataTable, { Column } from '@/components/DataTable';
 import axios from 'axios';
 import { baseUrl, getAuthToken } from '@/config';
 import DeleteDialog from '@/components/DeleteDialog';
+import { toast } from 'react-toastify';
 import FormInput from '@/components/ui/Input';
 import FormSelect from '@/components/ui/FormSelect';
 import { PackageOpen } from 'lucide-react';
@@ -59,6 +60,7 @@ export function StockInContent() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<TransactionType | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [setupPermissions, setSetupPermissions] = useState<any>(null);
 
   const token = typeof window !== 'undefined' ? getAuthToken() : null;
@@ -147,8 +149,9 @@ export function StockInContent() {
       await fetchCategoriesAndProducts(); // refresh product currentStock
       setIsDialogOpen(false);
       formik.resetForm();
+      toast.success(values._id ? 'Stock In updated successfully' : 'Stock In added successfully');
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Operation failed');
+      toast.error(err.response?.data?.message || 'Operation failed');
     } finally {
       setIsSubmitting(false);
     }
@@ -161,14 +164,20 @@ export function StockInContent() {
 
   const handleConfirmDelete = async () => {
     if (!transactionToDelete) return;
+    setIsDeleting(true);
     try {
       await axios.delete(`${baseUrl.stock}/${transactionToDelete._id}`, { headers });
       await fetchData();
       await fetchCategoriesAndProducts();
       setShowDeleteDialog(false);
       setTransactionToDelete(null);
+      toast.success('Stock In deleted successfully');
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Delete failed');
+      setShowDeleteDialog(false);
+      setTransactionToDelete(null);
+      toast.error(err.response?.data?.message || 'Delete failed');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -253,15 +262,17 @@ export function StockInContent() {
           <>
             <button
               onClick={() => { setShowDeleteDialog(false); setTransactionToDelete(null); }}
-              className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+              className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              disabled={isDeleting}
             >
               Cancel
             </button>
             <button
               onClick={handleConfirmDelete}
-              className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
+              className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+              disabled={isDeleting}
             >
-              Delete
+              {isDeleting ? 'Deleting...' : 'Delete'}
             </button>
           </>
         }
@@ -272,7 +283,7 @@ export function StockInContent() {
       <Dialog
         isOpen={isDialogOpen}
         onClose={() => { setIsDialogOpen(false); formik.resetForm(); }}
-        title="ADD STOCK IN"
+        title="Add Stock In"
         footer={
           <>
             <button

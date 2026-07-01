@@ -361,15 +361,12 @@ export default function LeadsPage() {
             <button
               onClick={() => setShowFilterDrawer(!showFilterDrawer)}
               className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs md:text-sm font-medium transition-all cursor-pointer ${showFilterDrawer || hasActiveFilters
-                ? 'bg-primary-50 text-primary-600 border border-primary-200 hover:bg-primary-100'
-                : 'bg-gray-100 text-gray-700 border border-transparent hover:bg-gray-200'
+                ? 'bg-primary-100 text-primary-600 border border-primary-300 hover:bg-primary-100'
+                : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
                 }`}
             >
               <Filter className="h-4 w-4" />
               <span className="hidden sm:inline">Filters</span>
-              {/* {hasActiveFilters && (
-                <span className="h-2 w-2 bg-primary-500 rounded-full"></span>
-              )} */}
             </button>
 
             {/* Excel Export Button */}

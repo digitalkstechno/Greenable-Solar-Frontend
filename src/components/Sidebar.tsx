@@ -243,7 +243,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
             {!isOpen && (
               <div
                 onClick={toggleSidebar}
-                className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#30cdb2] to-[#23abed] flex items-center justify-center font-bold text-white shadow-lg cursor-pointer"
+                className="w-10 h-10 rounded-xl bg-[#45A84A] flex items-center justify-center font-bold text-white shadow-lg cursor-pointer"
               >
                 GS
               </div>
@@ -334,7 +334,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
                     ) : (
                       <button
                         onClick={() => handleNavigation(item.path)}
-                        className={`flex w-full cursor-pointer items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200 group ${isItemActive
+                        className={`flex w-full cursor-pointer justify-center items-center py-3 px-4 gap-3 rounded-xl transition-all duration-200 group ${isItemActive
                           ? 'bg-[#f4f7fb] text-green-600 shadow-md'
                           : 'text-white/80 hover:bg-white/10 hover:text-white'
                           }`}

@@ -289,7 +289,7 @@ export function StockOutContent() {
       <Dialog
         isOpen={isDialogOpen}
         onClose={() => { setIsDialogOpen(false); formik.resetForm(); }}
-        title="ADD STOCK OUT"
+        title="Add Stock Out"
         footer={
           <>
             <button

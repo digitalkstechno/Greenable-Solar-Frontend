@@ -284,7 +284,7 @@ export function ProductContent() {
           setIsDialogOpen(false);
           formik.resetForm();
         }}
-        title={formik.values._id ? 'EDIT PRODUCT' : 'ADD PRODUCT'}
+        title={formik.values._id ? 'Edit Product' : 'Add Product'}
         footer={
           <>
             <button

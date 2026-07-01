@@ -523,7 +523,7 @@ export default function Header({ toggleSidebar }: HeaderProps) {
 
             {showNotifications && (
               <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-sm rounded-lg bg-white shadow-xl overflow-hidden z-50">
-                <div className="px-4 py-3 border-b border-gray-100 bg-[#0a2352] flex justify-between items-center">
+                <div className="px-4 py-3 border-b border-gray-100 bg-[#d87612] flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <h3 className="text-sm font-semibold text-white">Notifications</h3>
                     {/* Counter badge on the right side of the header */}

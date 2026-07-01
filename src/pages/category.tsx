@@ -249,7 +249,7 @@ export function CategoryContent() {
           setIsDialogOpen(false);
           formik.resetForm();
         }}
-        title={formik.values._id ? 'EDIT CATEGORY' : 'ADD CATEGORY'}
+        title={formik.values._id ? 'Edit Category' : 'Add Category'}
         footer={
           <>
             <button

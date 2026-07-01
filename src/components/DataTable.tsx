@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   FiChevronLeft,
   FiChevronRight,
+  FiChevronDown,
   FiEdit,
   FiTrash2,
   FiEye,
@@ -92,6 +94,50 @@ export default function DataTable<T extends Record<string, any>>({
   const [searchValue, setSearchValue] = useState(searchValueProp);
   const [showFilters, setShowFilters] = useState(false);
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
+  const [isPageSizeOpen, setIsPageSizeOpen] = useState(false);
+  const [pageSizeMenuPos, setPageSizeMenuPos] = useState<{ top: number; left: number; width: number } | null>(null);
+  const pageSizeRef = useRef<HTMLDivElement | null>(null);
+  const pageSizeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const pageSizeMenuRef = useRef<HTMLDivElement | null>(null);
+  const pageSizeOptions = [10, 25, 50, 100];
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const openPageSizeMenu = () => {
+    const rect = pageSizeButtonRef.current?.getBoundingClientRect();
+    if (rect) {
+      const estimatedMenuHeight = pageSizeOptions.length * 36 + 2; // ~36px per option row + border
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const shouldFlipUp = spaceBelow < estimatedMenuHeight && rect.top > estimatedMenuHeight;
+
+      setPageSizeMenuPos({
+        top: shouldFlipUp
+          ? rect.top + window.scrollY - estimatedMenuHeight
+          : rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    }
+    setIsPageSizeOpen((v) => !v);
+  };
+
+  useEffect(() => {
+    if (!isPageSizeOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        pageSizeRef.current && !pageSizeRef.current.contains(target) &&
+        pageSizeMenuRef.current && !pageSizeMenuRef.current.contains(target)
+      ) {
+        setIsPageSizeOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isPageSizeOpen]);
 
   useEffect(() => {
     setSearchValue(searchValueProp);
@@ -207,7 +253,7 @@ export default function DataTable<T extends Record<string, any>>({
                   placeholder="Search anything..."
                   value={searchValue}
                   onChange={(e) => handleSearch(e.target.value)}
-                  className="w-full sm:w-80 rounded-md border border-gray-200 bg-white pl-10 pr-4 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 transition-all duration-200 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 hover:border-gray-300"
+                  className="w-full sm:w-80 h-11 rounded-md border border-gray-200 bg-white pl-10 pr-4 text-sm text-gray-700 placeholder:text-gray-400 transition-all duration-200 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 hover:border-gray-300"
                 />
               </div>
             )}
@@ -223,7 +269,7 @@ export default function DataTable<T extends Record<string, any>>({
             {addButton && (
               <button
                 onClick={addButton.onClick}
-                className="inline-flex items-center gap-2 rounded-md bg-secondary px-6 py-2 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 active:scale-95"
+                className="inline-flex h-11 items-center gap-2 rounded-md bg-secondary px-6 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 active:scale-95"
               >
                 {addButton.icon || <span className="text-lg">+</span>}
                 {addButton.label}
@@ -379,18 +425,52 @@ export default function DataTable<T extends Record<string, any>>({
       {pagination && totalPages > 0 && !loading && data.length > 0 && (
         <div className="border-t border-gray-100 bg-gradient-to-r from-gray-50 to-white px-4 md:px-6 py-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-wrap items-center gap-4 text-sm">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
               <div className="flex items-center gap-2">
                 <span className="font-medium text-gray-600">Rows</span>
-                <select
-                  value={pageSize}
-                  onChange={(e) => onPageSizeChange(Number(e.target.value))}
-                  className="cursor-pointer rounded-lg border border-gray-200 bg-white px-2 py-1 text-sm font-medium text-gray-700 transition-all focus:border-primary-500 focus:outline-none"
-                >
-                  {[10, 25, 50, 100].map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
+                <div className="relative" ref={pageSizeRef}>
+                  <button
+                    ref={pageSizeButtonRef}
+                    type="button"
+                    onClick={openPageSizeMenu}
+                    className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-200 bg-white pl-3 pr-2 py-1 text-sm font-medium text-gray-700 transition-all focus:border-primary-500 focus:outline-none"
+                  >
+                    {pageSize}
+                    <FiChevronDown className={`h-3.5 w-3.5 text-gray-400 transition-transform ${isPageSizeOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {isMounted && isPageSizeOpen && pageSizeMenuPos && createPortal(
+                    <div
+                      ref={pageSizeMenuRef}
+                      style={{
+                        position: 'absolute',
+                        top: pageSizeMenuPos.top,
+                        left: pageSizeMenuPos.left,
+                        minWidth: Math.max(pageSizeMenuPos.width, 64),
+                      }}
+                      className="z-[9999] overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg"
+                    >
+                      {pageSizeOptions.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => {
+                            onPageSizeChange(s);
+                            setIsPageSizeOpen(false);
+                          }}
+                          className={`block w-full px-3 py-2 text-left text-sm font-medium transition-colors ${
+                            s === pageSize
+                              ? 'bg-[#D87613] text-white'
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>,
+                    document.body
+                  )}
+                </div>
               </div>
               <span className="text-gray-500 text-xs md:text-sm">
                 Showing <span className="font-medium text-gray-700">{(currentPage - 1) * pageSize + 1}</span> to{' '}

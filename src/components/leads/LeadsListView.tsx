@@ -314,7 +314,7 @@ export default function LeadsListView({
             }`}
         >
           New Lead
-          <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-gray-200 text-gray-700">
+          <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700">
             {newLeadCount}
           </span>
         </button>
