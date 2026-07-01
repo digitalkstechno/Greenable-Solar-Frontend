@@ -137,6 +137,8 @@ export default function LeadsPage() {
     staffMembers,
     counts,
     loading,
+    totals,
+    currentUser,
     refetchAll,
     fetchLeadsList,
     fetchLostLeads,
@@ -533,6 +535,8 @@ export default function LeadsPage() {
             externalLeads={leadsList}
             fetchLeadsList={fetchLeadsList}
             loading={loading}
+            totals={totals}
+            currentUser={currentUser}
             permissions={{
               create: canCreate,
               readAll: canReadAll,
@@ -571,6 +575,8 @@ export default function LeadsPage() {
             wonLeads={wonLeads}
             statuses={statuses}
             counts={counts?.statusCounts}
+            totals={totals}
+            currentUser={currentUser}
             onEdit={canUpdate ? handleEdit : undefined}
             onView={handleView}
             onRefresh={refetchAll}

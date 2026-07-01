@@ -132,14 +132,26 @@ const FileInput = ({ fieldKey, label, accept = '*', isPdf = false, existingFiles
           {selected ? (
             <p className="text-xs font-medium text-orange-600 truncate">{selected.name}</p>
           ) : existing ? (
-            <p className="text-xs text-green-600 flex items-center gap-1">
-              <CheckCircle className="h-3 w-3" /> {existing.originalName || 'File uploaded'}
-            </p>
+            <div className="flex items-center justify-between w-full">
+              <p className="text-xs text-green-600 flex items-center gap-1 min-w-0">
+                <CheckCircle className="h-3 w-3 flex-shrink-0" />
+                <span className="truncate">{existing.originalName || 'File uploaded'}</span>
+              </p>
+              <a
+                href={existing.url?.startsWith('http') ? existing.url : `${process.env.NEXT_PUBLIC_IMAGE_URL || 'http://localhost:5009'}${existing.url || '/' + existing.path}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs font-bold text-orange-500 hover:text-orange-600 ml-2 whitespace-nowrap"
+                onClick={(e) => e.stopPropagation()}
+              >
+                View
+              </a>
+            </div>
           ) : (
             <p className="text-xs text-gray-500">Click to upload {isPdf ? '(PDF)' : '(Image/PDF)'}</p>
           )}
         </div>
-        <Upload className="h-4 w-4 text-gray-400 flex-shrink-0" />
+        {!existing && <Upload className="h-4 w-4 text-gray-400 flex-shrink-0" />}
         <input
           type="file"
           accept={accept}
@@ -174,6 +186,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
   const [loading, setLoading] = useState(false);
   const [activeSection, setActiveSection] = useState<SectionKey>('project');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showLoanDocs, setShowLoanDocs] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
 
   // Fetch existing data when drawer opens
@@ -195,7 +208,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
         const d = res.data?.data;
         if (d) {
           setForm({
-            leadRefrance: d.leadRefrance || '',
+            leadRefrance: d.leadRefrance || lead.fullName || '',
             panelMake: d.panelMake || '',
             panelWp: d.panelWp?.toString() || '',
             noOfPanel: d.noOfPanel?.toString() || '',
@@ -227,6 +240,78 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
             if (d[key]) ef[key] = d[key];
           });
           setExistingFiles(ef);
+
+          const hasLoan = !!(d.loanDocQuotation || d.loanDocBankStatement || d.loanDocITRReturn || d.loanDocPanCard || d.loanDocAadhaarCard);
+          setShowLoanDocs(hasLoan);
+        } else {
+          // If no existing project detail, try to autofill from the last quotation
+          const quotations = lead.quotations || [];
+          if (quotations.length > 0) {
+            const lastQ = quotations[quotations.length - 1];
+            
+            // Parse solar module
+            const solarStr = lastQ.solarModule || '';
+            const matchSolar = solarStr.match(/^([a-zA-Z\s\-]+)?\s*(\d+)/);
+            const panelMake = matchSolar ? (matchSolar[1] || '').trim() : solarStr;
+            const panelWp = matchSolar ? matchSolar[2] : '';
+
+            // Parse inverter
+            const inverterStr = lastQ.inverter || '';
+            const matchInverter = inverterStr.match(/^([a-zA-Z\s\-]+)?\s*(\d+(\.\d+)?)/);
+            const inverterMake = matchInverter ? (matchInverter[1] || '').trim() : inverterStr;
+            const inverterKw = matchInverter ? matchInverter[2] : '';
+
+            // Parse system capacity (kw) from first row
+            const firstRow = lastQ.rows?.find((r: any) =>
+              r.title && (
+                r.title.toLowerCase().includes('design') ||
+                r.title.toLowerCase().includes('solar power system') ||
+                r.title.toLowerCase().includes('capacity')
+              )
+            );
+            const capacityVal = firstRow ? (firstRow.values?.[0] || '') : '';
+            const matchKw = capacityVal.match(/(\d+(\.\d+)?)/);
+            const kw = matchKw ? parseFloat(matchKw[1]) : 0;
+
+            // Calculate no of panels
+            let noOfPanel = '';
+            if (kw > 0 && panelWp) {
+              const wpNum = parseInt(panelWp);
+              if (wpNum > 0) {
+                noOfPanel = Math.ceil((kw * 1000) / wpNum).toString();
+              }
+            }
+
+            // Parse project amount
+            const costRow = lastQ.rows?.find((r: any) =>
+              r.title && (
+                r.title.toLowerCase().includes('after subsidy') ||
+                r.title.toLowerCase().includes('consumer system cost') ||
+                r.title.toLowerCase().includes('effective price')
+              )
+            );
+            const costVal = costRow ? (costRow.values?.[0] || '') : '';
+            const matchCost = costVal.replace(/[^\d]/g, '');
+            const projectAmount = matchCost || '';
+
+            setForm({
+              ...EMPTY_FORM,
+              leadRefrance: lead.fullName || '',
+              panelMake,
+              panelWp,
+              noOfPanel,
+              inverterMake,
+              inverterKw: inverterKw || (kw > 0 ? kw.toString() : ''),
+              projectAmount,
+            });
+            setShowLoanDocs(false);
+          } else {
+            setForm({
+              ...EMPTY_FORM,
+              leadRefrance: lead.fullName || '',
+            });
+            setShowLoanDocs(false);
+          }
         }
       } catch {
         // 404 = no existing data, fine
@@ -382,12 +467,13 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
     const isPhotosValid = validateSection('photos');
     const isRegDocsValid = validateSection('regDocs');
     const isPaymentValid = validateSection('payment');
-    const isLoanDocsValid = validateSection('loanDocs');
+    const isLoanDocsValid = showLoanDocs ? validateSection('loanDocs') : true;
 
     return isProjValid && isPhotosValid && isRegDocsValid && isPaymentValid && isLoanDocsValid;
   };
 
   const handleSectionSwitch = (target: SectionKey) => {
+    if (target === 'loanDocs' && !showLoanDocs) return;
     if (target !== 'project') {
       const isProjValid = validateSection('project');
       if (!isProjValid) {
@@ -419,7 +505,11 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
       }
     } else if (activeSection === 'payment') {
       if (validateSection('payment')) {
-        setActiveSection('loanDocs');
+        if (showLoanDocs) {
+          setActiveSection('loanDocs');
+        } else {
+          handleSubmit();
+        }
       } else {
         toast.error('Please fill all required Payment Details first');
       }
@@ -445,7 +535,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
         setActiveSection('regDocs');
       } else if (!validateSection('payment')) {
         setActiveSection('payment');
-      } else if (!validateSection('loanDocs')) {
+      } else if (showLoanDocs && !validateSection('loanDocs')) {
         setActiveSection('loanDocs');
       }
       return;
@@ -477,8 +567,11 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
     { key: 'photos', label: 'Site Photos', icon: <Image className="h-4 w-4" /> },
     { key: 'regDocs', label: 'Reg. Docs', icon: <FileCheck className="h-4 w-4" /> },
     { key: 'payment', label: 'Payment', icon: <CreditCard className="h-4 w-4" /> },
-    { key: 'loanDocs', label: 'Loan Docs', icon: <FileText className="h-4 w-4" /> },
   ];
+
+  if (showLoanDocs) {
+    sections.push({ key: 'loanDocs', label: 'Loan Docs', icon: <FileText className="h-4 w-4" /> });
+  }
 
   return (
     <>
@@ -863,11 +956,28 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                       />
                     </div>
                   </div>
+
+                  {/* Loan Toggle */}
+                  <div className="mt-8 flex items-center justify-between p-4 bg-orange-50/50 rounded-2xl border border-orange-100">
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-800">Apply for Loan</h4>
+                      <p className="text-xs text-gray-500 mt-0.5 font-medium">Toggle this if the customer is opting for a solar project loan</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={showLoanDocs}
+                        onChange={(e) => setShowLoanDocs(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                    </label>
+                  </div>
                 </div>
               )}
 
               {/* ─── Loan Docs ───────────────────────────────────────────────────── */}
-              {activeSection === 'loanDocs' && (
+              {activeSection === 'loanDocs' && showLoanDocs && (
                 <div>
                   <SectionTitle>Required Documents for Loan</SectionTitle>
                   {LOAN_DOC_FIELDS.map((f) => (
@@ -919,7 +1029,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
               ) : (
                 <ChevronRight className="h-4 w-4" />
               )}
-              {saving ? 'Saving...' : activeSection === 'loanDocs' ? 'Save Details' : 'Next >'}
+              {saving ? 'Saving...' : activeSection === (showLoanDocs ? 'loanDocs' : 'payment') ? 'Save Details' : 'Next >'}
             </button>
           </div>
         </div>

@@ -7,12 +7,13 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { baseUrl, getAuthToken } from '@/config';
 import { ApiLead } from './types';
-import { RefreshCw, Plus } from 'lucide-react';
+import { RefreshCw, Plus, FileText } from 'lucide-react';
 import DataTable, { Column } from '@/components/DataTable';
 import KanbanCard from './KanbanCard';
 import Swal from 'sweetalert2';
 import ProjectDetailDrawer from './ProjectDetailDrawer';
 import PaymentModal from './PaymentModal';
+import LeadDocumentsDialog from './LeadDocumentsDialog';
 import Calendar from '@/components/ui/Calendar';
 import Dialog from '@/components/Dialog';
 
@@ -58,6 +59,8 @@ interface Props {
     onLostSearch?: (search: string) => void;
     onWonSearch?: (search: string) => void;
     refreshKey?: number;
+    currentUser?: any;
+    totals?: any;
 }
 
 type SubView = 'board' | 'lost' | 'won';
@@ -73,6 +76,8 @@ export default function LeadsKanbanView({
     onLostSearch,
     onWonSearch,
     refreshKey = 0,
+    currentUser,
+    totals,
 }: Props) {
 
     // Local search state for Lost / Won sub-views (debounced → triggers API re-fetch via parent)
@@ -107,6 +112,7 @@ export default function LeadsKanbanView({
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const [projectDetailLead, setProjectDetailLead] = useState<ApiLead | null>(null);
     const [paymentLead, setPaymentLead] = useState<ApiLead | null>(null);
+    const [documentsLead, setDocumentsLead] = useState<ApiLead | null>(null);
 
     // Board state
     const [boardLeads, setBoardLeads] = useState<Record<string, ApiLead[]>>({});
@@ -603,8 +609,23 @@ export default function LeadsKanbanView({
         { key: 'address', label: 'LOCATION', render: (v) => <span className="text-sm">{v || '-'}</span> },
         { key: 'contact', label: 'CONTACT', render: (v, row) => <ContactCell phone={v} email={row.email} /> },
         { key: 'wonDate', label: 'WON DATE', render: (v) => (v ? new Date(v).toLocaleDateString() : 'N/A') },
-        { key: 'assignedTo', label: 'ASSIGNED TO', render: (v) => v?.fullName || '-' },
-        { key: 'paymentAmount', label: 'AMOUNT', render: (v) => (v ? `₹${v.toLocaleString()}` : '-') },
+        { 
+            key: 'projectAmount', 
+            label: 'Total Amount', 
+            render: (_v, row) => {
+                const projectAmt = row.projectAmount ?? row.projectDetail?.projectAmount ?? 0;
+                return projectAmt ? `₹${Number(projectAmt).toLocaleString()}` : '-';
+            } 
+        },
+        { 
+            key: 'pendingAmount', 
+            label: 'Pending Amount', 
+            render: (_v, row) => {
+                const projectAmt = row.projectAmount ?? row.projectDetail?.projectAmount ?? 0;
+                const pendingAmt = row.pendingAmount ?? (projectAmt - (row.paymentAmount || 0));
+                return pendingAmt ? `₹${Number(pendingAmt).toLocaleString()}` : '-';
+            } 
+        },
     ];
 
     return (
@@ -844,22 +865,84 @@ export default function LeadsKanbanView({
                         actions
                         onView={(row) => onView?.(row)}
                         onEdit={permissions?.update ? (row) => onEdit?.(row) : undefined}
-                        extraActions={permissions?.update ? [
-                            {
-                                label: 'Add Details',
-                                icon: <Plus className="h-3.5 w-3.5" />,
-                                color: 'emerald',
-                                onClick: (row) => setProjectDetailLead(row),
-                            },
-                            {
-                                label: 'Payment',
-                                icon: <span className="text-xs font-bold">₹</span>,
-                                color: 'emerald',
-                                onClick: (row) => setPaymentLead(row),
+                        extraActions={(() => {
+                            const actions: {
+                                label: string;
+                                onClick: (row: ApiLead) => void;
+                                icon?: React.ReactNode;
+                                color?: 'blue' | 'green' | 'red' | 'orange' | 'purple' | 'emerald';
+                                show?: (row: ApiLead) => boolean;
+                            }[] = [];
+                            const roleName = currentUser?.role?.roleName || '';
+                            if (roleName === 'admin' || roleName === 'super admin' || roleName.includes('document')) {
+                                actions.push({
+                                    label: 'Documents',
+                                    icon: <FileText className="h-3.5 w-3.5" />,
+                                    color: 'emerald' as const,
+                                    onClick: (row: ApiLead) => {
+                                        setDocumentsLead(row);
+                                    },
+                                });
                             }
-                        ] : undefined}
+                            if (permissions?.update) {
+                                actions.push({
+                                    label: 'Add Details',
+                                    icon: <Plus className="h-3.5 w-3.5" />,
+                                    color: 'emerald',
+                                    onClick: (row: ApiLead) => setProjectDetailLead(row),
+                                });
+                                actions.push({
+                                    label: 'Payment',
+                                    icon: <span className="text-xs font-bold">₹</span>,
+                                    color: 'emerald',
+                                    onClick: (row: ApiLead) => setPaymentLead(row),
+                                });
+                            }
+                            return actions.length > 0 ? actions : undefined;
+                        })()}
                         searchValue={wonSearchValue}
                         onSearch={handleWonSearch}
+                        footer={totals ? (
+  <tr className="sticky bottom-0 z-30 bg-white border-t border-emerald-300 shadow-[0_-4px_12px_rgba(16,185,129,0.12)] backdrop-blur-sm">
+
+  <td
+    colSpan={6}
+    className="px-5 py-2.5 text-right bg-gradient-to-r from-emerald-50 via-white to-emerald-50 font-semibold text-gray-800 uppercase tracking-widest text-xs"
+  >
+    Grand Totals
+  </td>
+
+  <td className="px-5 py-2.5 text-center bg-gradient-to-r from-emerald-50 via-white to-emerald-50 border-l border-emerald-100">
+    <div className="text-[10px] uppercase tracking-wide text-gray-500">
+      KW Req
+    </div>
+    <div className="mt-0.5 text-base font-bold text-emerald-600">
+      {totals.totalKwReq?.toLocaleString() || 0}
+    </div>
+  </td>
+
+  <td className="px-5 py-2.5 text-center bg-gradient-to-r from-emerald-50 via-white to-emerald-50 border-l border-emerald-100">
+    <div className="text-[10px] uppercase tracking-wide text-gray-500">
+      Total Amount
+    </div>
+    <div className="mt-0.5 text-base font-bold text-emerald-700">
+      ₹{totals.totalAmount?.toLocaleString() || 0}
+    </div>
+  </td>
+
+  <td className="px-5 py-2.5 text-center bg-gradient-to-r from-emerald-50 via-white to-emerald-50 border-l border-emerald-100">
+    <div className="text-[10px] uppercase tracking-wide text-gray-500">
+      Pending
+    </div>
+    <div className="mt-0.5 text-base font-bold text-orange-600">
+      ₹{totals.totalPendingAmount?.toLocaleString() || 0}
+    </div>
+  </td>
+
+  <td className="bg-gradient-to-r from-emerald-50 via-white to-emerald-50"></td>
+
+</tr>   
+                        ) : undefined}
                     />
                 </div>
             )}
@@ -878,6 +961,13 @@ export default function LeadsKanbanView({
                 lead={paymentLead}
                 onClose={() => setPaymentLead(null)}
                 onPaymentAdded={onRefresh}
+            />
+
+            {/* Lead Documents Dialog */}
+            <LeadDocumentsDialog
+                isOpen={!!documentsLead}
+                lead={documentsLead}
+                onClose={() => setDocumentsLead(null)}
             />
 
             {/* Mark Lost Modal */}

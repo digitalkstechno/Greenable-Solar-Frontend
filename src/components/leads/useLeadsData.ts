@@ -30,6 +30,8 @@ export function useLeadsData(
   const [staffMembers, setStaffMembers] = useState<ApiUser[]>([]);
   const [leadLabels, setLeadLabels] = useState<LeadLabel[]>([]);
   const [counts, setCounts] = useState<LeadCountSummary | null>(null);
+  const [totals, setTotals] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [permissions, setPermissions] = useState({
     create: false, update: false, delete: false, readAll: false, readOwn: false,
@@ -93,6 +95,9 @@ export function useLeadsData(
         });
 
         const data = res.data?.data;
+        if (res.data?.totals) {
+          setTotals(res.data.totals);
+        }
 
         if (Array.isArray(data)) {
           // Shape A: grouped → [{ leads: [...] }, ...]
@@ -117,6 +122,9 @@ export function useLeadsData(
             limit: 100,
           },
         });
+        if (res.data?.totals) {
+          setTotals(res.data.totals);
+        }
         setLeads(res.data?.data || []);
       }
     } catch (e) {
@@ -147,6 +155,9 @@ export function useLeadsData(
       });
       const arr = res.data?.data || [];
       const p = res.data?.pagination || {};
+      if (res.data?.totals) {
+        setTotals(res.data.totals);
+      }
       setLeadsList(arr);
       setListTotalItems(p.totalRecords ?? p.total ?? p.count ?? arr.length);
       setListTotalPages(p.totalPages ?? (p.totalRecords ? Math.ceil(p.totalRecords / LIMIT) : 1));
@@ -211,6 +222,9 @@ export function useLeadsData(
       const raw = res.data?.data;
       const arr: ApiLead[] = Array.isArray(raw) ? raw : (raw?.data || []);
       const p = res.data?.pagination || {};
+      if (res.data?.totals) {
+        setTotals(res.data.totals);
+      }
       setWonLeads(arr);
       setWonTotalItems(p.totalRecords ?? p.total ?? p.count ?? arr.length);
       setWonTotalPages(p.totalPages ?? (p.totalRecords ? Math.ceil(p.totalRecords / LIMIT) : 1));
@@ -248,11 +262,12 @@ export function useLeadsData(
       const [stRes, staffRes, meRes] = await Promise.all([
         axios.get(baseUrl.leadStatuses, { headers: getHeaders() }),
         axios.get(baseUrl.getAllUsers, { headers: getHeaders() }),
-        axios.get(baseUrl.me, { headers: getHeaders() })
+        axios.get(baseUrl.currentStaff, { headers: getHeaders() })
       ]);
       setStatuses(stRes.data?.data ?? []);
       setStaffMembers(staffRes.data?.data ?? []);
       const role = meRes.data?.data?.role || {};
+      setCurrentUser(meRes.data?.data || null);
       const rawPerms = Array.isArray(role.permissions) ? role.permissions[0] : role.permissions || {};
       const lp = rawPerms.lead || {};
       setPermissions({
@@ -388,6 +403,7 @@ export function useLeadsData(
     lostLeads, wonLeads,
     sources, statuses, staffMembers, leadLabels,
     counts, loading, permissions,
+    totals, currentUser,
     refetchAll,
     fetchLeadsList,
     fetchKanbanLeads,
