@@ -10,6 +10,7 @@ import { baseUrl, getAuthToken } from '@/config';
 import { toast } from 'react-toastify';
 import DeleteDialog from '@/components/DeleteDialog';
 import FormInput from '@/components/ui/Input';
+import { useAppSelector } from '@/store/hooks';
 
 function useDebounce<T>(value: T, delay: number = 500): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -81,8 +82,23 @@ export function LeadStatusContent() {
   const [statusToDelete, setStatusToDelete] = useState<LeadItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const [setupPermissions, setSetupPermissions] = useState<any>(null);
+
+  const { data: currentUser } = useAppSelector((state) => state.userData);
   const token = typeof window !== 'undefined' ? getAuthToken() : null;
   const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+
+  // Roles & Permission
+  useEffect(() => {
+    if (!currentUser) return;
+    const role = currentUser?.role || {};
+    const rawPerms = Array.isArray(role.permissions) ? role.permissions[0] : role.permissions || {};
+    setSetupPermissions(rawPerms.leadStatus || null);
+  }, [currentUser]);
+
+  const canCreate = !!setupPermissions?.create;
+  const canUpdate = !!setupPermissions?.update;
+  const canDelete = !!setupPermissions?.delete;
 
   // Initialize formik
   const formik = useFormik({
@@ -231,7 +247,7 @@ export function LeadStatusContent() {
           setPageSize(s);
           setCurrentPage(1);
         }}
-        onEdit={async (row) => {
+        onEdit={canUpdate ? async (row) => {
           try {
             const res = await axios.get(`${baseUrl.leadStatuses}/${row._id}`, { headers });
             const data = res.data.data;
@@ -246,18 +262,18 @@ export function LeadStatusContent() {
             console.error('Failed to fetch by ID', err);
             toast.error(err?.response?.data?.message || 'Failed to fetch data');
           }
-        }}
-        onDelete={handleDeleteClick}
-        canEdit={(row) => !isReserved(row.name)}
-        canDelete={(row) => !isReserved(row.name)}
-        addButton={{
+        } : undefined}
+        onDelete={canDelete ? handleDeleteClick : undefined}
+        canEdit={(row) => canUpdate && !isReserved(row.name)}
+        canDelete={(row) => canDelete && !isReserved(row.name)}
+        addButton={canCreate ? {
           label: 'Add Status',
           onClick: () => {
             formik.resetForm();
             formik.setFieldValue('order', allData.length + 1);
             setIsDialogOpen(true);
           },
-        }}
+        } : undefined}
       />
 
       {/* DELETE CONFIRMATION DIALOG */}
@@ -364,7 +380,7 @@ export function LeadStatusContent() {
             error={formik.touched.name && formik.errors.name ? formik.errors.name : undefined}
             required
             placeholder="Enter status name"
-            disabled={isSubmitting || (formik.values._id && isReserved(formik.values.originalName))}
+            disabled={isSubmitting || !!(formik.values._id && isReserved(formik.values.originalName))}
           />
 
           <FormInput

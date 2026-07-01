@@ -8,6 +8,7 @@ import { baseUrl } from '@/config';
 import { getAuthToken } from '@/config';
 import { toast } from 'react-toastify';
 import DeleteDialog from '@/components/DeleteDialog';
+import { useAppSelector } from '@/store/hooks';
 
 // ──────────────────────────────────────────────── Types
 type CapabilityPartial = Partial<{
@@ -152,6 +153,7 @@ export function RolesContent() {
 
   const debouncedSearch = useDebounce(searchTerm, 500);
 
+  const { data: currentUser } = useAppSelector((state) => state.userData);
   const token = getAuthToken();
   const [setupPermissions, setSetupPermissions] = useState<{
     create?: boolean;
@@ -159,24 +161,16 @@ export function RolesContent() {
     update?: boolean;
     delete?: boolean;
   } | null>(null);
+  const [isPermissionsLoaded, setIsPermissionsLoaded] = useState(false);
 
+  // Roles & Permission
   useEffect(() => {
-    if (!token) return;
-    axios
-      .get(baseUrl.currentStaff, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => {
-        const role = res.data?.data?.role || {};
-        const rawPerms = Array.isArray(role.permissions)
-          ? role.permissions[0]
-          : role.permissions || {};
-        setSetupPermissions(rawPerms.role || null);
-      })
-      .catch(() => {
-        setSetupPermissions(null);
-      });
-  }, [token]);
+    if (!currentUser) return;
+    const role = currentUser?.role || {};
+    const rawPerms = Array.isArray(role.permissions) ? role.permissions[0] : role.permissions || {};
+    setSetupPermissions(rawPerms.role || null);
+    setIsPermissionsLoaded(true);
+  }, [currentUser]);
 
   const fetchRoles = useCallback(async () => {
     setIsLoading(true);
@@ -215,8 +209,10 @@ export function RolesContent() {
   }, [currentPage, pageSize, debouncedSearch, token]);
 
   useEffect(() => {
-    fetchRoles();
-  }, [fetchRoles]);
+    if (isPermissionsLoaded) {
+      fetchRoles();
+    }
+  }, [fetchRoles, isPermissionsLoaded]);
 
   const refreshAfterMutation = () => {
     fetchRoles();

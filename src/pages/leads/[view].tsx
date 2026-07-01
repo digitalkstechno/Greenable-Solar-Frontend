@@ -7,6 +7,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { ListCollapse, Plus, Filter, Kanban, Search, Download, Upload } from 'lucide-react';
 import axios from 'axios';
 import { baseUrl, getAuthToken } from '@/config';
+import { useAppSelector } from '@/store/hooks';
 
 // ── Sub-components ──────────────────────────────────────────────────────────
 import LeadsListView from '@/components/leads/LeadsListView';
@@ -81,34 +82,18 @@ export default function LeadsPage() {
     convert?: boolean;
   } | null>(null);
 
+  const { data: currentUser } = useAppSelector((state) => state.userData);
   const token = typeof window !== 'undefined' ? getAuthToken() : null;
 
   // ── Fetch permissions ────────────────────────────────────────────────────
   useEffect(() => {
-    if (!token) return;
-
-    const fetchPermissions = async () => {
-      try {
-        const res = await axios.get(baseUrl.currentStaff, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const role = res.data?.data?.role || {};
-        const rawPerms = Array.isArray(role.permissions)
-          ? role.permissions[0]
-          : role.permissions || {};
-
-        const lp = rawPerms.lead || {};
-        setLeadPermissions(lp);
-        if (!lp.readAll && lp.readOwn) setActiveTab('my');
-      } catch (error) {
-        console.error('Failed to fetch permissions:', error);
-        setLeadPermissions(null);
-      }
-    };
-
-    fetchPermissions();
-  }, [token]);
+    if (!currentUser) return;
+    const role = currentUser?.role || {};
+    const rawPerms = Array.isArray(role.permissions) ? role.permissions[0] : role.permissions || {};
+    const lp = rawPerms.lead || {};
+    setLeadPermissions(lp);
+    if (!lp.readAll && lp.readOwn) setActiveTab('my');
+  }, [currentUser]);
 
   const filters = useMemo(
     () => ({

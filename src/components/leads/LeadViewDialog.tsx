@@ -482,6 +482,7 @@ import { FormSelect } from '../ui/FormSelect';
 import { generateQuotationPdf } from '@/components/leads/generateQuotationPdf';
 import Calendar from '@/components/ui/Calendar';
 import TimePicker from '@/components/ui/TimePicker';
+import { useAppSelector } from '@/store/hooks';
 
 interface Props {
   lead: ApiLead | null;
@@ -504,6 +505,8 @@ interface FollowUp {
 }
 
 export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: Props) {
+  const { data: currentUser } = useAppSelector((state) => state.userData);
+
   const [editStatus, setEditStatus] = useState('');
   const [editNextDate, setEditNextDate] = useState('');
   const [editNextTime, setEditNextTime] = useState('');
@@ -515,7 +518,7 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
   const [localAttachments, setLocalAttachments] = useState<any[]>([]);
   const [localActivities, setLocalActivities] = useState<any[]>([]);
   const [localQuotations, setLocalQuotations] = useState<any[]>([]);
-  const [staffInfo, setStaffInfo] = useState<any>(null);
+  // const [staffInfo, setStaffInfo] = useState<any>(null);
   const [followUpSearch, setFollowUpSearch] = useState('');
   const [quotationOpen, setQuotationOpen] = useState(false);
   const [editQuotationData, setEditQuotationData] = useState<any>(null);
@@ -555,21 +558,34 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
   }, [localFollowUps, followUpSearch]);
 
   // Get current staff info and departments
+  // useEffect(() => {
+  //   const fetchMeta = async () => {
+  //     try {
+  //       const headers = { Authorization: `Bearer ${getAuthToken()}` };
+  //       const [staffRes, deptRes] = await Promise.all([
+  //         axios.get(baseUrl.currentStaff, { headers }),
+  //         axios.get(baseUrl.department, { headers }).catch(() => ({ data: { data: [] } }))
+  //       ]);
+  //       setStaffInfo(staffRes.data?.data);
+  //       setDepartments(deptRes.data?.data || []);
+  //     } catch (error) {
+  //       console.error('Failed to fetch meta info', error);
+  //     }
+  //   };
+  //   fetchMeta();
+  // }, []);
+
   useEffect(() => {
-    const fetchMeta = async () => {
+    const fetchDepartments = async () => {
       try {
         const headers = { Authorization: `Bearer ${getAuthToken()}` };
-        const [staffRes, deptRes] = await Promise.all([
-          axios.get(baseUrl.currentStaff, { headers }),
-          axios.get(baseUrl.department, { headers }).catch(() => ({ data: { data: [] } }))
-        ]);
-        setStaffInfo(staffRes.data?.data);
+        const deptRes = await axios.get(baseUrl.department, { headers }).catch(() => ({ data: { data: [] } }));
         setDepartments(deptRes.data?.data || []);
       } catch (error) {
-        console.error('Failed to fetch meta info', error);
+        console.error('Failed to fetch departments', error);
       }
     };
-    fetchMeta();
+    fetchDepartments();
   }, []);
 
   const assignedToDeptName = useMemo(() => {
@@ -671,9 +687,9 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
       date: editNextDate,
       time: editNextTime,
       note: followupNote,
-      staff: staffInfo ? {
-        _id: staffInfo._id,
-        fullName: staffInfo.fullName || 'Current User'
+      staff: currentUser ? {
+        _id: currentUser._id,
+        fullName: currentUser.fullName || 'Current User'
       } : undefined,
       _id: `temp_${Date.now()}`, // Temporary ID
       createdAt: new Date().toISOString()
@@ -1091,9 +1107,9 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
                             <td className="px-4 py-3 whitespace-nowrap">
                               <div className="flex items-center gap-2">
                                 <div className="h-6 w-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold">
-                                  {f.staff?.fullName?.charAt(0) || staffInfo?.fullName?.charAt(0) || 'U'}
+                                  {f.staff?.fullName?.charAt(0) || currentUser?.fullName?.charAt(0) || 'U'}
                                 </div>
-                                <span className="text-gray-600">{f.staff?.fullName || staffInfo?.fullName || 'Current User'}</span>
+                                <span className="text-gray-600">{f.staff?.fullName || currentUser?.fullName || 'Current User'}</span>
                               </div>
                             </td>
                           </tr>

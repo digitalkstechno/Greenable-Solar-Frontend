@@ -3,15 +3,15 @@ import type { AppProps } from "next/app";
 import { Poppins } from "next/font/google";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
-import { usePathname } from "next/navigation";
 import Header from "@/components/Header";
-import { useEffect } from "react";
 import axios from "axios";
 import { useRouter } from "next/router";
-import { clearAuthToken } from "@/config";
-
+import { clearAuthToken, getAuthToken } from "@/config";
+import ReduxProvider from "@/store/provider";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { fetchUserData, clearUserData, setUserData } from "@/store/slices/userDataSlice";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -19,35 +19,53 @@ const poppins = Poppins({
   display: "swap",
 });
 
-export default function App({ Component, pageProps }: AppProps) {
+function AppContent({ Component, pageProps }: AppProps) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { isFetched } = useAppSelector((state) => state.userData);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const pathName = usePathname()
-  const isLoginPage = pathName === "/login";
+  const isLoginPage = router.pathname === "/login";
 
-  const getLabel = () => {
-    if (pathName === "/") return "Dashboard"
-    if (pathName === "/leads") return "Leads"
-    if (pathName === "/leads/list") return "Leads List"
-    if (pathName === "/leads/kanban") return "Leads Kanban"
-    if (pathName === "/setup") return "Setup"
-    if (pathName === "/tasks") return "Tasks"
-    return ""
-  }
+  // useEffect(() => {
+  //   const interceptor = axios.interceptors.response.use(
+  //     (response) => response,
+  //     (error) => {
+  //       if (error.response?.status === 401) {
+  //         clearAuthToken();
+  //         router.push("/login");
+  //       }
+  //       return Promise.reject(error);
+  //     }
+  //   );
+  //   return () => axios.interceptors.response.eject(interceptor);
+  // }, []);
 
+  // App load thay tyare (refresh / direct visit) jo token che to loading permissions and user profile
   useEffect(() => {
-    const interceptor = axios.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        if (error.response?.status === 401) {
-          clearAuthToken();
-          router.push('/login');
+    const token = getAuthToken?.();
+    if (token) {
+      if (!isLoginPage) {
+        // 1. Try to load currentUser from localStorage to prevent SSR mismatch & API call on refresh
+        const stored = localStorage.getItem("currentUser");
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            dispatch(setUserData(parsed));
+            return; // Found in storage, skip calling fetchUserData
+          } catch (e) {
+            console.error("Failed to parse stored user", e);
+          }
         }
-        return Promise.reject(error);
+
+        // 2. If not found in localStorage and not fetched yet, call fetchUserData
+        if (!isFetched) {
+          dispatch(fetchUserData());
+        }
       }
-    );
-    return () => axios.interceptors.response.eject(interceptor);
-  }, []);
+    } else {
+      dispatch(clearUserData());
+    }
+  }, [isFetched, isLoginPage, dispatch]);
 
   return (
     <div className={poppins.className}>
@@ -59,11 +77,11 @@ export default function App({ Component, pageProps }: AppProps) {
           />
         )}
         <div
-          className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${!isLoginPage ? (isSidebarOpen ? 'md:ml-64' : 'md:ml-20') : ''
-            }`}
+          className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${
+            !isLoginPage ? (isSidebarOpen ? "md:ml-64" : "md:ml-20") : ""
+          }`}
         >
           <main className="animate-in fade-in duration-300">
-            {/* Only show header for non-login pages */}
             {!isLoginPage ? (
               <Header toggleSidebar={() => setIsSidebarOpen((prev) => !prev)} />
             ) : null}
@@ -85,5 +103,13 @@ export default function App({ Component, pageProps }: AppProps) {
         theme="colored"
       />
     </div>
+  );
+}
+
+export default function App(props: AppProps) {
+  return (
+    <ReduxProvider>
+      <AppContent {...props} />
+    </ReduxProvider>
   );
 }

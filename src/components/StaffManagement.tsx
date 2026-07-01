@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import Dialog from './Dialog';
@@ -29,6 +29,7 @@ interface SalesExecutiveFormProps {
   onClose: () => void;
   onSubmit: (data: SalesExecutive) => void;
   initialData?: SalesExecutive | null;
+  departments?: { _id: string; roleName: string; name?: string }[] | any[];
 }
 
 export default function SalesExecutiveForm({
@@ -36,14 +37,13 @@ export default function SalesExecutiveForm({
   onClose,
   onSubmit: parentOnSubmit,
   initialData,
+  departments = [],
 }: SalesExecutiveFormProps) {
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [roles, setRoles] = useState<{ _id: string; roleName: string }[]>([]);
-  const [department, setDepartment] = useState<{ _id: string; name: string }[]>([]);
 
   const isUpdate = !!initialData?.id;
 
@@ -134,19 +134,7 @@ export default function SalesExecutiveForm({
     }
   }, [initialData, isOpen]);
 
-  useEffect(() => {
-    const storedToken = getAuthToken();
-    const headers = { Authorization: `Bearer ${storedToken}` };
-
-    axios.get(baseUrl.getAllRoles, { headers })
-      .then((res) => setRoles(res.data?.data || res.data?.roles || []))
-      .catch(() => setRoles([]));
-
-    axios.get(baseUrl.department, { headers })
-      .then((res) => setDepartment(res.data?.data ?? []))
-      .catch(() => setDepartment([]));
-
-  }, []);
+  // Dropdowns data is passed via props to prevent extra API requests
 
   useEffect(() => {
     if (isOpen) {
@@ -216,10 +204,6 @@ export default function SalesExecutiveForm({
         toast.success('User updated successfully');
       } else {
         toast.success('User created successfully');
-      }
-
-      if (values.department) {
-        payload.append('role', values.department);
       }
 
       // ✅ reset only when creating
@@ -394,7 +378,7 @@ export default function SalesExecutiveForm({
             value={formik.values.department}
             onChange={(e) => { formik.setFieldValue('department', e); formik.setFieldTouched('department', true, false); }}
             onBlur={formik.handleBlur}
-            options={department?.map((d: any) => ({ value: d._id, label: d.roleName || d.name })) || []}
+            options={departments?.map((d: any) => ({ value: d._id, label: d.roleName || d.name })) || []}
             placeholder="— Select Department —"
             error={formik.touched.department && formik.errors.department ? formik.errors.department : undefined}
           />

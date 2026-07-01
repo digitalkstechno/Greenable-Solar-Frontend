@@ -5,6 +5,7 @@ import Dialog from '@/components/Dialog';
 import axios from 'axios';
 import { baseUrl, getAuthToken } from '@/config';
 import { toast } from 'react-toastify';
+import { useAppSelector } from '@/store/hooks';
 import { RolesContent } from './roles';
 import { UserContent } from './user-list';
 import { LeadSourcesContent } from './lead-sources';
@@ -26,6 +27,7 @@ export default function Setup() {
   const [activeTab, setActiveTab] = useState<
     'Department Management' | 'User' | 'Lead Sources' | 'Lead Status' | 'Kanban Status' | 'Lead Labels' | 'Teams' | 'Organizations' | 'Task Status' | 'Field Settings' | 'Category' | 'Product' | 'Stock In' | 'Stock Out'
   >('Department Management');
+  const { data: currentUser } = useAppSelector((state) => state.userData);
   const token = typeof window !== 'undefined' ? getAuthToken() : null;
   const [permissions, setPermissions] = useState<any>(null);
   const [loadingPermissions, setLoadingPermissions] = useState(true);
@@ -50,43 +52,14 @@ export default function Setup() {
     }, undefined, { shallow: true });
   };
 
-  // Fetch permissions - FIXED: Always call useEffect, but check token inside
+  // Fetch permissions from Redux currentUser
   useEffect(() => {
-    let isMounted = true;
-
-    const fetchPermissions = async () => {
-      if (!token) {
-        if (isMounted) setLoadingPermissions(false);
-        return;
-      }
-
-      try {
-        const res = await axios.get(baseUrl.currentStaff, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!isMounted) return;
-        const role = res.data?.data?.role || {};
-        const rawPerms = Array.isArray(role.permissions)
-          ? role.permissions[0]
-          : role.permissions || {};
-        setPermissions(rawPerms);
-      } catch {
-        if (!isMounted) return;
-        setPermissions(null);
-      } finally {
-        if (isMounted) {
-          setLoadingPermissions(false);
-        }
-      }
-    };
-
-    fetchPermissions();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [token]);
+    if (!currentUser) return;
+    const role = currentUser?.role || {};
+    const rawPerms = Array.isArray(role.permissions) ? role.permissions[0] : role.permissions || {};
+    setPermissions(rawPerms);
+    setLoadingPermissions(false);
+  }, [currentUser]);
 
   type Item = { name: string; order: number };
   type BackendItem = { name?: string; order?: number | string };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import DataTable, { Column } from '@/components/DataTable';
 import StaffManagementForm from '@/components/StaffManagement';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
@@ -8,6 +8,7 @@ import axios from 'axios';
 import { baseUrl, getAuthToken } from '@/config';
 import { toast } from 'react-toastify';
 import DeleteDialog from '@/components/DeleteDialog';
+import { useAppSelector } from '@/store/hooks';
 
 interface StaffManagement {
   id: string;
@@ -50,6 +51,7 @@ export function UserContent() {
 
   const debouncedSearch = useDebounce(search, 500);
 
+  const { data: currentUser } = useAppSelector((state) => state.userData);
   const token = typeof window !== 'undefined' ? getAuthToken() : null;
   const [setupPermissions, setSetupPermissions] = useState<{
     create?: boolean;
@@ -59,26 +61,28 @@ export function UserContent() {
   } | null>(null);
 
   const [departments, setDepartments] = useState<{ _id: string; roleName: string; name?: string }[]>([]);
+  // Ref-based ladder guard: strictly ek j vaar API call thay, StrictMode / re-render / 
+  // fetchStaff re-creation na chakkar ma fasi ne ferithi call na thay tena mate.
+  const departmentsFetchedRef = useRef(false);
+  // departments no latest snapshot ref ma pan rakhiye jethi fetchStaff ni dependency
+  // array ma "departments" nakhavani jarur j na pade (nahi to fetchStaff badalay,
+  // ane niche no useEffect fari staff API pan call kari de).
+  const departmentsRef = useRef(departments);
+  departmentsRef.current = departments;
 
+  // Roles & Permission
   useEffect(() => {
-    if (!token) return;
-    
-    // Fetch permissions
-    axios
-      .get(baseUrl.currentStaff, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => {
-        const role = res.data?.data?.role || {};
-        const rawPerms = Array.isArray(role.permissions)
-          ? role.permissions[0]
-          : role.permissions || {};
-        setSetupPermissions(rawPerms.staff || null);
-      })
-      .catch(() => {
-        setSetupPermissions(null);
-      });
-    // Fetch departments to map IDs to names
+    if (!currentUser) return;
+    const role = currentUser?.role || {};
+    const rawPerms = Array.isArray(role.permissions) ? role.permissions[0] : role.permissions || {};
+    setSetupPermissions(rawPerms.staff || null);
+  }, [currentUser]);
+
+  // Fetch departments to map IDs to names — component na lifetime ma sirf EK j vaar
+  useEffect(() => {
+    if (!token || departmentsFetchedRef.current) return;
+    departmentsFetchedRef.current = true;
+
     axios
       .get(baseUrl.department, {
         headers: { Authorization: `Bearer ${token}` },
@@ -86,7 +90,12 @@ export function UserContent() {
       .then((res) => {
         setDepartments(res.data?.data ?? []);
       })
-      .catch(() => setDepartments([]));
+      .catch(() => {
+        setDepartments([]);
+        // Fail thay to next mount/retry mate guard reset (optional — 
+        // agar retry j nathi joito to aa line hatavi shakay)
+        departmentsFetchedRef.current = false;
+      });
   }, [token]);
 
   const fetchStaff = useCallback(async () => {
@@ -116,9 +125,9 @@ export function UserContent() {
       const formatted: StaffManagement[] = payload.map((item: any) => {
         const roleObj = item.role;
         const roleOrDeptId = typeof roleObj === 'object' && roleObj !== null ? roleObj._id : roleObj;
-        const deptName = typeof roleObj === 'object' && roleObj !== null 
-          ? (roleObj.roleName || roleObj.name) 
-          : departments.find(d => d._id === roleOrDeptId)?.roleName || roleOrDeptId || '-';
+        const deptName = typeof roleObj === 'object' && roleObj !== null
+          ? (roleObj.roleName || roleObj.name)
+          : departmentsRef.current.find(d => d._id === roleOrDeptId)?.roleName || roleOrDeptId || '-';
 
         return {
           id: item._id,
@@ -148,7 +157,10 @@ export function UserContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, limit, debouncedSearch, token, departments]);
+    // NOTE: `departments` dependency thi hatavyu — hવे fetchStaff no reference
+    // department fetch thay tyare badalto nathi, etle upar-nu useEffect ferithi
+    // trigger nahi thay ane getAllUsers API pan vagar-jarur call nahi thay.
+  }, [page, limit, debouncedSearch, token]);
 
   useEffect(() => {
     fetchStaff();
@@ -277,7 +289,7 @@ export function UserContent() {
       });
       fetchStaff();
       toast.success('User deleted successfully');
-      
+
       // Close dialog
       setShowDeleteDialog(false);
       setStaffToDelete(null);
@@ -380,6 +392,7 @@ export function UserContent() {
         }}
         onSubmit={handleSubmit}
         initialData={editingExecutive}
+        departments={departments}
       />
     </>
   );

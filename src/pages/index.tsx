@@ -2,7 +2,7 @@
 
   import { useEffect, useState } from "react";
   import type { ComponentType } from "react";
-  import { useRouter } from "next/navigation";
+  import { useRouter } from "next/router";
   import {
     PieChart,
     Pie,
@@ -39,6 +39,7 @@
   } from "lucide-react";
   import axios from "axios";
   import { baseUrl, getAuthToken } from "@/config";
+  import { useAppSelector } from "@/store/hooks";
   import moment from "moment";
   import Link from 'next/link';
   import DashboardLeadUpdateDialog from "@/components/leads/DashboardLeadUpdateDialog";
@@ -105,37 +106,35 @@
     const [selectedLeadForUpdate, setSelectedLeadForUpdate] = useState<any>(null);
 
     const [permissions, setPermissions] = useState<{ readAll: boolean; readOwn: boolean }>({ readAll: false, readOwn: false });
+    const [isPermissionsLoaded, setIsPermissionsLoaded] = useState(false);
     const [user, setUser] = useState<any>(null);
     const [greeting, setGreeting] = useState("");
     const [fromDate, setFromDate] = useState("");
     const [toDate, setToDate] = useState("");
 
+    const { data: currentUser } = useAppSelector((state) => state.userData);
     const token =
       typeof window !== "undefined" ? getAuthToken() : null;
 
-    // Fetch user info and permissions
+    // Fetch user info and permissions from Redux currentUser
     useEffect(() => {
-      if (!token) return;
-      axios.get(baseUrl.currentStaff, { headers: { Authorization: `Bearer ${token}` } })
-        .then(res => {
-          const staff = res.data?.data || {};
-          setUser(staff);
-          const role = staff.role || {};
-          const rawPerms = Array.isArray(role.permissions) ? role.permissions[0] : role.permissions || {};
-          const lp = rawPerms.lead || {};
-          setPermissions({
-            readAll: !!lp.readAll,
-            readOwn: !!lp.readOwn,
-          });
+      if (!currentUser) return;
+      setUser(currentUser);
+      const role = currentUser.role || {};
+      const rawPerms = Array.isArray(role.permissions) ? role.permissions[0] : role.permissions || {};
+      const lp = rawPerms.lead || {};
+      setPermissions({
+        readAll: !!lp.readAll,
+        readOwn: !!lp.readOwn,
+      });
+      setIsPermissionsLoaded(true);
 
-          // Set greeting based on time
-          const hour = new Date().getHours();
-          if (hour < 12) setGreeting("Good Morning");
-          else if (hour < 17) setGreeting("Good Afternoon");
-          else setGreeting("Good Evening");
-        })
-        .catch(console.error);
-    }, [token]);
+      // Set greeting based on time
+      const hour = new Date().getHours();
+      if (hour < 12) setGreeting("Good Morning");
+      else if (hour < 17) setGreeting("Good Afternoon");
+      else setGreeting("Good Evening");
+    }, [currentUser]);
 
     // Redirect if no token
     useEffect(() => {
@@ -302,11 +301,11 @@
     };
 
     useEffect(() => {
-      if (token) {
+      if (token && isPermissionsLoaded) {
         fetchLeadSummary();
         fetchUpcomingFollowups(1);
         fetchDueFollowups(1);
-        fetchTodayTasks();
+        // fetchTodayTasks(); // Commented out per request
 
         // Only fetch staff stats if they have readAll
         if (permissions.readAll) {
@@ -314,7 +313,7 @@
           fetchStaffPerformance();
         }
       }
-    }, [token, permissions, fromDate, toDate]);
+    }, [token, isPermissionsLoaded, fromDate, toDate]);
 
     useEffect(() => {
       if (typeof window !== "undefined") {

@@ -9,6 +9,7 @@ import axios from 'axios';
 import { baseUrl, getAuthToken } from '@/config';
 import DeleteDialog from '@/components/DeleteDialog';
 import FormInput from '@/components/ui/Input';
+import { useAppSelector } from '@/store/hooks';
 
 function useDebounce<T>(value: T, delay: number = 500): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -53,6 +54,7 @@ export function CategoryContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [setupPermissions, setSetupPermissions] = useState<any>(null);
 
+  const { data: currentUser } = useAppSelector((state) => state.userData);
   const token = typeof window !== 'undefined' ? getAuthToken() : null;
   const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
 
@@ -162,15 +164,11 @@ export function CategoryContent() {
 
   // Roles & Permission
   useEffect(() => {
-    if (!token) return;
-    axios.get(baseUrl.currentStaff, {
-      headers: { Authorization: `Bearer ${token}` },
-    }).then((res) => {
-      const role = res.data?.data?.role || {};
-      const rawPerms = Array.isArray(role.permissions) ? role.permissions[0] : role.permissions || {};
-      setSetupPermissions(rawPerms.category || null);
-    }).catch(() => setSetupPermissions(null));
-  }, [token]);
+    if (!currentUser) return;
+    const role = currentUser?.role || {};
+    const rawPerms = Array.isArray(role.permissions) ? role.permissions[0] : role.permissions || {};
+    setSetupPermissions(rawPerms.category || null);
+  }, [currentUser]);
 
   const canCreate = !!setupPermissions?.create;
   const canUpdate = !!setupPermissions?.update;

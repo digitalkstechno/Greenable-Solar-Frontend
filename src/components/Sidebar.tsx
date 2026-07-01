@@ -23,9 +23,11 @@ import {
   Building2,
   X,
 } from 'lucide-react';
-import { useRouter } from "next/navigation";
+import { useRouter } from "next/router";
 import axios from "axios";
 import { baseUrl, clearAuthToken, getAuthToken } from "@/config";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import { setUserData } from "@/store/slices/userDataSlice";
 import Swal from 'sweetalert2';
 import { CenterDialog } from "./Dialog";
 import FormInput from "./ui/Input";
@@ -45,6 +47,8 @@ interface MenuItem {
 export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const dispatch = useAppDispatch();
+  const { data: currentUser } = useAppSelector((state) => state.userData);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [canViewLead, setCanViewLead] = useState(false);
   const [canViewTask, setCanViewTask] = useState(false);
@@ -56,7 +60,6 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
   const [canViewCategory, setCanViewCategory] = useState(false);
   const [canViewProduct, setCanViewProduct] = useState(false);
   const [canViewStock, setCanViewStock] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [profileName, setProfileName] = useState('');
   const [profileEmail, setProfileEmail] = useState('');
@@ -109,7 +112,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
           timer: 1500,
           showConfirmButton: false,
         });
-        setCurrentUser(res.data.data);
+        dispatch(setUserData(res.data.data));
         setIsProfileDialogOpen(false);
       } else {
         setProfileError(res.data?.message || 'Failed to update profile');
@@ -123,54 +126,34 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
 
 
   useEffect(() => {
-    const token = getAuthToken();
-    if (!token) return;
-    axios
-      .get(baseUrl.currentStaff, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => {
-        const role = res.data?.data?.role || {};
-        const rawPerms = Array.isArray(role.permissions)
-          ? role.permissions[0]
-          : role.permissions || {};
-        const leadPerms = rawPerms.lead || {};
-        const taskPerms = rawPerms.task || {};
-        const staffPerms = rawPerms.staff || {};
-        const rolePerms = rawPerms.role || {};
-        const leadStatusPerms = rawPerms.leadStatus || {};
-        const leadSourcePerms = rawPerms.leadSource || {};
-        const leadLabelPerms = rawPerms.leadLabel || {};
-        const setupPerms = rawPerms.setup || {};
-        const categoryPerms = rawPerms.category || {};
-        const productPerms = rawPerms.product || {};
-        const stockPerms = rawPerms.stock || {};
+    if (!currentUser) return;
+    const role = currentUser?.role || {};
+    const rawPerms = Array.isArray(role.permissions)
+      ? role.permissions[0]
+      : role.permissions || {};
+    const leadPerms = rawPerms.lead || {};
+    const taskPerms = rawPerms.task || {};
+    const staffPerms = rawPerms.staff || {};
+    const rolePerms = rawPerms.role || {};
+    const leadStatusPerms = rawPerms.leadStatus || {};
+    const leadSourcePerms = rawPerms.leadSource || {};
+    const leadLabelPerms = rawPerms.leadLabel || {};
+    const setupPerms = rawPerms.setup || {};
+    const categoryPerms = rawPerms.category || {};
+    const productPerms = rawPerms.product || {};
+    const stockPerms = rawPerms.stock || {};
 
-        setCanViewLead(!!(leadPerms.readOwn || leadPerms.readAll));
-        setCanViewTask(!!(taskPerms.readOwn || taskPerms.readAll));
-        setCanViewStaff(!!(staffPerms.readAll || setupPerms.readAll));
-        setCanViewRole(!!(rolePerms.readAll || setupPerms.readAll));
-        setCanViewLeadStatus(!!(leadStatusPerms.readAll || setupPerms.readAll));
-        setCanViewLeadSource(!!(leadSourcePerms.readAll || setupPerms.readAll));
-        setCanViewLeadLabel(!!(leadLabelPerms.readAll || setupPerms.readAll));
-        setCanViewCategory(!!(categoryPerms.readAll || categoryPerms.readOwn || setupPerms.readAll));
-        setCanViewProduct(!!(productPerms.readAll || productPerms.readOwn || setupPerms.readAll));
-        setCanViewStock(!!(stockPerms.readAll || stockPerms.readOwn || setupPerms.readAll));
-        setCurrentUser(res.data?.data);
-      })
-      .catch(() => {
-        setCanViewLead(false);
-        setCanViewTask(false);
-        setCanViewStaff(false);
-        setCanViewRole(false);
-        setCanViewLeadStatus(false);
-        setCanViewLeadSource(false);
-        setCanViewLeadLabel(false);
-        setCanViewCategory(false);
-        setCanViewProduct(false);
-        setCanViewStock(false);
-      });
-  }, []);
+    setCanViewLead(!!(leadPerms.readOwn || leadPerms.readAll));
+    setCanViewTask(!!(taskPerms.readOwn || taskPerms.readAll));
+    setCanViewStaff(!!(staffPerms.readAll || setupPerms.readAll));
+    setCanViewRole(!!(rolePerms.readAll || setupPerms.readAll));
+    setCanViewLeadStatus(!!(leadStatusPerms.readAll || setupPerms.readAll));
+    setCanViewLeadSource(!!(leadSourcePerms.readAll || setupPerms.readAll));
+    setCanViewLeadLabel(!!(leadLabelPerms.readAll || setupPerms.readAll));
+    setCanViewCategory(!!(categoryPerms.readAll || categoryPerms.readOwn || setupPerms.readAll));
+    setCanViewProduct(!!(productPerms.readAll || productPerms.readOwn || setupPerms.readAll));
+    setCanViewStock(!!(stockPerms.readAll || stockPerms.readOwn || setupPerms.readAll));
+  }, [currentUser]);
 
   const menuItems: MenuItem[] = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -256,6 +239,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
         if (typeof window !== "undefined") {
           localStorage.removeItem("token");
           localStorage.removeItem("auth");
+          localStorage.removeItem("currentUser");
         }
 
         // Show success message
