@@ -279,7 +279,7 @@ export default function PaymentModal({ isOpen, lead, onClose, onPaymentAdded }: 
           <div className="border-t border-gray-200 px-6 py-4">
             <button
               onClick={onClose}
-              className="w-full px-4 py-2 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 transition"
+              className="w-full px-4 py-2 bg-white text-black rounded-lg font-medium hover:bg-gray-100 shadow-lg transition"
             >
               Close
             </button>
