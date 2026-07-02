@@ -85,6 +85,13 @@ export type ApiLead = {
     }[];
     
   };
+  projectAmount?: number;
+  projectDetail?: {
+    projectAmount?: number;
+  };
+  pendingAmount?: number;
+  paymentAmount?: number;
+  _raw?: any;
 };
 
 export type AddLeadForm = {

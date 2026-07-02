@@ -172,7 +172,6 @@ const FileInput = ({ fieldKey, label, accept = '*', isPdf = false, existingFiles
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 mb-4">
-      <div className="h-1 w-6 rounded-full bg-orange-500" />
       <h3 className="text-sm font-bold text-gray-800">{children}</h3>
     </div>
   );
@@ -586,10 +585,8 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
         className={`fixed right-0 top-0 z-50 flex h-full w-full max-w-4xl flex-col bg-white shadow-2xl transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {/* Header */}
-        <div className="flex items-center gap-4 border-b border-gray-100 bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
-            <Zap className="h-5 w-5 text-white" />
-          </div>
+        <div className="flex items-center justify-between bg-secondary px-6 py-4">
+          
           <div className="flex-1">
             <h2 className="text-lg font-bold text-white">Project Details</h2>
             <p className="text-xs text-white/80 truncate">{lead?.fullName}</p>
@@ -1022,7 +1019,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
             <button
               onClick={handleNextOrSave}
               disabled={saving}
-              className="flex items-center gap-2 rounded-lg bg-orange-500 px-5 py-2 text-sm font-semibold text-white shadow hover:bg-orange-600 active:scale-95 transition disabled:opacity-60"
+              className="flex cursor-pointer items-center gap-2 rounded-md bg-secondary px-6 py-2 text-sm font-semibold text-white shadow-md active:scale-95 transition-all"
             >
               {saving ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/50 border-t-white" />
