@@ -42,6 +42,7 @@ export default function LeadAddDialog({
 }: Props) {
   const [statuses, setStatuses] = useState<DropdownItem[]>([]);
   const [staff, setStaff] = useState<DropdownItem[]>([]);
+  const [leadSources, setLeadSources] = useState<DropdownItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [quotationOpen, setQuotationOpen] = useState(false);
@@ -202,13 +203,15 @@ export default function LeadAddDialog({
 
         let leadData = null;
         if (mode === 'edit' && initialData?._id) {
-          const [stRes, staffRes, deptRes, leadRes] = await Promise.all([
+          const [stRes, staffRes, deptRes, sourceRes, leadRes] = await Promise.all([
             axios.get(baseUrl.leadStatuses, { headers }),
             axios.get(baseUrl.getAllUsers, { headers, params: { limit: 1000 } }),
             axios.get(baseUrl.department, { headers }),
+            axios.get(baseUrl.leadSources, { headers }),
             axios.get(`${baseUrl.findLeadById}/${initialData._id}`, { headers })
           ]);
           setStatuses(stRes.data?.data || []);
+          setLeadSources(sourceRes.data?.data || []);
           const depts = deptRes.data?.data || [];
           const users = staffRes.data?.data || [];
           const usersWithDepts = users.map((u: any) => {
@@ -218,12 +221,14 @@ export default function LeadAddDialog({
           setStaff(usersWithDepts);
           leadData = leadRes.data?.data;
         } else {
-          const [stRes, staffRes, deptRes] = await Promise.all([
+          const [stRes, staffRes, deptRes, sourceRes] = await Promise.all([
             axios.get(baseUrl.leadStatuses, { headers }),
             axios.get(baseUrl.getAllUsers, { headers, params: { limit: 1000 } }),
-            axios.get(baseUrl.department, { headers })
+            axios.get(baseUrl.department, { headers }),
+            axios.get(baseUrl.leadSources, { headers })
           ]);
           setStatuses(stRes.data?.data || []);
+          setLeadSources(sourceRes.data?.data || []);
           const depts = deptRes.data?.data || [];
           const users = staffRes.data?.data || [];
           const usersWithDepts = users.map((u: any) => {
@@ -416,18 +421,14 @@ export default function LeadAddDialog({
                 placeholder="Select Discom Name"
               />
               <FormSelect
-                label="Lead Refrence"
+                label="Lead Source"
                 name="leadrefrence"
                 value={formik.values.leadrefrance || ''}
                 onChange={(val) => { formik.setFieldValue('leadrefrance', val); }}
                 onBlur={() => formik.setFieldTouched('leadrefrance')}
-                options={[
-                  { value: 'like', label: 'Link' },
-                  { value: 'facebook', label: 'Facebook' },
-                  { value: 'data', label: 'Data' },
-                ]}
+                options={leadSources.map(s => ({ value: s.name || '', label: s.name || '' }))}
                 error={getFieldError('leadrefrance')}
-                placeholder="Select Lead Refrence"
+                placeholder="Select Lead Source"
               />
             </div>
 
