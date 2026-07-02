@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { FiX } from 'react-icons/fi';
 
 interface DialogProps {
@@ -26,7 +26,30 @@ export default function Dialog({
     lg: 'md:w-1/2 md:max-w-[50vw]',
     xl: 'md:w-2/3 md:max-w-[75vw]',
   };
-  // Body overflow hidden is removed to prevent layout shifting scrollbar gaps at the bottom.
+  
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen && dialogRef.current) {
+      const timer = setTimeout(() => {
+        const inputs = Array.from(dialogRef.current?.querySelectorAll(
+          'input:not([disabled]):not([type="hidden"]):not([readonly]), textarea:not([disabled]):not([readonly]), select:not([disabled])'
+        ) || []) as HTMLElement[];
+        
+        const firstVisibleInput = inputs.find(
+          el => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0
+        );
+
+        if (firstVisibleInput) {
+          firstVisibleInput.focus();
+          if (firstVisibleInput instanceof HTMLInputElement && (firstVisibleInput.type === 'text' || firstVisibleInput.type === 'search')) {
+            firstVisibleInput.select();
+          }
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   return (
     <div
@@ -44,6 +67,7 @@ export default function Dialog({
 
       {/* Sliding Dialog */}
       <div
+        ref={dialogRef}
         className={`
           relative h-full w-full ${sizeClasses[size]} bg-white shadow-2xl flex flex-col
           transform transition-transform duration-300
@@ -91,7 +115,29 @@ export function CenterDialog({
   onClose,
   children,
 }: CenterDialogProps) {
-  // Body overflow hidden is removed to prevent layout shifting scrollbar gaps at the bottom.
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen && dialogRef.current) {
+      const timer = setTimeout(() => {
+        const inputs = Array.from(dialogRef.current?.querySelectorAll(
+          'input:not([disabled]):not([type="hidden"]):not([readonly]), textarea:not([disabled]):not([readonly]), select:not([disabled])'
+        ) || []) as HTMLElement[];
+        
+        const firstVisibleInput = inputs.find(
+          el => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0
+        );
+
+        if (firstVisibleInput) {
+          firstVisibleInput.focus();
+          if (firstVisibleInput instanceof HTMLInputElement && (firstVisibleInput.type === 'text' || firstVisibleInput.type === 'search')) {
+            firstVisibleInput.select();
+          }
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   return (
     <div
@@ -109,6 +155,7 @@ export function CenterDialog({
 
       {/* Center Modal */}
       <div
+        ref={dialogRef}
         className={`relative bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 transform transition-all duration-300
           ${isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}
         `}

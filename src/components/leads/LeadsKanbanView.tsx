@@ -1,8 +1,8 @@
 // components/leads/LeadsKanbanView.tsx
 // Kanban board with Board / Lost / Won sub-views + drag-and-drop
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { FiSearch, FiPhone, FiMail } from 'react-icons/fi';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { FiSearch, FiPhone, FiMail, FiX } from 'react-icons/fi';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { baseUrl, getAuthToken } from '@/config';
@@ -61,6 +61,7 @@ interface Props {
     refreshKey?: number;
     currentUser?: any;
     totals?: any;
+    onSearch?: (value: string) => void;
 }
 
 type SubView = 'board' | 'lost' | 'won';
@@ -78,6 +79,7 @@ export default function LeadsKanbanView({
     refreshKey = 0,
     currentUser,
     totals,
+    onSearch,
 }: Props) {
 
     // Local search state for Lost / Won sub-views (debounced → triggers API re-fetch via parent)
@@ -696,13 +698,13 @@ export default function LeadsKanbanView({
                 </div>
             </div> */}
 
-            <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-1">
                 <div className="flex items-center gap-2">
                     {(['board', 'lost', 'won'] as SubView[]).map((v) => {
                         const lostCount = lostPagination?.totalItems ?? lostLeads.length;
                         const wonCount = wonPagination?.totalItems ?? wonLeads.length;
-                        const label = v === 'board' ? 'Kanban View' : v === 'lost' ? 'Lost Leads' : 'Won Leads';
-                        const count = v === 'lost' ? lostCount : v === 'won' ? wonCount : null;
+                        const label = v === 'board' ? 'Kanban View' : v === 'lost' ? 'Won Leads' : 'Lost Leads';
+                        const count = v === 'lost' ? wonCount : v === 'won' ? lostCount : null;
 
                         const activeClasses =
                             v === 'lost'
@@ -739,6 +741,50 @@ export default function LeadsKanbanView({
                         );
                     })}
                 </div>
+
+                {/* Unified search bar on the right of subview buttons */}
+                <div className="relative w-full sm:w-80">
+                    <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Search anything..."
+                        value={
+                            subView === 'board'
+                                ? filters.search || ''
+                                : subView === 'lost'
+                                    ? lostSearchValue
+                                    : wonSearchValue
+                        }
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            if (subView === 'board') {
+                                onSearch?.(val);
+                            } else if (subView === 'lost') {
+                                handleLostSearch(val);
+                            } else {
+                                handleWonSearch(val);
+                            }
+                        }}
+                        className="w-full pl-9 pr-9 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm h-11 bg-white"
+                    />
+                    {((subView === 'board' ? filters.search : subView === 'lost' ? lostSearchValue : wonSearchValue) || '') && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (subView === 'board') {
+                                    onSearch?.('');
+                                } else if (subView === 'lost') {
+                                    handleLostSearch('');
+                                } else {
+                                    handleWonSearch('');
+                                }
+                            }}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer"
+                        >
+                            <FiX className="h-4 w-4" />
+                        </button>
+                    )}
+                </div>
             </div>
 
             {subView === 'board' && statusGroups.length === 0 ? (
@@ -766,7 +812,7 @@ export default function LeadsKanbanView({
                                 ? 'text-emerald-700'
                                 : group.isLost
                                     ? 'text-red-500'
-                                    : 'text-secondary';
+                                    : 'text-orange-700';
                             const bodyBg = group.isWon
                                 ? 'bg-[#f4f7fb]'
                                 : group.isLost
@@ -864,6 +910,7 @@ export default function LeadsKanbanView({
                         onView={(row) => onView?.(row)}
                         onEdit={permissions?.update ? (row) => onEdit?.(row) : undefined}
                         extraActions={permissions?.update ? [{ label: 'Reactivate', onClick: (row) => reactivate(row._id), icon: <RefreshCw className="h-4 w-4" />, color: 'orange' }] : undefined}
+                        searchable={false}
                         searchValue={lostSearchValue}
                         onSearch={handleLostSearch}
                     />
@@ -933,6 +980,7 @@ export default function LeadsKanbanView({
                             }
                             return actions.length > 0 ? actions : undefined;
                         })()}
+                        searchable={false}
                         searchValue={wonSearchValue}
                         onSearch={handleWonSearch}
                         footer={wonLeads.length > 0 ? (

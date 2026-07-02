@@ -13,7 +13,8 @@ import {
   FiFilter,
   FiDownload,
   FiMoreVertical,
-  FiRefreshCw
+  FiRefreshCw,
+  FiX
 } from 'react-icons/fi';
 
 export interface Column<T> {
@@ -208,94 +209,91 @@ export default function DataTable<T extends Record<string, any>>({
   return (
     <div className="rounded-md bg-white border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-2xl">
       {/* Header - Premium Design */}
-      <div className="bg-gradient-to-r from-gray-50 via-white to-gray-50 border-b border-gray-200 px-3 py-3">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            {title && (
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                {title}
-              </h2>
-            )}
-            {subtitle && (
-              <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
-            )}
-            {totalRecords > 0 && (
-              <p className="text-xs text-gray-400 mt-2">
-                Showing {data.length} of {totalRecords} entries
-              </p>
-            )}
-          </div>
+      {(onRefresh || onExport || searchable || addButton) && (
+        <div className="p-4 md:px-6 md:py-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-end gap-4">
+            
 
-          <div className="flex flex-wrap items-center gap-3">
-            {onRefresh && (
-              <button
-                onClick={onRefresh}
-                className="group relative inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all duration-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            <div className="flex flex-wrap items-center gap-3">
+              {onRefresh && (
+                <button
+                  onClick={onRefresh}
+                  className="group relative inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all duration-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  <FiRefreshCw className="h-4 w-4 transition-transform group-hover:rotate-180 duration-500" />
+                  <span className="hidden sm:inline">Refresh</span>
+                </button>
+              )}
+
+              {onExport && (
+                <button
+                  onClick={onExport}
+                  className="group relative inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all duration-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  <FiDownload className="h-4 w-4" />
+                  <span className="hidden sm:inline">Export</span>
+                </button>
+              )}
+
+              {searchable && (
+                <div className="relative w-full sm:w-auto">
+                  <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Search anything..."
+                    value={searchValue}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="w-full sm:w-80 h-11 rounded-md border border-gray-200 bg-white pl-10 pr-10 text-sm text-gray-700 placeholder:text-gray-400 transition-all duration-200 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 hover:border-gray-300"
+                  />
+                  {searchValue && (
+                    <button
+                      type="button"
+                      onClick={() => handleSearch('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer"
+                    >
+                      <FiX className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all duration-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
-                <FiRefreshCw className="h-4 w-4 transition-transform group-hover:rotate-180 duration-500" />
-                <span className="hidden sm:inline">Refresh</span>
-              </button>
-            )}
+                <FiFilter className="h-4 w-4" />
+                <span className="hidden sm:inline">Filters</span>
+              </button> */}
 
-            {onExport && (
-              <button
-                onClick={onExport}
-                className="group relative inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all duration-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
-                <FiDownload className="h-4 w-4" />
-                <span className="hidden sm:inline">Export</span>
-              </button>
-            )}
-
-            {searchable && (
-              <div className="relative w-full sm:w-auto">
-                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4 pointer-events-none" />
-                <input
-                  type="search"
-                  placeholder="Search anything..."
-                  value={searchValue}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="w-full sm:w-80 h-11 rounded-md border border-gray-200 bg-white pl-10 pr-4 text-sm text-gray-700 placeholder:text-gray-400 transition-all duration-200 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 hover:border-gray-300"
-                />
-              </div>
-            )}
-
-            {/* <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all duration-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-              <FiFilter className="h-4 w-4" />
-              <span className="hidden sm:inline">Filters</span>
-            </button> */}
-
-            {addButton && (
-              <button
-                onClick={addButton.onClick}
-                className="inline-flex h-11 items-center gap-2 rounded-md bg-secondary px-6 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 active:scale-95"
-              >
-                {addButton.icon || <span className="text-lg">+</span>}
-                {addButton.label}
-              </button>
-            )}
+              {addButton && (
+                <button
+                  onClick={addButton.onClick}
+                  className="inline-flex h-11 items-center gap-2 rounded-md bg-secondary px-6 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 active:scale-95"
+                >
+                  {addButton.icon || <span className="text-lg">+</span>}
+                  {addButton.label}
+                </button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Table - Modern Design */}
-      <div className="border-t border-gray-100 overflow-auto max-h-[60vh]">
+      <div className="border-t border-gray-100 overflow-auto max-h-[calc(100vh-340px)] relative">
         <table className="w-full divide-y divide-gray-100">
-          <thead className="bg-gray-100 sticky top-0 z-20 shadow-sm">
+          <thead className="sticky top-0 z-10 bg-gray-100 shadow-[0_1px_0_0_rgba(0,0,0,0.1)]">
             <tr>
               {columns.map((column) => (
                 <th
                   key={String(column.key)}
-                  className={`px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 whitespace-nowrap ${column.className || ''}`}
+                  className={`sticky top-0 z-10 bg-gray-100 px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 whitespace-nowrap ${column.className || ''}`}
                 >
                   {column.label}
                 </th>
               ))}
               {actions && (onView || onEdit || onDelete || extraActions) && (
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 whitespace-nowrap">
+                <th className="sticky top-0 z-10 bg-gray-100 px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 whitespace-nowrap">
                   Actions
                 </th>
               )}
