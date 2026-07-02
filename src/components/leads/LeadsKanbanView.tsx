@@ -659,7 +659,7 @@ export default function LeadsKanbanView({
 
     const pageTotals = React.useMemo(() => {
         return wonLeads.reduce((acc, lead) => {
-            const kw = parseFloat(lead.kwRequirement) || 0;
+            const kw = parseFloat(lead.kwRequirement || '') || 0;
             const projectAmt = lead.projectAmount ?? lead.projectDetail?.projectAmount ?? 0;
             const pendingAmt = lead.pendingAmount ?? (projectAmt - (lead.paymentAmount || 0));
             return {
@@ -737,8 +737,8 @@ export default function LeadsKanbanView({
                                                 ? 'bg-red-500 text-white'
                                                 : 'bg-green-500 text-white'
                                             : v === 'lost'
-                                                ? 'bg-red-100 text-red-700'
-                                                : 'bg-green-100 text-green-700'
+                                                ? 'bg-green-100 text-green-700'
+                                                : 'bg-red-100 text-red-700'
                                             }`}
                                     >
                                         {count}
