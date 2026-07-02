@@ -48,6 +48,7 @@ export type ApiLead = {
   note?: string;
   leadLabel?: any[];
   assignedTo?: ApiUser;
+  createdBy?: ApiUser;
   isActive?: boolean;
   followUps?: ApiFollowUp[];
   attachments?: {

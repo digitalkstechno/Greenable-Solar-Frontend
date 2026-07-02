@@ -640,6 +640,7 @@ export default function LeadsPage() {
         onClose={handleDialogClose}
         mode={editingLead ? 'edit' : 'add'}
         initialData={editingLead}
+        currentUser={currentUser}
         onLeadCreated={() => {
           refetchAll();
           setBoardRefreshKey((k) => k + 1);
@@ -656,6 +657,7 @@ export default function LeadsPage() {
       <LeadViewDialog
         lead={viewingLead}
         statuses={statuses}
+        currentUser={currentUser}
         onClose={() => setViewingLead(null)}
         onRefresh={() => {
           refetchAll();

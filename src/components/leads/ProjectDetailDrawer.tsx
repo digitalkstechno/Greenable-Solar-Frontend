@@ -111,8 +111,9 @@ interface FileInputProps {
   files: Record<string, FileOrNull>;
   onFileChange: (key: string, file: File | null) => void;
   error?: string;
+  required?: boolean;
 }
-const FileInput = ({ fieldKey, label, accept = '*', isPdf = false, existingFiles, files, onFileChange, error }: FileInputProps) => {
+const FileInput = ({ fieldKey, label, accept = '*', isPdf = false, existingFiles, files, onFileChange, error, required = true }: FileInputProps) => {
   const existing = existingFiles[fieldKey];
   const selected = files[fieldKey];
   const hasError = !!error;
@@ -120,7 +121,7 @@ const FileInput = ({ fieldKey, label, accept = '*', isPdf = false, existingFiles
   return (
     <div className="space-y-1 mb-4">
       <label className="block text-xs font-bold text-gray-700 mb-1.5">
-        {label} <span className="text-red-500">*</span>
+        {label} {required && <span className="text-red-500">*</span>}
       </label>
       <label className={`group flex items-center gap-3 cursor-pointer rounded-xl border-2 border-dashed bg-gray-50 px-4 py-3 hover:border-orange-300 hover:bg-orange-50/30 transition ${hasError ? 'border-red-500 ring-2 ring-red-50' : 'border-gray-200'}`}>
         <div className="flex-shrink-0 rounded-lg bg-gray-100 p-2 group-hover:bg-orange-100 transition">
@@ -207,7 +208,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
         const d = res.data?.data;
         if (d) {
           setForm({
-            leadRefrance: d.leadRefrance || lead.fullName || '',
+            leadRefrance: d.leadRefrance || lead.createdBy?.fullName || lead.createdBy?.name || '',
             panelMake: d.panelMake || '',
             panelWp: d.panelWp?.toString() || '',
             noOfPanel: d.noOfPanel?.toString() || '',
@@ -295,7 +296,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
 
             setForm({
               ...EMPTY_FORM,
-              leadRefrance: lead.fullName || '',
+              leadRefrance: lead.createdBy?.fullName || lead.createdBy?.name || '',
               panelMake,
               panelWp,
               noOfPanel,
@@ -307,7 +308,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
           } else {
             setForm({
               ...EMPTY_FORM,
-              leadRefrance: lead.fullName || '',
+              leadRefrance: lead.createdBy?.fullName || lead.createdBy?.name || '',
             });
             setShowLoanDocs(false);
           }
@@ -411,8 +412,10 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
     } else if (section === 'regDocs') {
       REG_DOC_FIELDS.forEach(f => delete newErrors[f.key]);
       REG_DOC_FIELDS.forEach(f => {
-        if (!existingFiles[f.key] && !files[f.key]) {
-          newErrors[f.key] = `${f.label} is required`;
+        if (f.key !== 'docLatestTaxBill' && f.key !== 'docCancelCheck') {
+          if (!existingFiles[f.key] && !files[f.key]) {
+            newErrors[f.key] = `${f.label} is required`;
+          }
         }
       });
     } else if (section === 'payment') {
@@ -626,6 +629,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
               {activeSection === 'project' && (
                 <div>
                   <SectionTitle>Add Details After Project Done</SectionTitle>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <FormInput
                       label="Lead Reference"
@@ -908,6 +912,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                       files={files}
                       onFileChange={handleFileChange}
                       error={errors[f.key]}
+                      required={f.key !== 'docLatestTaxBill' && f.key !== 'docCancelCheck'}
                     />
                   ))}
                 </div>

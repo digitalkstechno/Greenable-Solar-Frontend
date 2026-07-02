@@ -11,6 +11,7 @@ import { RefreshCw, Plus, FileText } from 'lucide-react';
 import DataTable, { Column } from '@/components/DataTable';
 import KanbanCard from './KanbanCard';
 import Swal from 'sweetalert2';
+
 import ProjectDetailDrawer from './ProjectDetailDrawer';
 import PaymentModal from './PaymentModal';
 import LeadDocumentsDialog from './LeadDocumentsDialog';
@@ -584,7 +585,8 @@ export default function LeadsKanbanView({
         { key: 'contact', label: 'CONTACT', render: (v) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5"><FiPhone className="h-3.5 w-3.5 text-gray-400" />{v}</div></div> },
         { key: 'email', label: 'EMAIL', render: (_, row) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5"><FiMail className="h-3.5 w-3.5 text-gray-400" />{row.email || '-'}</div></div> },
         { key: 'lostDate', label: 'LOST DATE', render: (v) => (v ? new Date(v).toLocaleDateString() : 'N/A') },
-        { key: 'assignedTo', label: 'ASSIGNED TO', render: (v) => v?.fullName || '-' },
+        { key: 'createdBy', label: 'CREATED BY', render: (v) => v?.fullName || v?.name || '-' },
+        { key: 'assignedTo', label: 'ASSIGNED TO', render: (v) => v?.fullName || v?.name || '-' },
         { key: 'lostReason', label: 'REASON', render: (v) => v || 'Not specified' },
     ];
 
@@ -609,6 +611,8 @@ export default function LeadsKanbanView({
                 return dateStr ? new Date(dateStr).toLocaleDateString('en-GB') : 'N/A';
             } 
         },
+        { key: 'createdBy', label: 'CREATED BY', render: (v) => v?.fullName || v?.name || '-' },
+        { key: 'assignedTo', label: 'ASSIGNED TO', render: (v) => v?.fullName || v?.name || '-' },
         {
             key: 'projectAmount',
             label: 'Total Amount',
@@ -645,6 +649,10 @@ export default function LeadsKanbanView({
             }
         }
     ];
+
+    const isSalesExecutive = currentUser?.role?.name === 'Sales Executive' || currentUser?.role?.roleName === 'Sales Executive' || currentUser?.role === 'Sales Executive';
+    const visibleLostLeadsColumns = lostLeadsColumns.filter(c => !(isSalesExecutive && c.key === 'assignedTo'));
+    const visibleWonLeadsColumns = wonLeadsColumns.filter(c => !(isSalesExecutive && c.key === 'assignedTo'));
 
     const pageTotals = React.useMemo(() => {
         return wonLeads.reduce((acc, lead) => {
@@ -820,7 +828,7 @@ export default function LeadsKanbanView({
                     </div>
                     <DataTable
                         data={lostLeads}
-                        columns={lostLeadsColumns}
+                        columns={visibleLostLeadsColumns}
                         loading={false}
                         pagination
                         currentPage={lostPagination?.currentPage ?? 1}
@@ -854,7 +862,7 @@ export default function LeadsKanbanView({
                     </div>
                     <DataTable
                         data={wonLeads}
-                        columns={wonLeadsColumns}
+                        columns={visibleWonLeadsColumns}
                         loading={false}
                         pagination
                         currentPage={wonPagination?.currentPage ?? 1}

@@ -34,6 +34,7 @@ interface TableLead extends Record<string, any> {
   locationLink?: string;
   status: string;
   staff: string;
+  assignedTo: string;
   lastFollowUp: string;
   projectAmount?: number;
   pendingAmount?: number;
@@ -100,7 +101,8 @@ function mapLead(item: any): TableLead {
     address: item.address,
     locationLink: item.locationLink,
     status: item.leadStatus?.name || item.status?.name || '-',
-    staff: item.assignedTo?.fullName || '-',
+    staff: item.createdBy?.fullName || item.createdBy?.name || '-',
+    assignedTo: item.assignedTo?.fullName || item.assignedTo?.name || '-',
     lastFollowUp: item.updatedAt
       ? new Date(item.updatedAt).toLocaleDateString()
       : '-',
@@ -233,7 +235,8 @@ export default function LeadsListView({
     { key: 'kwRequirement', label: 'KW REQ' },
     { key: 'discomName', label: 'DISCOM' },
     { key: 'status', label: 'STATUS' },
-    { key: 'staff', label: 'ASSIGNED STAFF' },
+    { key: 'staff', label: 'CREATED BY' },
+    { key: 'assignedTo', label: 'ASSIGNED TO' },
     { key: 'lastFollowUp', label: 'LAST FOLLOW-UP' },
     {
       key: 'docs',
@@ -259,8 +262,11 @@ export default function LeadsListView({
     },
   ];
 
+  const isSalesExecutive = currentUser?.role?.name === 'Sales Executive' || currentUser?.role?.roleName === 'Sales Executive' || currentUser?.role === 'Sales Executive';
+  const visibleColumns = columns.filter(c => !(isSalesExecutive && c.key === 'assignedTo'));
+
   if (activeStatusFilter === 'won') {
-    columns.push({
+    visibleColumns.splice(visibleColumns.length - 2, 0, {
       key: 'projectAmount',
       label: 'Total Amount',
       render: (_v, row) => {
@@ -268,7 +274,7 @@ export default function LeadsListView({
         return projectAmt ? `₹${Number(projectAmt).toLocaleString()}` : '-';
       },
     });
-    columns.push({
+    visibleColumns.splice(visibleColumns.length - 2, 0, {
       key: 'pendingAmount',
       label: 'Pending Amount',
       render: (_v, row) => {
@@ -375,7 +381,7 @@ export default function LeadsListView({
       {/* Data table */}
       <DataTable
         data={leads}
-        columns={columns}
+        columns={visibleColumns}
         loading={loading}
         pagination
         searchable={false}
@@ -405,6 +411,7 @@ export default function LeadsListView({
               label: 'Add Details',
               icon: <Plus className="h-3.5 w-3.5" />,
               color: 'emerald' as const,
+              show: (row: TableLead) => row.status?.toLowerCase() === 'won',
               onClick: (row: TableLead) => {
                 const rawLead: ApiLead = row._raw || row;
                 setProjectDetailLead(rawLead);

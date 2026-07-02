@@ -486,6 +486,7 @@ import TimePicker from '@/components/ui/TimePicker';
 interface Props {
   lead: ApiLead | null;
   statuses: ApiStatus[];
+  currentUser?: any;
   onClose: () => void;
   onRefresh: () => void;
 }
@@ -514,7 +515,7 @@ const formatTime12h = (timeStr?: string) => {
   return `${String(h).padStart(2, '0')}:${m}`;
 };
 
-export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: Props) {
+export default function LeadViewDialog({ lead, statuses, currentUser, onClose, onRefresh }: Props) {
   const [editStatus, setEditStatus] = useState('');
   const [editNextDate, setEditNextDate] = useState('');
   const [editNextTime, setEditNextTime] = useState('');
@@ -534,6 +535,9 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
   const [deletingQuotation, setDeletingQuotation] = useState(false);
   const [reassignOpen, setReassignOpen] = useState(false);
   const [reassignUsers, setReassignUsers] = useState<any[]>([]);
+
+  const isSalesExecutive = currentUser?.role?.roleName === 'Sales Executive' || currentUser?.role?.name === 'Sales Executive' || currentUser?.role === 'Sales Executive';
+
   const [selectedReassignUser, setSelectedReassignUser] = useState('');
   const [reassigning, setReassigning] = useState(false);
   const [localAssignedTo, setLocalAssignedTo] = useState<any>(null);
@@ -948,23 +952,25 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
             )}
 
             <div className="rounded-lg border border-gray-200 bg-white p-4">
-              <div className="mb-3 text-sm font-bold text-gray-800">Assigned</div>
+              <div className="mb-3 text-sm font-bold text-gray-800">Created By</div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-lg">
-                    {localAssignedTo?.fullName?.charAt(0)?.toUpperCase() || 'U'}
+                    {lead.createdBy?.fullName?.charAt(0)?.toUpperCase() || lead.createdBy?.name?.charAt(0)?.toUpperCase() || localAssignedTo?.fullName?.charAt(0)?.toUpperCase() || 'U'}
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-900">{localAssignedTo?.fullName || 'Unassigned'}</div>
-                    <div className="text-xs text-gray-500">{assignedToDeptName || localAssignedTo?.role?.name || 'Sales Executive'}</div>
+                    <div className="font-semibold text-gray-900">{lead.createdBy?.fullName || lead.createdBy?.name || localAssignedTo?.fullName || 'Unassigned'}</div>
+                    <div className="text-xs text-gray-500">{lead.createdBy?.role?.roleName || assignedToDeptName || localAssignedTo?.role?.name || 'Sales Executive'}</div>
                   </div>
                 </div>
-                <button
-                  onClick={handleOpenReassign}
-                  className="text-sm font-medium text-blue-600 hover:text-blue-700"
-                >
-                  Reassign
-                </button>
+                {!isSalesExecutive && (
+                  <button
+                    onClick={handleOpenReassign}
+                    className="text-sm font-medium text-blue-600 hover:text-blue-700"
+                  >
+                    Reassign
+                  </button>
+                )}
               </div>
             </div>
             <div className="rounded-lg bg-gray-50 p-4">

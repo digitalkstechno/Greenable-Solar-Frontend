@@ -28,6 +28,7 @@ interface Props {
   onClose: () => void;
   mode: 'add' | 'edit';
   initialData?: ApiLead | null;
+  currentUser?: any;
   onLeadCreated?: (lead: any) => void;
   onLeadUpdated?: (lead: any) => void;
 }
@@ -36,6 +37,7 @@ interface Props {
 
 export default function LeadAddDialog({
   isOpen, onClose, mode, initialData,
+  currentUser,
   onLeadCreated, onLeadUpdated,
 }: Props) {
   const [statuses, setStatuses] = useState<DropdownItem[]>([]);
@@ -45,6 +47,8 @@ export default function LeadAddDialog({
   const [quotationOpen, setQuotationOpen] = useState(false);
 
   const [requiredFields, setRequiredFields] = useState<string[]>([]);
+
+  const isSalesExecutive = currentUser?.role?.roleName === 'Sales Executive' || currentUser?.role?.name === 'Sales Executive' || currentUser?.role === 'Sales Executive';
 
   useEffect(() => {
     const loadRequiredFields = () => {
@@ -95,10 +99,10 @@ export default function LeadAddDialog({
     if (requiredFields.includes('contact')) shape.contact = shape.contact.required('Mobile Number is required');
     if (requiredFields.includes('email')) shape.email = shape.email.required('Email is required');
     if (requiredFields.includes('leadStatus')) shape.leadStatus = Yup.string().required('Please select a stage');
-    if (requiredFields.includes('assignedTo')) shape.assignedTo = Yup.string().required('Please assign a sales executive');
+    if (requiredFields.includes('assignedTo') && !isSalesExecutive) shape.assignedTo = Yup.string().required('Please assign a sales executive');
 
     return Yup.object().shape(shape);
-  }, [requiredFields]);
+  }, [requiredFields, isSalesExecutive]);
 
   const isInitiallyWon = useMemo(() => {
     if (mode !== 'edit' || !initialData) return false;
@@ -314,10 +318,14 @@ export default function LeadAddDialog({
                 type="text"
                 placeholder="Rajesh Patel"
                 value={formik.values.fullName}
-                onChange={formik.handleChange}
+                onChange={(e) => {
+                  e.target.value = e.target.value.toUpperCase();
+                  formik.handleChange(e);
+                }}
                 onBlur={formik.handleBlur}
                 error={getFieldError('fullName')}
                 required={requiredFields.includes('fullName')}
+                className="uppercase"
               />
               {/* Mobile Number — numeric only, max 10 digits */}
               <div className="w-full mb-4">
@@ -382,10 +390,14 @@ export default function LeadAddDialog({
                 type="text"
                 placeholder="5"
                 value={formik.values.kwRequirement}
-                onChange={formik.handleChange}
+                onChange={(e) => {
+                  e.target.value = e.target.value.toUpperCase();
+                  formik.handleChange(e);
+                }}
                 onBlur={formik.handleBlur}
                 error={getFieldError('kwRequirement')}
                 required={requiredFields.includes('kwRequirement')}
+                className="uppercase"
               />
             </div>
 
@@ -424,10 +436,14 @@ export default function LeadAddDialog({
               name="address"
               placeholder="215, Escon Plaza, Above SBI Bank, Amroli, Surat"
               value={formik.values.address}
-              onChange={formik.handleChange}
+              onChange={(e) => {
+                e.target.value = e.target.value.toUpperCase();
+                formik.handleChange(e);
+              }}
               onBlur={formik.handleBlur}
               error={getFieldError('address')}
               as="textarea"
+              className="uppercase"
             />
 
             <FormInput
@@ -435,10 +451,14 @@ export default function LeadAddDialog({
               name="locationLink"
               placeholder="https://maps.app.goo.gl/abc123xyz"
               value={formik.values.locationLink}
-              onChange={formik.handleChange}
+              onChange={(e) => {
+                e.target.value = e.target.value.toUpperCase();
+                formik.handleChange(e);
+              }}
               onBlur={formik.handleBlur}
               error={getFieldError('locationLink')}
               as="textarea"
+              className="uppercase"
             />
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -454,18 +474,20 @@ export default function LeadAddDialog({
                 required={requiredFields.includes('leadStatus')}
                 disabled={isInitiallyWon}
               />
-              <FormSelect
-                label="User (For Assign)"
-                name="assignedTo"
-                value={formik.values.assignedTo}
-                onChange={(val) => { formik.setFieldValue('assignedTo', val); }}
-                onBlur={() => formik.setFieldTouched('assignedTo')}
-                options={staff.map((s) => ({ value: String(s._id), label: `${s.fullName || s.name!}${s.departmentName ? ` (${s.departmentName})` : ''}` }))}
-                error={getFieldError('assignedTo')}
-                placeholder="Select User"
-                required={requiredFields.includes('assignedTo')}
-                maxHeight="max-h-44"
-              />
+              {!isSalesExecutive && (
+                <FormSelect
+                  label="User (For Assign)"
+                  name="assignedTo"
+                  value={formik.values.assignedTo}
+                  onChange={(val) => { formik.setFieldValue('assignedTo', val); }}
+                  onBlur={() => formik.setFieldTouched('assignedTo')}
+                  options={staff.map((s) => ({ value: String(s._id), label: `${s.fullName || s.name!}${s.departmentName ? ` (${s.departmentName})` : ''}` }))}
+                  error={getFieldError('assignedTo')}
+                  placeholder="Select User"
+                  required={requiredFields.includes('assignedTo')}
+                  maxHeight="max-h-44"
+                />
+              )}
             </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <FormSelect
