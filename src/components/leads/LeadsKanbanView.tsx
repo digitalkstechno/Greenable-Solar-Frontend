@@ -225,7 +225,7 @@ export default function LeadsKanbanView({
         [loadingMoreMap, hasMoreMap, pageMap, fetchStatusLeads]
     );
 
-    const handleDrop = async (newStatusId: string) => {
+    const handleDrop = async (newStatusId: string, targetIndex?: number) => {
         if (!draggingId || !permissions?.update) return;
 
         let sourceStatusId = '';
@@ -238,7 +238,8 @@ export default function LeadsKanbanView({
             }
         }
 
-        if (sourceStatusId === newStatusId || !sourceStatusId) {
+     
+        if (!sourceStatusId) {
             setDraggingId(null);
             return;
         }
@@ -258,7 +259,15 @@ export default function LeadsKanbanView({
             if (leadIndex > -1) {
                 const [lead] = sourceLeads.splice(leadIndex, 1);
                 next[sourceStatusId] = sourceLeads;
-                next[newStatusId] = [lead, ...(next[newStatusId] || [])];
+                
+                const targetLeads = sourceStatusId === newStatusId ? sourceLeads : [...(next[newStatusId] || [])];
+                
+                if (targetIndex !== undefined && targetIndex >= 0) {
+                    targetLeads.splice(targetIndex, 0, lead);
+                } else {
+                    targetLeads.push(lead); // push to bottom by default if no targetIndex
+                }
+                next[newStatusId] = targetLeads;
                 lead.leadStatus = targetStatus;
             }
             return next;
@@ -267,16 +276,14 @@ export default function LeadsKanbanView({
         try {
             await axios.put(
                 `${baseUrl.updateKanbanStatus}/${currentDropId}/kanban-status`,
-                { leadStatus: newStatusId },
+                { leadStatus: newStatusId, position: targetIndex },
                 { headers: { Authorization: `Bearer ${token()}` } }
             );
-            toast.success(`Lead moved to ${targetStatus.name}`);
+            toast.success(sourceStatusId === newStatusId ? 'Lead reordered' : `Lead moved to ${targetStatus.name}`);
 
-            // SILENT RE-FETCH: sync counts/order etc in background without showing loaders
-            fetchStatusLeads(sourceStatusId, 1, false, true);
-            fetchStatusLeads(newStatusId, 1, false, true);
+       
 
-            onRefresh();
+          
         } catch {
             toast.error('Failed to update lead status');
             // Re-fetch with loader to show the revert
@@ -849,24 +856,39 @@ export default function LeadsKanbanView({
                                                     }`} />
                                             </div>
                                         ) : group.leads.length === 0 ? (
-                                            <div className="flex h-full items-center justify-center text-sm text-gray-400">
-                                                {group.isWon ? 'No won leads' : group.isLost ? 'No lost leads' : 'No leads'}
+                                            <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                                                <p className="text-sm font-medium">No leads yet</p>
+                                                <p className="text-xs mt-1">Drag and drop here</p>
                                             </div>
                                         ) : (
-                                            group.leads.map((lead: ApiLead) => (
-                                                <KanbanCard
-                                                    key={lead._id}
-                                                    lead={lead}
-                                                    isUpdating={updatingId === lead._id}
-                                                    onDragStart={() => { if (permissions?.update && !group.isWon && !group.isLost) setDraggingId(lead._id); }}
-                                                    onView={() => onView?.(lead)}
-                                                    onEdit={permissions?.update ? () => onEdit?.(lead) : undefined}
-                                                    onMarkLost={permissions?.update && !group.isLost ? () => markLost(lead._id) : undefined}
-                                                    onMarkWon={permissions?.update && !group.isWon ? () => markWon(lead._id) : undefined}
-                                                    // onReactivate={permissions?.update && (group.isLost || group.isWon) ? () => reactivate(lead._id) : undefined}
-                                                    onReactivate={permissions?.update && group.isLost ? () => reactivate(lead._id) : undefined}
-                                                />
-                                            ))
+                                            <>
+                                                {group.leads.map((lead, index) => (
+                                                    <div 
+                                                        key={lead._id}
+                                                        onDragOver={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                        }}
+                                                        onDrop={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            handleDrop(group.id, index);
+                                                        }}
+                                                    >
+                                                        <KanbanCard
+                                                            lead={lead}
+                                                            isUpdating={updatingId === lead._id}
+                                                            onDragStart={() => setDraggingId(lead._id)}
+                                                            onView={() => onView?.(lead)}
+                                                            onEdit={permissions?.update ? () => onEdit?.(lead) : undefined}
+                                                            onMarkLost={permissions?.update && !group.isLost ? () => markLost(lead._id) : undefined}
+                                                            onMarkWon={permissions?.update && !group.isWon ? () => markWon(lead._id) : undefined}
+                                                            // onReactivate={permissions?.update && (group.isLost || group.isWon) ? () => reactivate(lead._id) : undefined}
+                                                            onReactivate={permissions?.update && group.isLost ? () => reactivate(lead._id) : undefined}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </>
                                         )}
                                         {loadingMoreMap[group.id] && (
                                             <div className="flex justify-center py-2">
