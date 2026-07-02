@@ -95,7 +95,8 @@ export default function LeadDocumentsDialog({ isOpen, onClose, lead }: LeadDocum
     if (!path) return '';
     if (path.startsWith('http')) return path;
     const baseUrlWithoutApi = baseUrl.userLogin.replace('/api/v1/user/login', '');
-    return `${baseUrlWithoutApi}/${path.replace(/\\/g, '/')}`;
+    const cleanPath = path.replace(/\\/g, '/');
+    return `${baseUrlWithoutApi.replace(/\/$/, '')}/${cleanPath.replace(/^\//, '')}`;
   };
 
   const handleDownload = (e: React.MouseEvent, url: string, filename: string) => {
@@ -115,7 +116,7 @@ export default function LeadDocumentsDialog({ isOpen, onClose, lead }: LeadDocum
         <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
           <div>
             <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary" />
+              <FileText className="w-5 h-5 text-[#F28522]" />
               Project Documents
             </h2>
             <p className="text-sm text-gray-500 mt-1">
@@ -134,7 +135,7 @@ export default function LeadDocumentsDialog({ isOpen, onClose, lead }: LeadDocum
           <button
             onClick={() => setActiveTab('reg')}
             className={`pb-3 text-sm font-medium transition-colors border-b-2 ${
-              activeTab === 'reg' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
+              activeTab === 'reg' ? 'border-[#F28522] text-[#F28522]' : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
             Registration Docs ({regDocs.length})
@@ -142,7 +143,7 @@ export default function LeadDocumentsDialog({ isOpen, onClose, lead }: LeadDocum
           <button
             onClick={() => setActiveTab('loan')}
             className={`pb-3 text-sm font-medium transition-colors border-b-2 ${
-              activeTab === 'loan' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
+              activeTab === 'loan' ? 'border-[#F28522] text-[#F28522]' : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
             Loan Docs ({loanDocs.length})
@@ -151,7 +152,7 @@ export default function LeadDocumentsDialog({ isOpen, onClose, lead }: LeadDocum
             <button
               onClick={() => setActiveTab('other')}
               className={`pb-3 text-sm font-medium transition-colors border-b-2 ${
-                activeTab === 'other' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
+                activeTab === 'other' ? 'border-[#F28522] text-[#F28522]' : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
               Other Attachments ({otherDocs.length})
@@ -163,8 +164,8 @@ export default function LeadDocumentsDialog({ isOpen, onClose, lead }: LeadDocum
           {loading ? (
             <div className="absolute inset-0 flex items-center justify-center bg-transparent z-10">
               <div className="flex flex-col items-center gap-3">
-                <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#e9d8f4] border-t-primary shadow-sm" />
-                <span className="text-sm font-semibold text-primary animate-pulse">Loading documents...</span>
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-orange-100 border-t-[#F28522] shadow-sm" />
+                <span className="text-sm font-semibold text-[#F28522] animate-pulse">Loading documents...</span>
               </div>
             </div>
           ) : displayDocs.length === 0 ? (
@@ -184,9 +185,9 @@ export default function LeadDocumentsDialog({ isOpen, onClose, lead }: LeadDocum
                 const fileUrl = getFileUrl(item.file?.url || item.file?.path);
 
                 return (
-                  <div key={item.file?._id || idx} className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col gap-4 hover:shadow-xl hover:border-primary/30 transition-all duration-300 group">
+                  <div key={item.file?._id || idx} className="bg-white border border-gray-200 rounded-xl p-5 flex flex-col gap-4 hover:shadow-xl hover:border-[#F28522]/30 transition-all duration-300 group">
                     <div className="flex items-start gap-4">
-                      <div className="p-3 bg-gradient-to-br from-primary/10 to-primary/5 text-primary rounded-xl shrink-0 group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                      <div className="p-3 bg-orange-50 text-[#F28522] rounded-xl shrink-0 group-hover:scale-110 transition-transform duration-300 shadow-sm">
                         <FileText className="w-6 h-6" />
                       </div>
                       <div className="flex-1 min-w-0 pt-1">
@@ -203,14 +204,14 @@ export default function LeadDocumentsDialog({ isOpen, onClose, lead }: LeadDocum
                         href={fileUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex-1 flex justify-center items-center gap-2 py-2 px-4 bg-gradient-to-r from-[#4b6cb7] via-[#7b558f] to-[#a63c71] text-white rounded-lg text-sm font-semibold hover:opacity-90 hover:shadow-md transition-all duration-200 cursor-pointer"
+                        className="flex-1 flex justify-center items-center gap-2 py-2 px-4 bg-[#F28522] hover:bg-[#d9771e] text-white rounded-lg text-sm font-semibold hover:shadow-md transition-all duration-200 cursor-pointer"
                       >
                         <ExternalLink className="w-4 h-4" />
                         View
                       </a>
                       <button
                         onClick={(e) => handleDownload(e, fileUrl, docName)}
-                        className="flex-1 flex justify-center items-center gap-2 py-2 px-4 bg-gradient-to-r from-[#4b6cb7] via-[#7b558f] to-[#a63c71] text-white rounded-lg text-sm font-semibold hover:opacity-90 hover:shadow-md transition-all duration-200 cursor-pointer"
+                        className="flex-1 flex justify-center items-center gap-2 py-2 px-4 bg-[#F28522] hover:bg-[#d9771e] text-white rounded-lg text-sm font-semibold hover:shadow-md transition-all duration-200 cursor-pointer"
                       >
                         <FileText className="w-4 h-4" />
                         Download

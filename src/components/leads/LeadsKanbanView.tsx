@@ -1,7 +1,7 @@
 // components/leads/LeadsKanbanView.tsx
 // Kanban board with Board / Lost / Won sub-views + drag-and-drop
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { FiSearch, FiPhone, FiMail } from 'react-icons/fi';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -596,7 +596,8 @@ export default function LeadsKanbanView({
         { key: 'kwRequirement', label: 'KW REQ', render: (v) => <span className="text-sm">{v || '-'}</span> },
         { key: 'discomName', label: 'DISCOM', render: (v) => <span className="text-sm">{v || '-'}</span> },
         { key: 'address', label: 'LOCATION', render: (v) => <span className="text-sm">{v || '-'}</span> },
-        { key: 'contact', label: 'CONTACT', render: (v, row) => <ContactCell phone={v} email={row.email} /> },
+        { key: 'contact', label: 'CONTACT', render: (v) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5"><FiPhone className="h-3.5 w-3.5 text-gray-400" />{v}</div></div> },
+        { key: 'email', label: 'EMAIL', render: (_, row) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5"><FiMail className="h-3.5 w-3.5 text-gray-400" />{row.email || '-'}</div></div> },
         { key: 'lostDate', label: 'LOST DATE', render: (v) => (v ? new Date(v).toLocaleDateString() : 'N/A') },
         { key: 'assignedTo', label: 'ASSIGNED TO', render: (v) => v?.fullName || '-' },
         { key: 'lostReason', label: 'REASON', render: (v) => v || 'Not specified' },
@@ -607,26 +608,58 @@ export default function LeadsKanbanView({
         { key: 'kwRequirement', label: 'KW REQ', render: (v) => <span className="text-sm">{v || '-'}</span> },
         { key: 'discomName', label: 'DISCOM', render: (v) => <span className="text-sm">{v || '-'}</span> },
         { key: 'address', label: 'LOCATION', render: (v) => <span className="text-sm">{v || '-'}</span> },
-        { key: 'contact', label: 'CONTACT', render: (v, row) => <ContactCell phone={v} email={row.email} /> },
+        { key: 'contact', label: 'CONTACT', render: (v) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5"><FiPhone className="h-3.5 w-3.5 text-gray-400" />{v}</div></div> },
+        { key: 'email', label: 'EMAIL', render: (_, row) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5"><FiMail className="h-3.5 w-3.5 text-gray-400" />{row.email || '-'}</div></div> },
         { key: 'wonDate', label: 'WON DATE', render: (v) => (v ? new Date(v).toLocaleDateString() : 'N/A') },
-        { 
-            key: 'projectAmount', 
-            label: 'Total Amount', 
+        {
+            key: 'projectAmount',
+            label: 'Total Amount',
             render: (_v, row) => {
                 const projectAmt = row.projectAmount ?? row.projectDetail?.projectAmount ?? 0;
                 return projectAmt ? `₹${Number(projectAmt).toLocaleString()}` : '-';
-            } 
+            }
         },
-        { 
-            key: 'pendingAmount', 
-            label: 'Pending Amount', 
+        {
+            key: 'pendingAmount',
+            label: 'Pending Amount',
             render: (_v, row) => {
                 const projectAmt = row.projectAmount ?? row.projectDetail?.projectAmount ?? 0;
                 const pendingAmt = row.pendingAmount ?? (projectAmt - (row.paymentAmount || 0));
-                return pendingAmt ? `₹${Number(pendingAmt).toLocaleString()}` : '-';
-            } 
+                return pendingAmt ? <span className="text-red-600 font-semibold">₹{Number(pendingAmt).toLocaleString()}</span> : '-';
+            }
         },
+        {
+            key: 'docs',
+            label: 'DOCS',
+            render: (_, row) => {
+                return (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setDocumentsLead(row);
+                        }}
+                        className="text-gray-500 hover:text-gray-700 cursor-pointer p-1"
+                        title="Documents"
+                    >
+                        <FileText className="h-5 w-5" />
+                    </button>
+                );
+            }
+        }
     ];
+
+    const pageTotals = React.useMemo(() => {
+        return wonLeads.reduce((acc, lead) => {
+            const kw = parseFloat(lead.kwRequirement) || 0;
+            const projectAmt = lead.projectAmount ?? lead.projectDetail?.projectAmount ?? 0;
+            const pendingAmt = lead.pendingAmount ?? (projectAmt - (lead.paymentAmount || 0));
+            return {
+                totalKwReq: acc.totalKwReq + kw,
+                totalAmount: acc.totalAmount + projectAmt,
+                totalPendingAmount: acc.totalPendingAmount + pendingAmt
+            };
+        }, { totalKwReq: 0, totalAmount: 0, totalPendingAmount: 0 });
+    }, [wonLeads]);
 
     return (
         <div className="flex h-full flex-col gap-4">
@@ -683,20 +716,20 @@ export default function LeadsKanbanView({
                                 key={v}
                                 onClick={() => handleSubViewChange(v)}
                                 className={`flex items-center gap-2 rounded-lg cursor-pointer px-4 py-1.5 text-sm font-medium capitalize transition-colors ${subView === v
-                                        ? activeClasses
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-transparent'
+                                    ? activeClasses
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-transparent'
                                     }`}
                             >
                                 {label}
                                 {count !== null && (
                                     <span
                                         className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${subView === v
-                                                ? v === 'lost'
-                                                    ? 'bg-red-500 text-white'
-                                                    : 'bg-green-500 text-white'
-                                                : v === 'lost'
-                                                    ? 'bg-red-100 text-red-700'
-                                                    : 'bg-green-100 text-green-700'
+                                            ? v === 'lost'
+                                                ? 'bg-red-500 text-white'
+                                                : 'bg-green-500 text-white'
+                                            : v === 'lost'
+                                                ? 'bg-red-100 text-red-700'
+                                                : 'bg-green-100 text-green-700'
                                             }`}
                                     >
                                         {count}
@@ -766,8 +799,8 @@ export default function LeadsKanbanView({
                                     >
                                         {group.isLoading ? (
                                             <div className="flex h-full items-center justify-center py-10">
-                                                 <div className={`h-8 w-8 animate-spin rounded-full border-4 border-t-transparent ${group.isWon ? 'border-black' : group.isLost ? 'border-black' : 'border-secondary'
-                                                     }`} />
+                                                <div className={`h-8 w-8 animate-spin rounded-full border-4 border-t-transparent ${group.isWon ? 'border-black' : group.isLost ? 'border-black' : 'border-secondary'
+                                                    }`} />
                                             </div>
                                         ) : group.leads.length === 0 ? (
                                             <div className="flex h-full items-center justify-center text-sm text-gray-400">
@@ -902,46 +935,30 @@ export default function LeadsKanbanView({
                         })()}
                         searchValue={wonSearchValue}
                         onSearch={handleWonSearch}
-                        footer={totals ? (
-  <tr className="sticky bottom-0 z-30 bg-white border-t border-emerald-300 shadow-[0_-4px_12px_rgba(16,185,129,0.12)] backdrop-blur-sm">
+                        footer={wonLeads.length > 0 ? (
+                            <tr className="sticky bottom-0 z-30 bg-[#F3F4F6] border-t border-gray-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)]">
 
-  <td
-    colSpan={6}
-    className="px-5 py-2.5 text-right bg-gradient-to-r from-emerald-50 via-white to-emerald-50 font-semibold text-gray-800 uppercase tracking-widest text-xs"
-  >
-    Grand Totals
-  </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-right font-extrabold text-gray-900 text-base uppercase tracking-wider bg-[#F3F4F6]">
+                                    Grand Totals
+                                </td>
 
-  <td className="px-5 py-2.5 text-center bg-gradient-to-r from-emerald-50 via-white to-emerald-50 border-l border-emerald-100">
-    <div className="text-[10px] uppercase tracking-wide text-gray-500">
-      KW Req
-    </div>
-    <div className="mt-0.5 text-base font-bold text-emerald-600">
-      {totals.totalKwReq?.toLocaleString() || 0}
-    </div>
-  </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">
+                                    {pageTotals.totalKwReq?.toLocaleString() || 0} <span className="text-xs text-slate-500 font-normal ml-1">KW</span>
+                                </td>
 
-  <td className="px-5 py-2.5 text-center bg-gradient-to-r from-emerald-50 via-white to-emerald-50 border-l border-emerald-100">
-    <div className="text-[10px] uppercase tracking-wide text-gray-500">
-      Total Amount
-    </div>
-    <div className="mt-0.5 text-base font-bold text-emerald-700">
-      ₹{totals.totalAmount?.toLocaleString() || 0}
-    </div>
-  </td>
+                                <td colSpan={5} className="bg-[#F3F4F6] border-l border-gray-300"></td>
 
-  <td className="px-5 py-2.5 text-center bg-gradient-to-r from-emerald-50 via-white to-emerald-50 border-l border-emerald-100">
-    <div className="text-[10px] uppercase tracking-wide text-gray-500">
-      Pending
-    </div>
-    <div className="mt-0.5 text-base font-bold text-orange-600">
-      ₹{totals.totalPendingAmount?.toLocaleString() || 0}
-    </div>
-  </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">
+                                    ₹{pageTotals.totalAmount?.toLocaleString() || 0}
+                                </td>
 
-  <td className="bg-gradient-to-r from-emerald-50 via-white to-emerald-50"></td>
+                                <td className="px-6 py-4 whitespace-nowrap text-left font-bold text-red-600 text-base border-l border-gray-300 bg-[#F3F4F6]">
+                                    ₹{pageTotals.totalPendingAmount?.toLocaleString() || 0}
+                                </td>
 
-</tr>   
+                                <td colSpan={2} className="bg-[#F3F4F6] border-l border-gray-300"></td>
+
+                            </tr>
                         ) : undefined}
                     />
                 </div>

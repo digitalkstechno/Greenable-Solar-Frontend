@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -204,22 +204,27 @@ export default function LeadsListView({
               </a>
             </div>
           )}
-          {/* Email */}
-          <div className="flex items-center gap-1.5">
-            <Mail className="h-3 w-3 text-gray-400" />
-            {row.email ? (
-              <a
-                href={`mailto:${row.email}`}
-                title="Send Email"
-                onClick={(e) => e.stopPropagation()}
-                className="text-blue-500 hover:text-blue-700 hover:underline transition-colors"
-              >
-                {row.email}
-              </a>
-            ) : (
-              <span className="text-gray-500">-</span>
-            )}
-          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'email',
+      label: 'EMAIL',
+      render: (_, row) => (
+        <div className="flex items-center gap-1.5">
+          <Mail className="h-3 w-3 text-gray-400" />
+          {row.email ? (
+            <a
+              href={`mailto:${row.email}`}
+              title="Send Email"
+              onClick={(e) => e.stopPropagation()}
+              className="text-blue-500 hover:text-blue-700 hover:underline transition-colors text-sm"
+            >
+              {row.email}
+            </a>
+          ) : (
+            <span className="text-gray-500">-</span>
+          )}
         </div>
       ),
     },
@@ -228,6 +233,28 @@ export default function LeadsListView({
     { key: 'status', label: 'STATUS' },
     { key: 'staff', label: 'ASSIGNED STAFF' },
     { key: 'lastFollowUp', label: 'LAST FOLLOW-UP' },
+    {
+      key: 'docs',
+      label: 'DOCS',
+      render: (_, row) => {
+        if (row.status?.toLowerCase() === 'won') {
+          return (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const rawLead: ApiLead = row._raw || row;
+                setDocumentsLead(rawLead);
+              }}
+              className="text-gray-500 hover:text-gray-700 cursor-pointer p-1"
+              title="Documents"
+            >
+              <FileText className="h-5 w-5" />
+            </button>
+          );
+        }
+        return <span className="text-gray-400">-</span>;
+      },
+    },
   ];
 
   if (activeStatusFilter === 'won') {
@@ -245,7 +272,7 @@ export default function LeadsListView({
       render: (_v, row) => {
         const projectAmt = row.projectAmount ?? row._raw?.projectDetail?.projectAmount ?? 0;
         const pendingAmt = row.pendingAmount ?? (projectAmt - (row._raw?.paymentAmount || 0));
-        return pendingAmt ? `₹${Number(pendingAmt).toLocaleString()}` : '-';
+        return pendingAmt ? <span className="text-red-600 font-semibold">₹{Number(pendingAmt).toLocaleString()}</span> : '-';
       },
     });
   }
@@ -327,6 +354,19 @@ export default function LeadsListView({
     }
   };
 
+  const pageTotals = React.useMemo(() => {
+    return leads.reduce((acc, row) => {
+      const kw = parseFloat(row.kwRequirement || '0') || 0;
+      const projectAmt = row.projectAmount ?? row._raw?.projectDetail?.projectAmount ?? 0;
+      const pendingAmt = row.pendingAmount ?? (projectAmt - (row._raw?.paymentAmount || 0));
+      return {
+        totalKwReq: acc.totalKwReq + kw,
+        totalAmount: acc.totalAmount + projectAmt,
+        totalPendingAmount: acc.totalPendingAmount + pendingAmt,
+      };
+    }, { totalKwReq: 0, totalAmount: 0, totalPendingAmount: 0 });
+  }, [leads]);
+
   return (
     <div className="space-y-4">
 
@@ -397,18 +437,6 @@ export default function LeadsListView({
             show?: (row: TableLead) => boolean;
           }[] = [];
           const roleName = currentUser?.role?.roleName || '';
-          if (roleName === 'admin' || roleName === 'Super Admin' || roleName.includes('document')) {
-            actions.push({
-              label: 'Documents',
-              icon: <FileText className="h-3.5 w-3.5" />,
-              color: 'emerald' as const,
-              show: (row: TableLead) => row.status?.toLowerCase() === 'won',
-              onClick: (row: TableLead) => {
-                const rawLead: ApiLead = row._raw || row;
-                setDocumentsLead(rawLead);
-              },
-            });
-          }
           if (permissions?.update) {
             actions.push({
               label: 'Add Details',
@@ -432,43 +460,28 @@ export default function LeadsListView({
           }
           return actions.length > 0 ? actions : undefined;
         })()}
-        footer={activeStatusFilter === 'won' && totals ? (
-        <tr className="sticky bottom-0 z-30 bg-white border-t-2 border-emerald-500 shadow-[0_-6px_18px_rgba(16,185,129,0.15)]">
-  <td
-    colSpan={6}
-    className="px-6 py-5 text-right bg-emerald-50 font-bold text-gray-800 text-sm uppercase tracking-wider"
-  >
+        footer={activeStatusFilter === 'won' && leads.length > 0 ? (
+        <tr className="sticky bottom-0 z-30 bg-[#F3F4F6] border-t border-gray-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)]">
+  
+  <td colSpan={3} className="px-6 py-4 whitespace-nowrap text-right font-extrabold text-gray-900 text-base uppercase tracking-wider bg-[#F3F4F6]">
     Grand Totals
   </td>
 
-  <td className="px-6 py-5 text-center bg-emerald-50 border-l border-emerald-100">
-    <p className="text-[11px] font-medium uppercase text-gray-500">
-      KW Req
-    </p>
-    <p className="mt-1 text-lg font-bold text-emerald-600">
-      {totals.totalKwReq?.toLocaleString() || 0}
-    </p>
+  <td className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">
+    {pageTotals.totalKwReq?.toLocaleString() || 0} <span className="text-xs text-slate-500 font-normal ml-1">KW</span>
   </td>
 
-  <td className="px-6 py-5 text-center bg-emerald-50 border-l border-emerald-100">
-    <p className="text-[11px] font-medium uppercase text-gray-500">
-      Total Amount
-    </p>
-    <p className="mt-1 text-lg font-bold text-green-600">
-      ₹{totals.totalAmount?.toLocaleString() || 0}
-    </p>
+  <td colSpan={5} className="bg-[#F3F4F6] border-l border-gray-300"></td>
+
+  <td className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">
+    ₹{pageTotals.totalAmount?.toLocaleString() || 0}
   </td>
 
-  <td className="px-6 py-5 text-center bg-emerald-50 border-l border-emerald-100">
-    <p className="text-[11px] font-medium uppercase text-gray-500">
-      Pending
-    </p>
-    <p className="mt-1 text-lg font-bold text-red-500">
-      ₹{totals.totalPendingAmount?.toLocaleString() || 0}
-    </p>
+  <td className="px-6 py-4 whitespace-nowrap text-left font-bold text-red-600 text-base border-l border-gray-300 bg-[#F3F4F6]">
+    ₹{pageTotals.totalPendingAmount?.toLocaleString() || 0}
   </td>
 
-  <td className="bg-emerald-50"></td>
+  <td className="bg-[#F3F4F6] border-l border-gray-300"></td>
 </tr>
         ) : undefined}
       />

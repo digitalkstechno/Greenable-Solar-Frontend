@@ -282,9 +282,9 @@ export default function DataTable<T extends Record<string, any>>({
       </div>
 
       {/* Table - Modern Design */}
-      <div className="border-t border-gray-100 overflow-x-auto">
+      <div className="border-t border-gray-100 overflow-auto max-h-[60vh]">
         <table className="w-full divide-y divide-gray-100">
-          <thead className="bg-gray-100">
+          <thead className="bg-gray-100 sticky top-0 z-20 shadow-sm">
             <tr>
               {columns.map((column) => (
                 <th
