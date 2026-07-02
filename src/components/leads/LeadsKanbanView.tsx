@@ -1,7 +1,7 @@
 // components/leads/LeadsKanbanView.tsx
 // Kanban board with Board / Lost / Won sub-views + drag-and-drop
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { FiSearch, FiPhone, FiMail, FiX } from 'react-icons/fi';
 import axios from 'axios';
 import toast from 'react-hot-toast';
