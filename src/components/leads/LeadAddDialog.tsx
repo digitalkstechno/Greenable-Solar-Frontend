@@ -200,7 +200,7 @@ export default function LeadAddDialog({
         if (mode === 'edit' && initialData?._id) {
           const [stRes, staffRes, deptRes, leadRes] = await Promise.all([
             axios.get(baseUrl.leadStatuses, { headers }),
-            axios.get(baseUrl.getAllUsers, { headers }),
+            axios.get(baseUrl.getAllUsers, { headers, params: { limit: 1000 } }),
             axios.get(baseUrl.department, { headers }),
             axios.get(`${baseUrl.findLeadById}/${initialData._id}`, { headers })
           ]);
@@ -216,7 +216,7 @@ export default function LeadAddDialog({
         } else {
           const [stRes, staffRes, deptRes] = await Promise.all([
             axios.get(baseUrl.leadStatuses, { headers }),
-            axios.get(baseUrl.getAllUsers, { headers }),
+            axios.get(baseUrl.getAllUsers, { headers, params: { limit: 1000 } }),
             axios.get(baseUrl.department, { headers })
           ]);
           setStatuses(stRes.data?.data || []);

@@ -619,7 +619,20 @@ export default function LeadsKanbanView({
         { key: 'address', label: 'LOCATION', render: (v) => <span className="text-sm">{v || '-'}</span> },
         { key: 'contact', label: 'CONTACT', render: (v) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5"><FiPhone className="h-3.5 w-3.5 text-gray-400" />{v}</div></div> },
         { key: 'email', label: 'EMAIL', render: (_, row) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5"><FiMail className="h-3.5 w-3.5 text-gray-400" />{row.email || '-'}</div></div> },
-        { key: 'wonDate', label: 'WON DATE', render: (v) => (v ? new Date(v).toLocaleDateString() : 'N/A') },
+        { 
+            key: 'wonDate', 
+            label: 'WON DATE', 
+            render: (v, row) => {
+                let dateStr = v;
+                if (!dateStr && row.activities && row.activities.length > 0) {
+                    const wonActivity = row.activities.find((a: any) => a.message?.match(/Stage changed to won/i));
+                    if (wonActivity && wonActivity.date) {
+                        dateStr = wonActivity.date;
+                    }
+                }
+                return dateStr ? new Date(dateStr).toLocaleDateString('en-GB') : 'N/A';
+            } 
+        },
         {
             key: 'projectAmount',
             label: 'Total Amount',
@@ -710,8 +723,8 @@ export default function LeadsKanbanView({
                     {(['board', 'lost', 'won'] as SubView[]).map((v) => {
                         const lostCount = lostPagination?.totalItems ?? lostLeads.length;
                         const wonCount = wonPagination?.totalItems ?? wonLeads.length;
-                        const label = v === 'board' ? 'Kanban View' : v === 'lost' ? 'Won Leads' : 'Lost Leads';
-                        const count = v === 'lost' ? wonCount : v === 'won' ? lostCount : null;
+                        const label = v === 'board' ? 'Kanban View' : v === 'lost' ? 'Lost Leads' : 'Won Leads';
+                        const count = v === 'lost' ? lostCount : v === 'won' ? wonCount : null;
 
                         const activeClasses =
                             v === 'lost'
@@ -736,7 +749,7 @@ export default function LeadsKanbanView({
                                             ? v === 'lost'
                                                 ? 'bg-red-500 text-white'
                                                 : 'bg-green-500 text-white'
-                                            : v === 'lost'
+                                            : v === 'won'
                                                 ? 'bg-green-100 text-green-700'
                                                 : 'bg-red-100 text-red-700'
                                             }`}

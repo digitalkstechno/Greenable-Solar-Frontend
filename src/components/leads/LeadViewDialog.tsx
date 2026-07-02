@@ -782,7 +782,7 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
     try {
       const headers = { Authorization: `Bearer ${getAuthToken()}` };
       const [usersRes, deptRes] = await Promise.all([
-        axios.get(baseUrl.getAllUsers, { headers }),
+        axios.get(baseUrl.getAllUsers, { headers, params: { limit: 1000 } }),
         departments.length === 0 ? axios.get(baseUrl.department, { headers }) : Promise.resolve({ data: { data: departments } })
       ]);
       const depts = deptRes.data?.data || [];

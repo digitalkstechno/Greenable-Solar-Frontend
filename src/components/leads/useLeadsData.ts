@@ -263,7 +263,7 @@ export function useLeadsData(
     try {
       const [stRes, staffRes, meRes] = await Promise.all([
         axios.get(baseUrl.leadStatuses, { headers: getHeaders() }),
-        axios.get(baseUrl.getAllUsers, { headers: getHeaders() }),
+        axios.get(baseUrl.getAllUsers, { headers: getHeaders(), params: { limit: 1000 } }),
         axios.get(baseUrl.currentStaff, { headers: getHeaders() })
       ]);
       setStatuses(stRes.data?.data ?? []);
