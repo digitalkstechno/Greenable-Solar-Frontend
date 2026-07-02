@@ -40,8 +40,8 @@ export default function RoleForm({
   }, [isOpen]);
 
   // FIXED: Use lowercase for feature keys to match backend expectations
-  type Feature = 'lead' | 'task' | 'taskStatus' | 'staff' | 'role' | 'leadStatus' | 'leadSource' | 'leadLabel' | 'teams' | 'organizations' | 'category' | 'product' | 'stock';
-  const features: Feature[] = ['lead', 'task', 'taskStatus', 'staff', 'role', 'leadStatus', 'leadSource', 'leadLabel', 'teams', 'organizations', 'category', 'product', 'stock'];
+  type Feature = 'lead' | 'task' | 'taskStatus' | 'staff' | 'role' | 'leadStatus' | 'leadSource' | 'category' | 'product' | 'stock';
+  const features: Feature[] = ['lead', 'task', 'taskStatus', 'staff', 'role', 'leadStatus', 'leadSource', 'category', 'product', 'stock'];
 
   const featureLabels: Record<Feature, string> = {
     lead: 'Leads',
@@ -51,9 +51,6 @@ export default function RoleForm({
     role: 'Department Management',
     leadStatus: 'Lead Statuses',
     leadSource: 'Lead Sources',
-    leadLabel: 'Lead Labels',
-    teams: 'Teams',
-    organizations: 'Organizations',
     category: 'Category',
     product: 'Product',
     stock: 'Stock',
@@ -168,6 +165,18 @@ export default function RoleForm({
       nextCaps = { ...nextCaps, readAll: false };
     }
 
+    // Force readOwn to true if create, update, or delete is checked
+    if ((capability === 'create' || capability === 'update' || capability === 'delete') && nextValue) {
+      nextCaps = { ...nextCaps, readOwn: true, readAll: false };
+    }
+
+    // Prevent unchecking readOwn if create, update, or delete is checked
+    if (capability === 'readOwn' && !nextValue) {
+      if (nextCaps.create || nextCaps.update || nextCaps.delete) {
+        return; // do nothing, cannot uncheck
+      }
+    }
+
     const newPermissions = {
       ...formik.values.permissions,
       [feature]: nextCaps,
@@ -236,13 +245,13 @@ export default function RoleForm({
                     <div className="col-span-7">
                       <div className="flex flex-wrap gap-4">
                         {(['readAll', 'readOwn', 'create', 'update', 'delete'] as CapabilityKey[]).map((cap) => (
-                          <label key={cap} className={`inline-flex cursor-pointer items-center gap-2 text-sm text-gray-700 ${isDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                          <label key={cap} className={`inline-flex cursor-pointer items-center gap-2 text-sm text-gray-700 ${isDisabled || (cap === 'readOwn' && (caps.create || caps.update || caps.delete)) ? 'opacity-60 cursor-not-allowed' : ''}`}>
                             <input
                               type="checkbox"
                               checked={caps[cap]}
-                              onChange={() => { if (!isDisabled) toggleCapability(feature, cap); }}
-                              disabled={isDisabled}
-                              className="h-4 w-4 rounded cursor-pointer border-gray-300 text-sky-950 focus:ring-sky-200"
+                              onChange={() => { if (!isDisabled && !(cap === 'readOwn' && (caps.create || caps.update || caps.delete))) toggleCapability(feature, cap); }}
+                              disabled={isDisabled || (cap === 'readOwn' && (caps.create || caps.update || caps.delete))}
+                              className={`h-4 w-4 rounded border-gray-300 text-sky-950 focus:ring-sky-200 ${(isDisabled || (cap === 'readOwn' && (caps.create || caps.update || caps.delete))) ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                             />
                             <span>
                               {cap === 'readAll'

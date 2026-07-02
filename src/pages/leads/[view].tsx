@@ -333,16 +333,60 @@ export default function LeadsPage() {
 
       {/* ── Page Header & Unified Toolbar ───────────────────────────────── */}
       <div className="rounded-md border border-gray-200 bg-white px-4 md:px-6 py-4 transition-all duration-300">
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl md:text-2xl font-bold text-gray-900">Leads</h1>
-
-
+        <div className="flex flex-col xl:flex-row xl:items-center gap-4 justify-between w-full">
+          {/* Left side: Tabs & Search */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full xl:w-auto">
+            {viewMode === 'kanban' && (
+              <div className="flex items-center gap-2">
+                {(['board', 'lost', 'won'] as KanbanSubView[]).map((v) => {
+                  const lostCount = lostPagination?.totalItems ?? lostLeads.length;
+                  const wonCount = wonPagination?.totalItems ?? wonLeads.length;
+                  const label = v === 'board' ? 'Kanban View' : v === 'lost' ? 'Lost Leads' : 'Won Leads';
+                  const count = v === 'lost' ? lostCount : v === 'won' ? wonCount : null;
+                  const activeClasses =
+                    v === 'lost'
+                      ? 'border border-red-500 text-red-600 bg-white'
+                      : v === 'won'
+                      ? 'border border-green-500 text-green-600 bg-white'
+                      : 'border border-[#F28522] text-[#F28522] bg-white';
+                  
+                  return (
+                    <button
+                      key={v}
+                      onClick={() => setKanbanSubView(v)}
+                      className={`flex items-center gap-2 rounded-lg cursor-pointer px-4 py-1.5 text-sm font-medium capitalize transition-colors ${kanbanSubView === v ? activeClasses : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-transparent'}`}
+                    >
+                      {label}
+                      {count !== null && (
+                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${kanbanSubView === v ? (v === 'lost' ? 'bg-red-500 text-white' : 'bg-green-500 text-white') : (v === 'won' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700')}`}>
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search anything..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-9 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm h-11"
+              />
+              {search && (
+                <button type="button" onClick={() => setSearch('')} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer">
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           </div>
 
-
-
-          <div className="flex flex-wrap items-center gap-2 md:gap-3 md:ml-auto">
+          {/* Right side: Actions */}
+          <div className="flex flex-wrap items-center gap-2 md:gap-3 xl:ml-auto w-full xl:w-auto justify-end">
 
             {/* Advanced Filter Button */}
             <button
@@ -530,6 +574,7 @@ export default function LeadsPage() {
               convert: canConvert,
             }}
             pagination={listPagination}
+            searchValue={search}
             onSearch={setSearch}
             newLeadCount={counts?.statusWiseCounts?.find((s: any) => s.statusId === newLeadStatus?._id)?.count || 0}
             wonCount={counts?.statusWiseCounts?.find((s: any) => s.statusId === wonStatus?._id)?.count || 0}
@@ -564,10 +609,12 @@ export default function LeadsPage() {
             onRefresh={refetchAll}
             scope={activeTab}
             filters={filters}
+            searchValue={search}
             onSearch={setSearch}
             // Pass separate paginations for lost/won
             lostPagination={lostPagination}
             wonPagination={wonPagination}
+            subView={kanbanSubView}
             // Notify parent when sub-view changes so hook fetches correct data
             onSubViewChange={setKanbanSubView}
             onLostSearch={handleLostSearch}

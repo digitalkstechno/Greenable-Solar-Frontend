@@ -207,10 +207,10 @@ export default function DataTable<T extends Record<string, any>>({
   }, [pagination, currentPage, data.length, totalRecords, onPageChange]);
 
   return (
-    <div className="rounded-md bg-white border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-2xl">
+    <div className="w-full flex flex-col gap-4">
       {/* Header - Premium Design */}
       {(onRefresh || onExport || searchable || addButton) && (
-        <div className="p-4 md:px-6 md:py-4">
+        <div className="w-full">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-end gap-4">
             
 
@@ -280,7 +280,8 @@ export default function DataTable<T extends Record<string, any>>({
       )}
 
       {/* Table - Modern Design */}
-      <div className="border-t border-gray-100 overflow-auto max-h-[calc(100vh-340px)] relative">
+      <div className="rounded-md bg-white border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-2xl">
+        <div className="border-t border-gray-100 overflow-auto max-h-[calc(100vh-340px)] relative">
         <table className="w-full divide-y divide-gray-100">
           <thead className="sticky top-0 z-10 bg-gray-100 shadow-[0_1px_0_0_rgba(0,0,0,0.1)]">
             <tr>
@@ -529,6 +530,7 @@ export default function DataTable<T extends Record<string, any>>({
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

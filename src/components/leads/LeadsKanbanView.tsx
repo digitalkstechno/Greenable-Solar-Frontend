@@ -61,7 +61,9 @@ interface Props {
     refreshKey?: number;
     currentUser?: any;
     totals?: any;
+    searchValue?: string;
     onSearch?: (value: string) => void;
+    subView?: SubView;
 }
 
 type SubView = 'board' | 'lost' | 'won';
@@ -79,37 +81,11 @@ export default function LeadsKanbanView({
     refreshKey = 0,
     currentUser,
     totals,
+    searchValue,
     onSearch,
+    subView = 'board',
 }: Props) {
 
-    // Local search state for Lost / Won sub-views (debounced → triggers API re-fetch via parent)
-    const [lostSearchValue, setLostSearchValue] = useState('');
-    const [wonSearchValue, setWonSearchValue] = useState('');
-    const lostSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const wonSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const handleLostSearch = (value: string) => {
-        setLostSearchValue(value);
-        if (lostSearchTimer.current) clearTimeout(lostSearchTimer.current);
-        lostSearchTimer.current = setTimeout(() => {
-            onLostSearch?.(value);
-        }, 500);
-    };
-
-    const handleWonSearch = (value: string) => {
-        setWonSearchValue(value);
-        if (wonSearchTimer.current) clearTimeout(wonSearchTimer.current);
-        wonSearchTimer.current = setTimeout(() => {
-            onWonSearch?.(value);
-        }, 500);
-    };
-
-    // Reset local search when switching sub-views
-    const [subView, setSubView] = useState<SubView>('board');
-    useEffect(() => {
-        setLostSearchValue('');
-        setWonSearchValue('');
-    }, [subView]);
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
     const [projectDetailLead, setProjectDetailLead] = useState<ApiLead | null>(null);
@@ -718,94 +694,7 @@ export default function LeadsKanbanView({
                 </div>
             </div> */}
 
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-1">
-                <div className="flex items-center gap-2">
-                    {(['board', 'lost', 'won'] as SubView[]).map((v) => {
-                        const lostCount = lostPagination?.totalItems ?? lostLeads.length;
-                        const wonCount = wonPagination?.totalItems ?? wonLeads.length;
-                        const label = v === 'board' ? 'Kanban View' : v === 'lost' ? 'Lost Leads' : 'Won Leads';
-                        const count = v === 'lost' ? lostCount : v === 'won' ? wonCount : null;
 
-                        const activeClasses =
-                            v === 'lost'
-                                ? 'border border-red-500 text-red-600 bg-white'
-                                : v === 'won'
-                                    ? 'border border-green-500 text-green-600 bg-white'
-                                    : 'border border-[#F28522] text-[#F28522] bg-white';
-
-                        return (
-                            <button
-                                key={v}
-                                onClick={() => handleSubViewChange(v)}
-                                className={`flex items-center gap-2 rounded-lg cursor-pointer px-4 py-1.5 text-sm font-medium capitalize transition-colors ${subView === v
-                                    ? activeClasses
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-transparent'
-                                    }`}
-                            >
-                                {label}
-                                {count !== null && (
-                                    <span
-                                        className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${subView === v
-                                            ? v === 'lost'
-                                                ? 'bg-red-500 text-white'
-                                                : 'bg-green-500 text-white'
-                                            : v === 'won'
-                                                ? 'bg-green-100 text-green-700'
-                                                : 'bg-red-100 text-red-700'
-                                            }`}
-                                    >
-                                        {count}
-                                    </span>
-                                )}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {/* Unified search bar on the right of subview buttons */}
-                <div className="relative w-full sm:w-80">
-                    <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder="Search anything..."
-                        value={
-                            subView === 'board'
-                                ? filters.search || ''
-                                : subView === 'lost'
-                                    ? lostSearchValue
-                                    : wonSearchValue
-                        }
-                        onChange={(e) => {
-                            const val = e.target.value;
-                            if (subView === 'board') {
-                                onSearch?.(val);
-                            } else if (subView === 'lost') {
-                                handleLostSearch(val);
-                            } else {
-                                handleWonSearch(val);
-                            }
-                        }}
-                        className="w-full pl-9 pr-9 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm h-11 bg-white"
-                    />
-                    {((subView === 'board' ? filters.search : subView === 'lost' ? lostSearchValue : wonSearchValue) || '') && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                if (subView === 'board') {
-                                    onSearch?.('');
-                                } else if (subView === 'lost') {
-                                    handleLostSearch('');
-                                } else {
-                                    handleWonSearch('');
-                                }
-                            }}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer"
-                        >
-                            <FiX className="h-4 w-4" />
-                        </button>
-                    )}
-                </div>
-            </div>
 
             {subView === 'board' && statusGroups.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-[calc(100vh-320px)] text-center gap-4">
@@ -945,8 +834,6 @@ export default function LeadsKanbanView({
                         onEdit={permissions?.update ? (row) => onEdit?.(row) : undefined}
                         extraActions={permissions?.update ? [{ label: 'Reactivate', onClick: (row) => reactivate(row._id), icon: <RefreshCw className="h-4 w-4" />, color: 'orange' }] : undefined}
                         searchable={false}
-                        searchValue={lostSearchValue}
-                        onSearch={handleLostSearch}
                     />
                 </div>
             )}
@@ -1015,8 +902,6 @@ export default function LeadsKanbanView({
                             return actions.length > 0 ? actions : undefined;
                         })()}
                         searchable={false}
-                        searchValue={wonSearchValue}
-                        onSearch={handleWonSearch}
                         footer={wonLeads.length > 0 ? (
                             <tr className="sticky bottom-0 z-30 bg-[#F3F4F6] border-t border-gray-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)]">
 
