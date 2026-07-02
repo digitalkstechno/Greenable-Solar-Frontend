@@ -878,12 +878,11 @@ export default function LeadsKanbanView({
                                                         <KanbanCard
                                                             lead={lead}
                                                             isUpdating={updatingId === lead._id}
-                                                            onDragStart={() => setDraggingId(lead._id)}
+                                                            onDragStart={permissions?.update && !group.isWon ? () => setDraggingId(lead._id) : undefined}
                                                             onView={() => onView?.(lead)}
                                                             onEdit={permissions?.update ? () => onEdit?.(lead) : undefined}
-                                                            onMarkLost={permissions?.update && !group.isLost ? () => markLost(lead._id) : undefined}
-                                                            onMarkWon={permissions?.update && !group.isWon ? () => markWon(lead._id) : undefined}
-                                                            // onReactivate={permissions?.update && (group.isLost || group.isWon) ? () => reactivate(lead._id) : undefined}
+                                                            onMarkLost={permissions?.update && !group.isLost && !group.isWon ? () => markLost(lead._id) : undefined}
+                                                            onMarkWon={permissions?.update && !group.isWon && !group.isLost ? () => markWon(lead._id) : undefined}
                                                             onReactivate={permissions?.update && group.isLost ? () => reactivate(lead._id) : undefined}
                                                         />
                                                     </div>

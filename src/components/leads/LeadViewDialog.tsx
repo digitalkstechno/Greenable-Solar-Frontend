@@ -539,6 +539,15 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
   const [localAssignedTo, setLocalAssignedTo] = useState<any>(null);
   const [departments, setDepartments] = useState<any[]>([]);
 
+  const isWonLead = useMemo(() => {
+    if (!lead) return false;
+    if (lead.isWon) return true;
+    const statusId = typeof lead.leadStatus === 'string' 
+      ? lead.leadStatus 
+      : (lead.leadStatus as any)?._id;
+    return statuses.find(s => s._id === statusId)?.name?.match(/^won$/i) != null;
+  }, [lead, statuses]);
+
   useEffect(() => {
     if (lead) {
       setEditStatus(lead.leadStatus?._id || '');
@@ -886,13 +895,15 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
             >
               Close
             </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-            >
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
+            {!isWonLead && (
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            )}
           </>
         }
       >
@@ -962,11 +973,12 @@ export default function LeadViewDialog({ lead, statuses, onClose, onRefresh }: P
                 {statuses.map((s) => (
                   <button
                     key={s._id}
-                    onClick={() => setEditStatus(s._id)}
+                    onClick={() => !isWonLead && setEditStatus(s._id)}
+                    disabled={isWonLead}
                     className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${editStatus === s._id
                       ? 'bg-secondary text-white shadow'
-                      : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                      }`}
+                      : 'border border-gray-300 bg-white text-gray-700'
+                      } ${isWonLead ? 'opacity-60 cursor-not-allowed' : 'hover:bg-gray-50 cursor-pointer'}`}
                   >
                     {s.name}
                   </button>

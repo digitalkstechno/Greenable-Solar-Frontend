@@ -274,8 +274,7 @@ export default function LeadsPage() {
     sourceFilter.length > 0 ||
     staffFilter.length > 0 ||
     fromDate ||
-    toDate ||
-    search
+    toDate
   );
 
   // ── Access denied ─────────────────────────────────────────────────────────

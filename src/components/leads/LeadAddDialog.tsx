@@ -100,6 +100,15 @@ export default function LeadAddDialog({
     return Yup.object().shape(shape);
   }, [requiredFields]);
 
+  const isInitiallyWon = useMemo(() => {
+    if (mode !== 'edit' || !initialData) return false;
+    if (initialData.isWon) return true;
+    const statusId = typeof initialData.leadStatus === 'string' 
+      ? initialData.leadStatus 
+      : (initialData.leadStatus as any)?._id;
+    return statuses.find(s => s._id === statusId)?.name?.match(/^won$/i) != null;
+  }, [mode, initialData, statuses]);
+
   const token = getAuthToken;
 
   const formik = useFormik({
@@ -443,6 +452,7 @@ export default function LeadAddDialog({
                 error={getFieldError('leadStatus')}
                 placeholder="Select Stage"
                 required={requiredFields.includes('leadStatus')}
+                disabled={isInitiallyWon}
               />
               <FormSelect
                 label="User (For Assign)"
