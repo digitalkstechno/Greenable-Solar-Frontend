@@ -356,6 +356,7 @@ interface FormInputProps {
   checkboxColor?: string; // Custom color for checkbox
   min?: string;
   max?: string;
+  inputRef?: React.Ref<any>;
 }
 
 const FormInput: React.FC<FormInputProps> = ({
@@ -379,6 +380,7 @@ const FormInput: React.FC<FormInputProps> = ({
   checkboxColor = "#1e40af", // Default dark blue color
   min,
   max,
+  inputRef,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -610,6 +612,7 @@ const FormInput: React.FC<FormInputProps> = ({
         {/* Input Field */}
         {as === "textarea" ? (
           <textarea
+            ref={inputRef}
             name={name}
             value={value || ""}
             onChange={onChange}
@@ -635,6 +638,7 @@ const FormInput: React.FC<FormInputProps> = ({
           />
         ) : (
           <input
+            ref={inputRef}
             type={inputType}
             name={name}
             value={value || ""}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import Dialog from './Dialog';
@@ -27,6 +27,18 @@ export default function RoleForm({
   onSubmit,
   initialData,
 }: RoleFormProps) {
+  const roleNameRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        roleNameRef.current?.focus();
+        roleNameRef.current?.select();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
   // FIXED: Use lowercase for feature keys to match backend expectations
   type Feature = 'lead' | 'task' | 'taskStatus' | 'staff' | 'role' | 'leadStatus' | 'leadSource' | 'leadLabel' | 'teams' | 'organizations' | 'category' | 'product' | 'stock';
   const features: Feature[] = ['lead', 'task', 'taskStatus', 'staff', 'role', 'leadStatus', 'leadSource', 'leadLabel', 'teams', 'organizations', 'category', 'product', 'stock'];
@@ -193,6 +205,7 @@ export default function RoleForm({
       <form id="role-form" onSubmit={formik.handleSubmit} className="space-y-6">
         <div>
           <FormInput
+            inputRef={roleNameRef}
             label="Department Name"
             name="roleName"
             type="text"

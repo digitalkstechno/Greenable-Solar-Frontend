@@ -4,7 +4,7 @@
 
 import { useRouter } from 'next/router';
 import { useEffect, useState, useMemo, useCallback } from 'react';
-import { ListCollapse, Plus, Filter, Kanban, Search, Download, Upload } from 'lucide-react';
+import { ListCollapse, Plus, Filter, Kanban, Search, Download, Upload, X } from 'lucide-react';
 import axios from 'axios';
 import { baseUrl, getAuthToken } from '@/config';
 
@@ -339,21 +339,7 @@ export default function LeadsPage() {
 
           </div>
 
-          {/* Search Bar */}
-          {viewMode !== 'list' && (
-            <div className="w-full md:flex-1 md:max-w-md">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search leads..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-          )}
+
 
           <div className="flex flex-wrap items-center gap-2 md:gap-3 md:ml-auto">
 
@@ -414,7 +400,7 @@ export default function LeadsPage() {
             {canCreate && (
               <button
                 onClick={handleOpenAdd}
-                className="flex cursor-pointer items-center gap-2 rounded-md bg-[#d87612] px-6 py-2.5 text-sm font-semibold text-white shadow-md hover:bg-[#E67E22] hover:shadow-lg active:scale-95 transition-all"
+                className="flex cursor-pointer items-center gap-2 rounded-md bg-secondary px-6 py-2.5 text-sm font-semibold text-white shadow-md active:scale-95 transition-all"
               >
                 <Plus className="h-4 w-4" />
                 Add Lead
@@ -573,6 +559,7 @@ export default function LeadsPage() {
             onRefresh={refetchAll}
             scope={activeTab}
             filters={filters}
+            onSearch={setSearch}
             // Pass separate paginations for lost/won
             lostPagination={lostPagination}
             wonPagination={wonPagination}

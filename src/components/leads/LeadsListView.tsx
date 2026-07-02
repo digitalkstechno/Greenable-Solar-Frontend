@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { Phone, Mail, Plus } from 'lucide-react';
+import { Phone, Mail, Plus, Search, X } from 'lucide-react';
 import { baseUrl, getAuthToken } from '@/config';
 import { ApiSource, ApiStatus, ApiUser, ApiLead } from './types';
 import DataTable, { Column } from '@/components/DataTable';
@@ -304,44 +304,67 @@ export default function LeadsListView({
   return (
     <div className="space-y-4">
 
-      {/* Status Filter Buttons */}
-      <div className="flex items-center gap-2 mb-3">
-        <button
-          onClick={() => onStatusFilter?.('new lead')}
-          className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors border ${activeStatusFilter === 'new lead'
-            ? 'border-orange-400 text-orange-600 bg-white'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent'
-            }`}
-        >
-          New Lead
-          <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700">
-            {newLeadCount}
-          </span>
-        </button>
-        <button
-          onClick={() => onStatusFilter?.('won')}
-          className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors border ${activeStatusFilter === 'won'
-            ? 'border-green-200 text-green-600 bg-white'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent'
-            }`}
-        >
-          Won Leads
-          <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">
-            {wonCount}
-          </span>
-        </button>
-        <button
-          onClick={() => onStatusFilter?.('lost')}
-          className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors border ${activeStatusFilter === 'lost'
-            ? 'border-red-200 text-red-600 bg-white'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent'
-            }`}
-        >
-          Lost Leads
-          <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">
-            {lostCount}
-          </span>
-        </button>
+      {/* Status Filter Buttons & Search Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => onStatusFilter?.('new lead')}
+            className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors border ${activeStatusFilter === 'new lead'
+              ? 'border-orange-400 text-orange-400 bg-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent'
+              }`}
+          >
+            New Lead
+            <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-600">
+              {newLeadCount}
+            </span>
+          </button>
+          <button
+            onClick={() => onStatusFilter?.('won')}
+            className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors border ${activeStatusFilter === 'won'
+              ? 'border-green-200 text-green-600 bg-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent'
+              }`}
+          >
+            Won Leads
+            <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700">
+              {wonCount}
+            </span>
+          </button>
+          <button
+            onClick={() => onStatusFilter?.('lost')}
+            className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-medium transition-colors border ${activeStatusFilter === 'lost'
+              ? 'border-red-200 text-red-600 bg-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent'
+              }`}
+          >
+            Lost Leads
+            <span className="text-xs font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">
+              {lostCount}
+            </span>
+          </button>
+        </div>
+
+        {/* Search Bar on the right side of status buttons */}
+        <div className="relative w-full sm:w-80">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search anything..."
+            value={filters.search || ''}
+            onChange={(e) => onSearch?.(e.target.value)}
+            className="w-full pl-9 pr-9 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm h-11"
+          />
+          {(filters.search || '') && (
+            <button
+              type="button"
+              onClick={() => onSearch?.('')}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Data table */}
@@ -350,6 +373,7 @@ export default function LeadsListView({
         columns={columns}
         loading={loading}
         pagination
+        searchable={false}
         searchValue={filters.search || ''}
         onSearch={onSearch}
         currentPage={pagination?.currentPage || 1}
