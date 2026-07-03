@@ -41,7 +41,7 @@ function useDebounce<T>(value: T, delay = 500): T {
   return debouncedValue;
 }
 
-export default function LeadsPage() {
+export default function LeadsPage({ isSidebarOpen }: { isSidebarOpen: boolean }) {
   const router = useRouter();
   const { view: viewParam } = router.query;
 
@@ -468,6 +468,7 @@ export default function LeadsPage() {
               {viewMode !== 'kanban' && (
                 <div className="space-y-2">
                   <FormMultiSelect
+                    name="leadStatus"
                     label="Lead Status"
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e)}
@@ -478,6 +479,7 @@ export default function LeadsPage() {
 
               <div className="space-y-2">
                 <FormMultiSelect
+                  name="leadSource"
                   label="Lead Source"
                   value={sourceFilter}
                   onChange={(e) => setSourceFilter(e)}
@@ -487,6 +489,7 @@ export default function LeadsPage() {
 
               <div className="space-y-2">
                 <FormMultiSelect
+                  name="assignedStaff"
                   label="Assigned Staff"
                   value={staffFilter}
                   onChange={(e) => setStaffFilter(e)}
@@ -507,7 +510,7 @@ export default function LeadsPage() {
                   }}
                   minDate={new Date(new Date().setHours(0, 0, 0, 0))}
                   placeholder="dd-mm-yyyy"
-                  className="min-h-[46px]"
+                  className="min-h-11.5"
                 />
               </div>
 
@@ -524,7 +527,7 @@ export default function LeadsPage() {
                   }}
                   minDate={new Date(new Date().setHours(0, 0, 0, 0))}
                   placeholder="dd-mm-yyyy"
-                  className="min-h-[46px]"
+                  className="min-h-11.5"
                 />
               </div>
 
@@ -599,6 +602,7 @@ export default function LeadsPage() {
           />
         ) : (
           <LeadsKanbanView
+            isSidebarOpen={isSidebarOpen}
             leads={leads}
             lostLeads={lostLeads}
             wonLeads={wonLeads}

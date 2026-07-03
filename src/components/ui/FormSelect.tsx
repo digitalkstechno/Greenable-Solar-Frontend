@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect, useId } from "react";
 import { createPortal } from "react-dom";
 import { AlertCircle, ChevronDown, X, Check } from "lucide-react";
 
@@ -87,6 +87,7 @@ export const FormSelect: React.FC<FormSelectProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const selectName = name || `select-${useId()}`;
   const triggerRef = useRef<HTMLDivElement>(null);
   const coords = useDropdownPosition(triggerRef, isOpen);
 
@@ -97,7 +98,7 @@ export const FormSelect: React.FC<FormSelectProps> = ({
     const handler = (e: MouseEvent) => {
       if (triggerRef.current && !triggerRef.current.contains(e.target as Node)) {
         // Check if the click was inside the portal (options list)
-        const portal = document.getElementById(`portal-${name || 'select'}`);
+        const portal = document.getElementById(`portal-${selectName}`);
         if (portal && portal.contains(e.target as Node)) return;
 
         setIsOpen(false);
@@ -178,8 +179,8 @@ export const FormSelect: React.FC<FormSelectProps> = ({
 
         {isOpen && typeof document !== 'undefined' && createPortal(
           <div
-            id={`portal-${name || 'select'}`}
-            className="fixed z-[9999]"
+            id={`portal-${selectName}`}
+            className="fixed z-9999"
             style={{
               top: `${coords.top + 4}px`,
               left: `${coords.left}px`,
@@ -271,6 +272,7 @@ export const FormMultiSelect: React.FC<FormMultiSelectProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const selectName = name || `multi-${useId()}`;
   const triggerRef = useRef<HTMLDivElement>(null);
   const coords = useDropdownPosition(triggerRef, isOpen);
 
@@ -280,7 +282,7 @@ export const FormMultiSelect: React.FC<FormMultiSelectProps> = ({
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (triggerRef.current && !triggerRef.current.contains(e.target as Node)) {
-        const portal = document.getElementById(`portal-${name || 'multi'}`);
+        const portal = document.getElementById(`portal-${selectName}`);
         if (portal && portal.contains(e.target as Node)) return;
         setIsOpen(false);
         setIsFocused(false);
@@ -357,7 +359,7 @@ export const FormMultiSelect: React.FC<FormMultiSelectProps> = ({
               selectedOptions.map((option) => (
                 <span
                   key={option.value}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-bold transition-all hover:scale-105 active:scale-95 flex-shrink-0"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-bold transition-all hover:scale-105 active:scale-95 shrink-0"
                   style={{
                     backgroundColor: option.color ? `${option.color}15` : "#f1f5f9",
                     color: option.color || "#475569",
@@ -379,7 +381,7 @@ export const FormMultiSelect: React.FC<FormMultiSelectProps> = ({
             )}
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0 ml-1">
+          <div className="flex items-center gap-2 shrink-0 ml-1">
             {selectedOptions.length > 0 && !disabled && (
               <button
                 type="button"
@@ -398,8 +400,8 @@ export const FormMultiSelect: React.FC<FormMultiSelectProps> = ({
 
         {isOpen && typeof document !== 'undefined' && createPortal(
           <div
-            id={`portal-${name || 'multi'}`}
-            className="fixed z-[9999]"
+            id={`portal-${selectName}`}
+            className="fixed z-9999"
             style={{
               top: `${coords.top + 4}px`,
               left: `${coords.left}px`,

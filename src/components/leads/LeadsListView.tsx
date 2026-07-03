@@ -91,6 +91,17 @@ interface Props {
 }
 
 function mapLead(item: any): TableLead {
+
+  let projectAmount = item.projectAmount;
+  if (!projectAmount && item.quotations && item.quotations.length > 0) {
+    const lastQuotation = item.quotations[item.quotations.length - 1];
+    const firstRow = lastQuotation.rows?.[0];
+    const value = firstRow?.values?.[0];
+    if (value) {
+      projectAmount = parseInt(value.replace(/[^\d]/g, ''), 10) || undefined;
+    }
+  }
+
   return {
     id: item._id,
     name: item.fullName,
@@ -106,7 +117,7 @@ function mapLead(item: any): TableLead {
     lastFollowUp: item.updatedAt
       ? new Date(item.updatedAt).toLocaleDateString()
       : '-',
-    projectAmount: item.projectAmount,
+    projectAmount,
     pendingAmount: item.pendingAmount,
     isActive: item.isActive,
     _raw: item,
@@ -250,7 +261,7 @@ export default function LeadsListView({
     },
   ];
 
-  const isSalesExecutive = !['sales executive', 'sales'].includes(currentUser?.role?.name?.toLowerCase()) && !['sales executive', 'sales'].includes(currentUser?.role?.roleName?.toLowerCase());
+  const isSalesExecutive = ['sales executive', 'sales'].includes(currentUser?.role?.name?.toLowerCase()) || ['sales executive', 'sales'].includes(currentUser?.role?.roleName?.toLowerCase());
   const visibleColumns = columns.filter(c => !(isSalesExecutive && c.key === 'assignedTo'));
 
   if (activeStatusFilter === 'won') {
@@ -396,7 +407,7 @@ export default function LeadsListView({
           const roleName = currentUser?.role?.roleName || '';
           if (permissions?.update) {
             actions.push({
-              label: 'Add Details',
+              label: 'Add ',
               icon: <Plus className="h-3.5 w-3.5" />,
               color: 'emerald' as const,
               show: (row: TableLead) => row.status?.toLowerCase() === 'won',
@@ -406,7 +417,7 @@ export default function LeadsListView({
               },
             });
             actions.push({
-              label: 'Payment',
+              label: 'Pay',
               icon: <span className="text-xs font-bold">₹</span>,
               color: 'emerald' as const,
               show: (row: TableLead) => row.status?.toLowerCase() === 'won',

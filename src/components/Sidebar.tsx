@@ -166,11 +166,17 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
       text: "You will be logged out of your account",
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
+      confirmButtonColor: '#3b82f6',
+      cancelButtonColor: '#6b7280',
       confirmButtonText: 'Yes, logout',
       cancelButtonText: 'Cancel',
-      background: '#fff',
+      background: '#0f172a',
+      color: '#f8fafc',
+      customClass: {
+        popup: 'rounded-3xl shadow-2xl',
+        confirmButton: 'font-semibold px-6 py-2 rounded-lg',
+        cancelButton: 'font-semibold px-6 py-2 rounded-lg',
+      },
       backdrop: true,
       allowOutsideClick: false,
       allowEscapeKey: true,
@@ -184,6 +190,11 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
           showConfirmButton: false,
           allowOutsideClick: false,
           allowEscapeKey: false,
+          background: '#0f172a',
+          color: '#f8fafc',
+          customClass: {
+            popup: 'rounded-3xl shadow-2xl',
+          },
           didOpen: () => {
             Swal.showLoading();
           }

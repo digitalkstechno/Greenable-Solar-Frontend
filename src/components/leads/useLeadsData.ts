@@ -261,23 +261,25 @@ export function useLeadsData(
 
   const fetchMeta = useCallback(async () => {
     try {
-      const [stRes, staffRes, meRes, sourcesRes] = await Promise.all([
+      const [stRes, staffRes, meRes, sourcesRes] = await Promise.allSettled([
         axios.get(baseUrl.leadStatuses, { headers: getHeaders() }),
         axios.get(baseUrl.getAllUsers, { headers: getHeaders(), params: { limit: 1000 } }),
         axios.get(baseUrl.currentStaff, { headers: getHeaders() }),
         axios.get(baseUrl.leadSources, { headers: getHeaders() })
       ]);
-      setStatuses(stRes.data?.data ?? []);
-      setStaffMembers(staffRes.data?.data ?? []);
-      setSources(sourcesRes.data?.data ?? []);
-      const role = meRes.data?.data?.role || {};
-      setCurrentUser(meRes.data?.data || null);
-      const rawPerms = Array.isArray(role.permissions) ? role.permissions[0] : role.permissions || {};
-      const lp = rawPerms.lead || {};
-      setPermissions({
-        create: !!lp.create, update: !!lp.update, delete: !!lp.delete,
-        readAll: !!lp.readAll, readOwn: !!lp.readOwn,
-      });
+      if (stRes.status === 'fulfilled') setStatuses(stRes.value.data?.data ?? []);
+      if (staffRes.status === 'fulfilled') setStaffMembers(staffRes.value.data?.data ?? []);
+      if (sourcesRes.status === 'fulfilled') setSources(sourcesRes.value.data?.data ?? []);
+      if (meRes.status === 'fulfilled') {
+        const role = meRes.value.data?.data?.role || {};
+        setCurrentUser(meRes.value.data?.data || null);
+        const rawPerms = Array.isArray(role.permissions) ? role.permissions[0] : role.permissions || {};
+        const lp = rawPerms.lead || {};
+        setPermissions({
+          create: !!lp.create, update: !!lp.update, delete: !!lp.delete,
+          readAll: !!lp.readAll, readOwn: !!lp.readOwn,
+        });
+      }
     } catch (e) {
       console.error('fetchMeta error:', e);
     }

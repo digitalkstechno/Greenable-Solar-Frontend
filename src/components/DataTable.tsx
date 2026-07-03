@@ -93,6 +93,7 @@ export default function DataTable<T extends Record<string, any>>({
   extraActions,
   searchValue: searchValueProp = '',
   footer,
+  maxHeight,
 }: DataTableProps<T>) {
   const [searchValue, setSearchValue] = useState(searchValueProp);
   const [showFilters, setShowFilters] = useState(false);
@@ -281,7 +282,10 @@ export default function DataTable<T extends Record<string, any>>({
 
       {/* Table - Modern Design */}
       <div className="rounded-md bg-white border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-2xl">
-        <div className="border-t border-gray-100 overflow-auto max-h-[calc(100vh-340px)] relative">
+        <div 
+          className="border-t border-gray-100 overflow-auto relative"
+          style={{ maxHeight: maxHeight || 'calc(100vh - 340px)' }}
+        >
         <table className="w-full divide-y divide-gray-100">
           <thead className="sticky top-0 z-10 bg-gray-100 shadow-[0_1px_0_0_rgba(0,0,0,0.1)]">
             <tr>
@@ -419,7 +423,11 @@ export default function DataTable<T extends Record<string, any>>({
               ))
             )}
           </tbody>
-          {footer && <tfoot>{footer}</tfoot>}
+          {footer && (
+            <tfoot className="sticky bottom-0 z-20">
+              {footer}
+            </tfoot>
+          )}
         </table>
       </div>
 

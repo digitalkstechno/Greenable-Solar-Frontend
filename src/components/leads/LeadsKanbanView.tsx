@@ -28,6 +28,7 @@ type PaginationShape = {
 };
 
 interface Props {
+    isSidebarOpen: boolean;
     leads: ApiLead[];
     lostLeads: ApiLead[];
     wonLeads: ApiLead[];
@@ -70,6 +71,7 @@ interface Props {
 type SubView = 'board' | 'lost' | 'won';
 
 export default function LeadsKanbanView({
+    isSidebarOpen,
     lostLeads, wonLeads,
     statuses,
     onEdit, onView, onRefresh, counts, permissions, scope = 'all',
@@ -86,6 +88,15 @@ export default function LeadsKanbanView({
     onSearch,
     subView = 'board',
 }: Props) {
+
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -646,7 +657,15 @@ export default function LeadsKanbanView({
             key: 'projectAmount',
             label: 'Total Amount',
             render: (_v, row) => {
-                const projectAmt = row.projectAmount ?? row.projectDetail?.projectAmount ?? 0;
+                let projectAmt = row.projectAmount ?? row.projectDetail?.projectAmount;
+                if (!projectAmt && row.quotations && row.quotations.length > 0) {
+                    const lastQuotation = row.quotations[row.quotations.length - 1];
+                    const firstRow = lastQuotation.rows?.[0];
+                    const value = firstRow?.values?.[0];
+                    if (value) {
+                        projectAmt = parseInt(value.replace(/[^\d]/g, ''), 10) || 0;
+                    }
+                }
                 return projectAmt ? `₹${Number(projectAmt).toLocaleString()}` : '-';
             }
         },
@@ -654,7 +673,15 @@ export default function LeadsKanbanView({
             key: 'pendingAmount',
             label: 'Pending Amount',
             render: (_v, row) => {
-                const projectAmt = row.projectAmount ?? row.projectDetail?.projectAmount ?? 0;
+                let projectAmt = row.projectAmount ?? row.projectDetail?.projectAmount;
+                if (!projectAmt && row.quotations && row.quotations.length > 0) {
+                    const lastQuotation = row.quotations[row.quotations.length - 1];
+                    const firstRow = lastQuotation.rows?.[0];
+                    const value = firstRow?.values?.[0];
+                    if (value) {
+                        projectAmt = parseInt(value.replace(/[^\d]/g, ''), 10) || 0;
+                    }
+                }
                 const pendingAmt = row.pendingAmount ?? (projectAmt - (row.paymentAmount || 0));
                 return pendingAmt ? <span className="text-red-600 font-semibold">₹{Number(pendingAmt).toLocaleString()}</span> : '-';
             }
@@ -679,14 +706,22 @@ export default function LeadsKanbanView({
         }
     ];
 
-    const isSalesExecutive = !['sales executive', 'sales'].includes(currentUser?.role?.name?.toLowerCase()) && !['sales executive', 'sales'].includes(currentUser?.role?.roleName?.toLowerCase());
+        const isSalesExecutive = ['sales executive', 'sales'].includes(currentUser?.role?.name?.toLowerCase()) || ['sales executive', 'sales'].includes(currentUser?.role?.roleName?.toLowerCase());
     const visibleLostLeadsColumns = lostLeadsColumns.filter(c => !(isSalesExecutive && c.key === 'assignedTo'));
     const visibleWonLeadsColumns = wonLeadsColumns.filter(c => !(isSalesExecutive && c.key === 'assignedTo'));
 
     const pageTotals = React.useMemo(() => {
         return wonLeads.reduce((acc, lead) => {
             const kw = parseFloat(lead.kwRequirement || '') || 0;
-            const projectAmt = lead.projectAmount ?? lead.projectDetail?.projectAmount ?? 0;
+            let projectAmt = lead.projectAmount ?? lead.projectDetail?.projectAmount ?? 0;
+            if (!projectAmt && lead.quotations && lead.quotations.length > 0) {
+                const lastQuotation = lead.quotations[lead.quotations.length - 1];
+                const firstRow = lastQuotation.rows?.[0];
+                const value = firstRow?.values?.[0];
+                if (value) {
+                    projectAmt = parseInt(value.replace(/[^\d]/g, ''), 10) || 0;
+                }
+            }
             const pendingAmt = lead.pendingAmount ?? (projectAmt - (lead.paymentAmount || 0));
             return {
                 totalKwReq: acc.totalKwReq + kw,
@@ -864,7 +899,7 @@ export default function LeadsKanbanView({
             )}
 
             {subView === 'won' && (
-                <div className="w-full">
+                <div className="w-full pb-48">
                     <DataTable
                         data={wonLeads}
                         columns={visibleWonLeadsColumns}
@@ -915,27 +950,24 @@ export default function LeadsKanbanView({
                             return actions.length > 0 ? actions : undefined;
                         })()}
                         searchable={false}
-                        footer={wonLeads.length > 0 ? (
-                            <tr className="sticky bottom-0 z-30 bg-[#F3F4F6] border-t border-gray-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)]">
-                                {visibleWonLeadsColumns.map((col, idx) => {
-                                    if (idx === 0) {
-                                        return <td key={col.key} className="px-6 py-4 whitespace-nowrap text-right font-extrabold text-gray-900 text-base uppercase tracking-wider bg-[#F3F4F6]">Grand Totals</td>;
-                                    }
-                                    if (col.key === 'kwRequirement') {
-                                        return <td key={col.key} className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">{pageTotals.totalKwReq?.toLocaleString() || 0} <span className="text-xs text-slate-500 font-normal ml-1">KW</span></td>;
-                                    }
-                                    if (col.key === 'projectAmount') {
-                                        return <td key={col.key} className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">₹{pageTotals.totalAmount?.toLocaleString() || 0}</td>;
-                                    }
-                                    if (col.key === 'pendingAmount') {
-                                        return <td key={col.key} className="px-6 py-4 whitespace-nowrap text-left font-bold text-red-600 text-base border-l border-gray-300 bg-[#F3F4F6]">₹{pageTotals.totalPendingAmount?.toLocaleString() || 0}</td>;
-                                    }
-                                    return <td key={col.key} className="bg-[#F3F4F6] border-l border-gray-300"></td>;
-                                })}
-                                <td className="bg-[#F3F4F6] border-l border-gray-300"></td>
-                            </tr>
-                        ) : undefined}
+                        maxHeight="100vh"
                     />
+                    
+                    {wonLeads.length > 0 && (
+                        <div 
+                            className="fixed bottom-16 right-0 bg-[#F3F4F6] border-t border-gray-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)] z-[60] px-6 py-4"
+                            style={{ 
+                                left: isMobile ? '0' : (isSidebarOpen ? '16rem' : '5rem') 
+                            }}
+                        >
+                            <div className="flex items-center gap-6 overflow-x-auto">
+                                <div className="whitespace-nowrap text-right font-extrabold text-gray-900 text-base uppercase tracking-wider flex-shrink-0">Grand Totals</div>
+                                <div className="whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 pl-6 flex-shrink-0">Total KW: {pageTotals.totalKwReq?.toLocaleString() || 0} <span className="text-xs text-slate-500 font-normal ml-1">KW</span></div>
+                                <div className="whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 pl-6 flex-shrink-0">Total Amount: ₹{pageTotals.totalAmount?.toLocaleString() || 0}</div>
+                                <div className="whitespace-nowrap text-left font-bold text-red-600 text-base border-l border-gray-300 pl-6 flex-shrink-0">Total Pending Amount: ₹{pageTotals.totalPendingAmount?.toLocaleString() || 0}</div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
