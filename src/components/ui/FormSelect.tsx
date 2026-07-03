@@ -16,7 +16,7 @@ export interface SelectOption {
 function getBorderClasses(hasError: boolean, isFocused: boolean, disabled: boolean): string {
   if (disabled) return "border-gray-200 bg-gray-50/50 opacity-60 cursor-not-allowed";
   if (hasError) return "border-red-500 ring-2 ring-red-50";
-  if (isFocused) return "border-secondary ring-2 ring-blue-50";
+  if (isFocused) return "border-secondary ring-2 ring-orange-50";
   return "border-gray-200 hover:border-gray-400 shadow-sm hover:shadow-md";
 }
 
@@ -104,7 +104,7 @@ export const FormSelect: React.FC<FormSelectProps> = ({
         setIsFocused(false);
         onBlur?.({
           target: { name: name || "" },
-          persist: () => {},
+          persist: () => { },
         } as any);
       }
     };
@@ -199,8 +199,8 @@ export const FormSelect: React.FC<FormSelectProps> = ({
                         onClick={() => handleSelect(option)}
                         className={`
                           flex items-center justify-between px-4 py-2.5 text-sm transition-all
-                          ${option.disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-gray-50"}
-                          ${isSelected ? "bg-blue-50/50 text-secondary font-bold" : "text-gray-600"}
+                          ${option.disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-orange-50/70 hover:text-secondary"}
+                          ${isSelected ? "bg-orange-100 text-secondary font-bold" : "text-gray-600"}
                         `}
                       >
                         <span className="flex items-center gap-2.5">
@@ -286,7 +286,7 @@ export const FormMultiSelect: React.FC<FormMultiSelectProps> = ({
         setIsFocused(false);
         onBlur?.({
           target: { name: name || "" },
-          persist: () => {},
+          persist: () => { },
         } as any);
       }
     };
@@ -426,8 +426,8 @@ export const FormMultiSelect: React.FC<FormMultiSelectProps> = ({
                         onClick={() => !isMaxReached && handleSelect(option)}
                         className={`
                           flex items-center gap-3 px-4 py-2.5 text-sm transition-all
-                          ${option.disabled || isMaxReached ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-gray-50"}
-                          ${isSelected ? "bg-blue-50/50 text-secondary font-bold" : "text-gray-600"}
+                          ${option.disabled || isMaxReached ? "opacity-40 cursor-not-allowed" : "cursor-pointer hover:bg-orange-50/70 hover:text-secondary"}
+                          ${isSelected ? "bg-orange-100 text-secondary font-bold" : "text-gray-600"}
                         `}
                       >
                         <div className={`
