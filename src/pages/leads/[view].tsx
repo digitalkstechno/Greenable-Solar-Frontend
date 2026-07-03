@@ -362,9 +362,9 @@ export default function LeadsPage() {
                     v === 'lost'
                       ? 'border border-red-500 text-red-600 bg-white'
                       : v === 'won'
-                      ? 'border border-green-500 text-green-600 bg-white'
-                      : 'border border-[#F28522] text-[#F28522] bg-white';
-                  
+                        ? 'border border-green-500 text-green-600 bg-white'
+                        : 'border border-[#F28522] text-[#F28522] bg-white';
+
                   return (
                     <button
                       key={v}
@@ -382,7 +382,7 @@ export default function LeadsPage() {
                 })}
               </div>
             )}
-            
+
           </div>
 
           {/* Right side: Actions */}
@@ -496,7 +496,7 @@ export default function LeadsPage() {
                   label="Lead Source"
                   value={sourceFilter}
                   onChange={(e) => setSourceFilter(e)}
-                  options={sources.map((s) => ({ value: s._id, label: s.name }))}
+                  options={sources.map((s) => ({ value: s.name, label: s.name }))}
                 />
               </div>
 
@@ -547,7 +547,7 @@ export default function LeadsPage() {
 
             <div className="flex justify-end gap-3 mt-4">
               <button
-                onClick={clearFilters}
+                onClick={() => { clearFilters(); setShowFilterDrawer(false); }}
                 className="px-4 py-1.5 text-xs font-semibold text-gray-500 hover:text-gray-700 transition-all cursor-pointer"
               >
                 Clear All

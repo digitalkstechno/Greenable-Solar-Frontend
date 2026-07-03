@@ -590,7 +590,18 @@ export default function LeadsKanbanView({
         { key: 'kwRequirement', label: 'KW REQ', render: (v) => <span className="text-sm">{v || '-'}</span> },
         { key: 'address', label: 'LOCATION', render: (v) => <span className="text-sm">{v || '-'}</span> },
         { key: 'contact', label: 'CONTACT', render: (v) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5">{v}</div></div> },
-        { key: 'createdAt', label: 'CREATED DATE', render: (_, row) => row.createdAt ? new Date(row.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-' },
+        {
+  key: 'createdAt',
+  label: 'CREATED DATE',
+  render: (_, row) =>
+    row.createdAt
+      ? new Date(row.createdAt).toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: '2-digit',
+        })
+      : '-',
+},
         { key: 'lostDate', label: 'LOST DATE', render: (v) => (v ? new Date(v).toLocaleDateString() : 'N/A') },
         { key: 'createdBy', label: 'CREATED BY', render: (v) => v?.fullName || v?.name || '-' },
         { key: 'assignedTo', label: 'ASSIGNED TO', render: (v) => v?.fullName || v?.name || '-' },
@@ -602,7 +613,19 @@ export default function LeadsKanbanView({
         { key: 'kwRequirement', label: 'KW REQ', render: (v) => <span className="text-sm">{v || '-'}</span> },
         { key: 'address', label: 'LOCATION', render: (v) => <span className="text-sm">{v || '-'}</span> },
         { key: 'contact', label: 'CONTACT', render: (v) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5">{v}</div></div> },
-        { key: 'createdAt', label: 'CREATED DATE', render: (_, row) => row.createdAt ? new Date(row.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-' },
+        {
+  key: 'createdAt',
+  label: 'CREATED DATE',
+  render: (_, row) =>
+    row.createdAt
+      ? new Date(row.createdAt).toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: '2-digit',
+        })
+      : '-',
+}
+,
         {
             key: 'wonDate',
             label: 'WON DATE',

@@ -357,7 +357,24 @@ export default function LeadQuotationDialog({ isOpen, onClose, lead, onRefresh, 
 
   const handleRowValueChange = (rowIndex: number, colIndex: number, val: string) => {
     const newRows = [...rows];
-    newRows[rowIndex].values[colIndex] = val;
+    const cleanVal = val.toUpperCase() === 'INCLUDED' ? 'INCLUDED' : val.replace(/\D/g, '');
+    newRows[rowIndex].values[colIndex] = cleanVal;
+
+    // Auto-calculate "After Subsidy" if relevant rows exist
+    const baseCostIdx = newRows.findIndex(r => r.title.toLowerCase().includes('design, supply'));
+    const subsidyIdx = newRows.findIndex(r => r.title.toLowerCase().includes('total applicable subsidy'));
+    const finalCostIdx = newRows.findIndex(r => r.title.toLowerCase().includes('after subsidy received'));
+
+    if (baseCostIdx !== -1 && subsidyIdx !== -1 && finalCostIdx !== -1) {
+      const baseCost = parseInt(newRows[baseCostIdx].values[colIndex] || '0', 10) || 0;
+      const subsidy = parseInt(newRows[subsidyIdx].values[colIndex] || '0', 10) || 0;
+      
+      // If either has a value, calculate it (prevents overriding if user explicitly wants it empty, but auto-updates normally)
+      if (newRows[baseCostIdx].values[colIndex] || newRows[subsidyIdx].values[colIndex]) {
+        newRows[finalCostIdx].values[colIndex] = String(Math.max(0, baseCost - subsidy));
+      }
+    }
+
     setRows(newRows);
   };
 

@@ -49,7 +49,7 @@ export default function LeadAddDialog({
 
   const [requiredFields, setRequiredFields] = useState<string[]>([]);
 
-  const isSalesExecutive = !['sales executive', 'sales'].includes(currentUser?.role?.name?.toLowerCase()) && !['sales executive', 'sales'].includes(currentUser?.role?.roleName?.toLowerCase());
+  const isSalesExecutive = ['sales executive', 'sales'].includes(currentUser?.role?.name?.toLowerCase()) || ['sales executive', 'sales'].includes(currentUser?.role?.roleName?.toLowerCase());
 
   useEffect(() => {
     const loadRequiredFields = () => {
@@ -437,6 +437,7 @@ export default function LeadAddDialog({
               <FormSelect
                 label="Lead Source"
                 name="leadrefrence"
+                
                 value={formik.values.leadrefrance || ''}
                 onChange={(val) => { formik.setFieldValue('leadrefrance', val); }}
                 onBlur={() => formik.setFieldTouched('leadrefrance')}
@@ -535,8 +536,7 @@ export default function LeadAddDialog({
           </form>
         )}
       </Dialog>
-
-
     </>
+
   );
 }
