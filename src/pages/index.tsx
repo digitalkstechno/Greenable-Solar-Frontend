@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { ComponentType } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -9,10 +9,13 @@ import {
   Cell,
   ResponsiveContainer,
   Tooltip,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend,
+  AreaChart, Area,
+  RadialBarChart, RadialBar,
+  ComposedChart, Line
 } from "recharts";
 import {
   Users,
-  Calendar,
   Award,
   Phone,
   Mail,
@@ -42,6 +45,8 @@ import { baseUrl, getAuthToken } from "@/config";
 import moment from "moment";
 import Link from 'next/link';
 import DashboardLeadUpdateDialog from "@/components/leads/DashboardLeadUpdateDialog";
+import Calendar from "@/components/ui/Calendar";
+
 
 interface StatusCount {
   statusId: string;
@@ -73,6 +78,68 @@ interface SummaryCard {
 }
 
 const ITEMS_PER_PAGE = 5;
+
+interface YearSelectProps {
+  value: number;
+  onChange: (value: number) => void;
+  options: number[];
+}
+
+function YearSelect({ value, onChange, options }: YearSelectProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative inline-block text-left" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="inline-flex items-center justify-between w-24 px-3 py-2 rounded-xl text-xs font-bold border border-gray-200 bg-white text-gray-800 shadow-sm hover:border-orange-300 focus:outline-none transition-all cursor-pointer"
+      >
+        <span>{value}</span>
+        <svg
+          className={`w-3.5 h-3.5 transition-transform duration-200 text-gray-400 ${isOpen ? 'rotate-180 text-[#d87612]' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-1.5 w-24 rounded-xl shadow-lg bg-white border border-gray-100 focus:outline-none z-50 overflow-hidden py-1">
+          {options.map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => {
+                onChange(option);
+                setIsOpen(false);
+              }}
+              className={`w-full text-left px-3.5 py-2 text-xs font-semibold transition-all ${option === value
+                  ? 'bg-[#d87612] text-white'
+                  : 'text-gray-700 hover:bg-orange-50 hover:text-[#d87612]'
+                }`}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const router = useRouter();
@@ -107,8 +174,64 @@ export default function Dashboard() {
   const [permissions, setPermissions] = useState<{ readAll: boolean; readOwn: boolean }>({ readAll: false, readOwn: false });
   const [user, setUser] = useState<any>(null);
   const [greeting, setGreeting] = useState("");
+  const getInitialDates = (preset: 'today' | 'this-month' | 'prev-month' | 'this-year' | 'custom') => {
+    const now = new Date();
+    const format = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const date = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${date}`;
+    };
+
+    if (preset === 'today') {
+      return { from: format(now), to: format(now) };
+    } else if (preset === 'this-month') {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      return { from: format(start), to: format(end) };
+    } else if (preset === 'prev-month') {
+      const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const end = new Date(now.getFullYear(), now.getMonth(), 0);
+      return { from: format(start), to: format(end) };
+    } else if (preset === 'this-year') {
+      const start = new Date(now.getFullYear(), 0, 1);
+      const end = new Date(now.getFullYear(), 11, 31);
+      return { from: format(start), to: format(end) };
+    }
+    return { from: "", to: "" };
+  };
+
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [datePreset, setDatePreset] = useState<'today' | 'this-month' | 'prev-month' | 'this-year' | 'custom' | null>(null);
+  const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false);
+  const [statusView, setStatusView] = useState<'pie' | 'graph'>('pie');
+
+  const applyDatePreset = (preset: 'today' | 'this-month' | 'prev-month' | 'this-year' | 'custom') => {
+    if (datePreset === preset) {
+      setDatePreset(null);
+      setFromDate("");
+      setToDate("");
+    } else {
+      setDatePreset(preset);
+      if (preset === 'custom') return;
+      const dates = getInitialDates(preset);
+      setFromDate(dates.from);
+      setToDate(dates.to);
+    }
+  };
+
+  // Graphs states
+  const [kwGrowthData, setKwGrowthData] = useState<any[]>([]);
+  const [kwFilter, setKwFilter] = useState<number>(new Date().getFullYear());
+  const [staffWinRate, setStaffWinRate] = useState<any[]>([]);
+  const [staffFilter, setStaffWinFilter] = useState<'all' | 'week' | 'month' | 'year'>('all');
+  const [totalKw, setTotalKw] = useState(0);
+  const [totalStaffLeads, setTotalStaffLeads] = useState(0);
+  const [revenueGrowthData, setRevenueGrowthData] = useState<any[]>([]);
+  const [revenueFilter, setRevenueFilter] = useState<number>(new Date().getFullYear());
+  const [totalRevenueChart, setTotalRevenueChart] = useState(0);
+  const last3Years = [new Date().getFullYear(), new Date().getFullYear() - 1, new Date().getFullYear() - 2];
 
   const token =
     typeof window !== "undefined" ? getAuthToken() : null;
@@ -141,6 +264,21 @@ export default function Dashboard() {
   useEffect(() => {
     if (!token) router.replace("/login");
   }, [router, token]);
+
+  const statusChartContainerRef = useRef<HTMLDivElement>(null);
+  const [statusChartWidth, setStatusChartWidth] = useState(800);
+  const staffChartContainerRef = useRef<HTMLDivElement>(null);
+  const [staffChartWidth, setStaffChartWidth] = useState(800);
+
+  useEffect(() => {
+    const updateWidths = () => {
+      if (statusChartContainerRef.current) setStatusChartWidth(statusChartContainerRef.current.offsetWidth);
+      if (staffChartContainerRef.current) setStaffChartWidth(staffChartContainerRef.current.offsetWidth);
+    };
+    updateWidths();
+    window.addEventListener('resize', updateWidths);
+    return () => window.removeEventListener('resize', updateWidths);
+  }, [statusView, staffWinRate]);
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -224,6 +362,7 @@ export default function Dashboard() {
     try {
       const res = await axios.get(baseUrl.getAllUsers, {
         headers: { Authorization: `Bearer ${token}` },
+        params: { limit: 1000 }
       });
       const chartData = (res.data.data ?? []).map((staff: any) => ({
         name: staff.fullName || "Unknown",
@@ -301,7 +440,502 @@ export default function Dashboard() {
     }
   };
 
+  const handleFromDateChange = (date: Date | null) => {
+    if (!date) {
+      setFromDate("");
+    } else {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      setFromDate(`${y}-${m}-${d}`);
+      if (toDate) {
+        const currentToDate = new Date(toDate + 'T00:00:00');
+        if (currentToDate < date) {
+          setToDate("");
+        }
+      }
+    }
+  };
+
+  const handleToDateChange = (date: Date | null) => {
+    if (!date) {
+      setToDate("");
+    } else {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      setToDate(`${y}-${m}-${d}`);
+    }
+  };
+
+  const handleResetDates = () => {
+    setFromDate("");
+    setToDate("");
+  };
+
+  //Graphs 
+  const fetchKwGrowth = async (filter: number) => {
+    if (!token) return;
+    try {
+      const res = await axios.get(baseUrl.getAllLeads, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { limit: 1000 }
+      });
+      const leads = res.data?.data || [];
+
+      const now = new Date();
+      let grouped: Record<string, number> = {};
+
+      if (datePreset === 'today') {
+        const targetYear = now.getFullYear();
+        const targetMonth = now.getMonth();
+        const targetDate = now.getDate();
+        const hourSlots = ['12 AM - 4 AM', '4 AM - 8 AM', '8 AM - 12 PM', '12 PM - 4 PM', '4 PM - 8 PM', '8 PM - 12 AM'];
+        const currentHour = now.getHours();
+        let limitIdx = 5;
+        if (currentHour < 4) limitIdx = 0;
+        else if (currentHour < 8) limitIdx = 1;
+        else if (currentHour < 12) limitIdx = 2;
+        else if (currentHour < 16) limitIdx = 3;
+        else if (currentHour < 20) limitIdx = 4;
+        else limitIdx = 5;
+
+        const activeSlots = hourSlots.slice(0, Math.max(2, limitIdx + 1));
+        activeSlots.forEach(slot => grouped[slot] = 0);
+
+        leads.forEach((lead: any) => {
+          const leadDate = new Date(lead.createdAt);
+          if (fromDate) {
+            const fromD = new Date(fromDate + 'T00:00:00');
+            if (leadDate < fromD) return;
+          }
+          if (toDate) {
+            const toD = new Date(toDate + 'T23:59:59');
+            if (leadDate > toD) return;
+          }
+
+          const statusName = lead.leadStatus?.name || (typeof lead.leadStatus === 'string' ? lead.leadStatus : '');
+          if (statusName.toLowerCase().replace(/\s+/g, '') !== 'won') return;
+
+          if (
+            leadDate.getFullYear() === targetYear &&
+            leadDate.getMonth() === targetMonth &&
+            leadDate.getDate() === targetDate
+          ) {
+            const kw = parseFloat(lead.kwRequirement) || 0;
+            const hour = leadDate.getHours();
+            let slot = '';
+            if (hour < 4) slot = hourSlots[0];
+            else if (hour < 8) slot = hourSlots[1];
+            else if (hour < 12) slot = hourSlots[2];
+            else if (hour < 16) slot = hourSlots[3];
+            else if (hour < 20) slot = hourSlots[4];
+            else slot = hourSlots[5];
+
+            if (grouped[slot] !== undefined) {
+              grouped[slot] += kw;
+            }
+          }
+        });
+      } else if (datePreset === 'this-month') {
+        const targetYear = now.getFullYear();
+        const targetMonth = now.getMonth();
+        const weekLabels = ['Week 1 (1-7)', 'Week 2 (8-14)', 'Week 3 (15-21)', 'Week 4 (22+)'];
+        let limitIdx = 3;
+        const todayDate = now.getDate();
+        if (todayDate <= 7) limitIdx = 0;
+        else if (todayDate <= 14) limitIdx = 1;
+        else if (todayDate <= 21) limitIdx = 2;
+        else limitIdx = 3;
+
+        const activeWeeks = weekLabels.slice(0, Math.max(2, limitIdx + 1));
+        activeWeeks.forEach(w => grouped[w] = 0);
+
+        leads.forEach((lead: any) => {
+          const leadDate = new Date(lead.createdAt);
+          if (fromDate) {
+            const fromD = new Date(fromDate + 'T00:00:00');
+            if (leadDate < fromD) return;
+          }
+          if (toDate) {
+            const toD = new Date(toDate + 'T23:59:59');
+            if (leadDate > toD) return;
+          }
+
+          const statusName = lead.leadStatus?.name || (typeof lead.leadStatus === 'string' ? lead.leadStatus : '');
+          if (statusName.toLowerCase().replace(/\s+/g, '') !== 'won') return;
+
+          if (leadDate.getFullYear() === targetYear && leadDate.getMonth() === targetMonth) {
+            const kw = parseFloat(lead.kwRequirement) || 0;
+            const leadDateVal = leadDate.getDate();
+            let wLabel = '';
+            if (leadDateVal <= 7) wLabel = weekLabels[0];
+            else if (leadDateVal <= 14) wLabel = weekLabels[1];
+            else if (leadDateVal <= 21) wLabel = weekLabels[2];
+            else wLabel = weekLabels[3];
+
+            if (grouped[wLabel] !== undefined) {
+              grouped[wLabel] += kw;
+            }
+          }
+        });
+      } else if (datePreset === 'prev-month') {
+        const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const targetYear = prevMonthDate.getFullYear();
+        const targetMonth = prevMonthDate.getMonth();
+        const weekLabels = ['Week 1 (1-7)', 'Week 2 (8-14)', 'Week 3 (15-21)', 'Week 4 (22+)'];
+        weekLabels.forEach(w => grouped[w] = 0);
+
+        leads.forEach((lead: any) => {
+          const leadDate = new Date(lead.createdAt);
+          if (fromDate) {
+            const fromD = new Date(fromDate + 'T00:00:00');
+            if (leadDate < fromD) return;
+          }
+          if (toDate) {
+            const toD = new Date(toDate + 'T23:59:59');
+            if (leadDate > toD) return;
+          }
+
+          const statusName = lead.leadStatus?.name || (typeof lead.leadStatus === 'string' ? lead.leadStatus : '');
+          if (statusName.toLowerCase().replace(/\s+/g, '') !== 'won') return;
+
+          if (leadDate.getFullYear() === targetYear && leadDate.getMonth() === targetMonth) {
+            const kw = parseFloat(lead.kwRequirement) || 0;
+            const leadDateVal = leadDate.getDate();
+            let wLabel = '';
+            if (leadDateVal <= 7) wLabel = weekLabels[0];
+            else if (leadDateVal <= 14) wLabel = weekLabels[1];
+            else if (leadDateVal <= 21) wLabel = weekLabels[2];
+            else wLabel = weekLabels[3];
+
+            if (grouped[wLabel] !== undefined) {
+              grouped[wLabel] += kw;
+            }
+          }
+        });
+      } else {
+        const targetYear = filter;
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const limitMonths = (targetYear === now.getFullYear());
+        const activeMonths = limitMonths ? months.slice(0, Math.max(2, now.getMonth() + 1)) : months;
+        activeMonths.forEach(m => grouped[m] = 0);
+
+        leads.forEach((lead: any) => {
+          const leadDate = new Date(lead.createdAt);
+          if (datePreset !== 'custom') {
+            if (fromDate) {
+              const fromD = new Date(fromDate + 'T00:00:00');
+              if (leadDate < fromD) return;
+            }
+            if (toDate) {
+              const toD = new Date(toDate + 'T23:59:59');
+              if (leadDate > toD) return;
+            }
+          }
+
+          const statusName = lead.leadStatus?.name || (typeof lead.leadStatus === 'string' ? lead.leadStatus : '');
+          if (statusName.toLowerCase().replace(/\s+/g, '') !== 'won') return;
+
+          if (leadDate.getFullYear() === targetYear) {
+            const kw = parseFloat(lead.kwRequirement) || 0;
+            const mLabel = months[leadDate.getMonth()];
+            if (grouped[mLabel] !== undefined) {
+              grouped[mLabel] += kw;
+            }
+          }
+        });
+      }
+
+      const chartData = Object.entries(grouped).map(([name, kw]) => ({ name, kw }));
+      const total = chartData.reduce((sum, d) => sum + d.kw, 0);
+      setTotalKw(total);
+      setKwGrowthData(chartData);
+    } catch (err) {
+      console.error("KW Growth error:", err);
+    }
+  };
+
+  const fetchRevenueGrowth = async (filter: number) => {
+    if (!token) return;
+    try {
+      const res = await axios.get(baseUrl.getAllLeads, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { limit: 1000 }
+      });
+      const leads = res.data?.data || [];
+
+      const now = new Date();
+      let grouped: Record<string, number> = {};
+
+      if (datePreset === 'today') {
+        const targetYear = now.getFullYear();
+        const targetMonth = now.getMonth();
+        const targetDate = now.getDate();
+        const hourSlots = ['12 AM - 4 AM', '4 AM - 8 AM', '8 AM - 12 PM', '12 PM - 4 PM', '4 PM - 8 PM', '8 PM - 12 AM'];
+        const currentHour = now.getHours();
+        let limitIdx = 5;
+        if (currentHour < 4) limitIdx = 0;
+        else if (currentHour < 8) limitIdx = 1;
+        else if (currentHour < 12) limitIdx = 2;
+        else if (currentHour < 16) limitIdx = 3;
+        else if (currentHour < 20) limitIdx = 4;
+        else limitIdx = 5;
+
+        const activeSlots = hourSlots.slice(0, Math.max(2, limitIdx + 1));
+        activeSlots.forEach(slot => grouped[slot] = 0);
+
+        leads.forEach((lead: any) => {
+          const leadDate = new Date(lead.createdAt);
+          if (fromDate) {
+            const fromD = new Date(fromDate + 'T00:00:00');
+            if (leadDate < fromD) return;
+          }
+          if (toDate) {
+            const toD = new Date(toDate + 'T23:59:59');
+            if (leadDate > toD) return;
+          }
+
+          const statusName = lead.leadStatus?.name || (typeof lead.leadStatus === 'string' ? lead.leadStatus : '');
+          if (statusName.toLowerCase().replace(/\s+/g, '') !== 'won') return;
+
+          if (
+            leadDate.getFullYear() === targetYear &&
+            leadDate.getMonth() === targetMonth &&
+            leadDate.getDate() === targetDate
+          ) {
+            const amt = parseFloat(lead.paymentAmount) || 0;
+            const hour = leadDate.getHours();
+            let slot = '';
+            if (hour < 4) slot = hourSlots[0];
+            else if (hour < 8) slot = hourSlots[1];
+            else if (hour < 12) slot = hourSlots[2];
+            else if (hour < 16) slot = hourSlots[3];
+            else if (hour < 20) slot = hourSlots[4];
+            else slot = hourSlots[5];
+
+            if (grouped[slot] !== undefined) {
+              grouped[slot] += amt;
+            }
+          }
+        });
+      } else if (datePreset === 'this-month') {
+        const targetYear = now.getFullYear();
+        const targetMonth = now.getMonth();
+        const weekLabels = ['Week 1 (1-7)', 'Week 2 (8-14)', 'Week 3 (15-21)', 'Week 4 (22+)'];
+        let limitIdx = 3;
+        const todayDate = now.getDate();
+        if (todayDate <= 7) limitIdx = 0;
+        else if (todayDate <= 14) limitIdx = 1;
+        else if (todayDate <= 21) limitIdx = 2;
+        else limitIdx = 3;
+
+        const activeWeeks = weekLabels.slice(0, Math.max(2, limitIdx + 1));
+        activeWeeks.forEach(w => grouped[w] = 0);
+
+        leads.forEach((lead: any) => {
+          const leadDate = new Date(lead.createdAt);
+          if (fromDate) {
+            const fromD = new Date(fromDate + 'T00:00:00');
+            if (leadDate < fromD) return;
+          }
+          if (toDate) {
+            const toD = new Date(toDate + 'T23:59:59');
+            if (leadDate > toD) return;
+          }
+
+          const statusName = lead.leadStatus?.name || (typeof lead.leadStatus === 'string' ? lead.leadStatus : '');
+          if (statusName.toLowerCase().replace(/\s+/g, '') !== 'won') return;
+
+          if (leadDate.getFullYear() === targetYear && leadDate.getMonth() === targetMonth) {
+            const amt = parseFloat(lead.paymentAmount) || 0;
+            const leadDateVal = leadDate.getDate();
+            let wLabel = '';
+            if (leadDateVal <= 7) wLabel = weekLabels[0];
+            else if (leadDateVal <= 14) wLabel = weekLabels[1];
+            else if (leadDateVal <= 21) wLabel = weekLabels[2];
+            else wLabel = weekLabels[3];
+
+            if (grouped[wLabel] !== undefined) {
+              grouped[wLabel] += amt;
+            }
+          }
+        });
+      } else if (datePreset === 'prev-month') {
+        const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const targetYear = prevMonthDate.getFullYear();
+        const targetMonth = prevMonthDate.getMonth();
+        const weekLabels = ['Week 1 (1-7)', 'Week 2 (8-14)', 'Week 3 (15-21)', 'Week 4 (22+)'];
+        weekLabels.forEach(w => grouped[w] = 0);
+
+        leads.forEach((lead: any) => {
+          const leadDate = new Date(lead.createdAt);
+          if (fromDate) {
+            const fromD = new Date(fromDate + 'T00:00:00');
+            if (leadDate < fromD) return;
+          }
+          if (toDate) {
+            const toD = new Date(toDate + 'T23:59:59');
+            if (leadDate > toD) return;
+          }
+
+          const statusName = lead.leadStatus?.name || (typeof lead.leadStatus === 'string' ? lead.leadStatus : '');
+          if (statusName.toLowerCase().replace(/\s+/g, '') !== 'won') return;
+
+          if (leadDate.getFullYear() === targetYear && leadDate.getMonth() === targetMonth) {
+            const amt = parseFloat(lead.paymentAmount) || 0;
+            const leadDateVal = leadDate.getDate();
+            let wLabel = '';
+            if (leadDateVal <= 7) wLabel = weekLabels[0];
+            else if (leadDateVal <= 14) wLabel = weekLabels[1];
+            else if (leadDateVal <= 21) wLabel = weekLabels[2];
+            else wLabel = weekLabels[3];
+
+            if (grouped[wLabel] !== undefined) {
+              grouped[wLabel] += amt;
+            }
+          }
+        });
+      } else {
+        const targetYear = filter;
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const limitMonths = (targetYear === now.getFullYear());
+        const activeMonths = limitMonths ? months.slice(0, Math.max(2, now.getMonth() + 1)) : months;
+        activeMonths.forEach(m => grouped[m] = 0);
+
+        leads.forEach((lead: any) => {
+          const leadDate = new Date(lead.createdAt);
+          if (datePreset !== 'custom') {
+            if (fromDate) {
+              const fromD = new Date(fromDate + 'T00:00:00');
+              if (leadDate < fromD) return;
+            }
+            if (toDate) {
+              const toD = new Date(toDate + 'T23:59:59');
+              if (leadDate > toD) return;
+            }
+          }
+
+          const statusName = lead.leadStatus?.name || (typeof lead.leadStatus === 'string' ? lead.leadStatus : '');
+          if (statusName.toLowerCase().replace(/\s+/g, '') !== 'won') return;
+
+          if (leadDate.getFullYear() === targetYear) {
+            const amt = parseFloat(lead.paymentAmount) || 0;
+            const mLabel = months[leadDate.getMonth()];
+            if (grouped[mLabel] !== undefined) {
+              grouped[mLabel] += amt;
+            }
+          }
+        });
+      }
+
+      const chartData = grouped ? Object.entries(grouped).map(([name, amt]) => ({ name, amt })) : [];
+      const total = chartData.reduce((sum, d) => sum + d.amt, 0);
+      setTotalRevenueChart(total);
+      const maxAmt = Math.max(...chartData.map(d => d.amt), 0);
+      const chartDataWithLine = chartData.map(d => ({
+        ...d,
+        lineAmt: d.amt > 0 ? d.amt + maxAmt * 0.10 : 0
+      }));
+      setRevenueGrowthData(chartDataWithLine);
+    } catch (err) {
+      console.error("Revenue Growth error:", err);
+    }
+  };
+
+  const fetchStaffWinRate = async (filter: 'all' | 'week' | 'month' | 'year') => {
+    if (!token) return;
+    try {
+      const [leadsRes, usersRes] = await Promise.all([
+        axios.get(baseUrl.getAllLeads, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { limit: 1000 }
+        }),
+        axios.get(baseUrl.getAllUsers, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { limit: 1000 }
+        }).catch(() => ({ data: { data: [] } }))
+      ]);
+
+      const leads = leadsRes.data?.data || [];
+      const users = usersRes.data?.data || [];
+
+      // Create a map of user ID to department name
+      const userDeptMap: Record<string, string> = {};
+      users.forEach((u: any) => {
+        const deptName = u.role?.roleName || u.roleName || u.department || '';
+        userDeptMap[String(u._id)] = deptName;
+      });
+
+      // Prepopulate staffMap with users in "Sales Executive" department
+      const staffMap: Record<string, { name: string; Won: number; Lost: number; 'In Progress': number }> = {};
+      users.forEach((u: any) => {
+        const deptName = userDeptMap[String(u._id)] || '';
+        if (deptName.toLowerCase() === 'sales executive') {
+          const name = u.fullName || 'Unknown';
+          staffMap[name] = { name, Won: 0, Lost: 0, 'In Progress': 0 };
+        }
+      });
+
+      const now = new Date();
+      const filtered = leads.filter((lead: any) => {
+        const userId = lead.assignedTo?._id || lead.assignedTo;
+        if (!userId) return false;
+
+        // Only count leads assigned to a Sales Executive
+        const deptName = userDeptMap[String(userId)] || '';
+        if (deptName.toLowerCase() !== 'sales executive') return false;
+
+        // Date range filter
+        const leadDate = new Date(lead.createdAt);
+        if (fromDate) {
+          const fromD = new Date(fromDate + 'T00:00:00');
+          if (leadDate < fromD) return false;
+        }
+        if (toDate) {
+          const toD = new Date(toDate + 'T23:59:59');
+          if (leadDate > toD) return false;
+        }
+
+        if (filter === 'all') return true;
+        const d = new Date(lead.createdAt);
+        const diff = now.getTime() - d.getTime();
+        if (filter === 'week') return diff <= 7 * 24 * 60 * 60 * 1000;
+        if (filter === 'month') return diff <= 30 * 24 * 60 * 60 * 1000;
+        if (filter === 'year') return d.getFullYear() === now.getFullYear();
+        return true;
+      });
+
+      setTotalStaffLeads(filtered.length);
+
+      filtered.forEach((lead: any) => {
+        const name = lead.assignedTo?.fullName || 'Unknown';
+        if (!staffMap[name]) {
+          staffMap[name] = { name, Won: 0, Lost: 0, 'In Progress': 0 };
+        }
+        const status = lead.leadStatus?.name?.toLowerCase() || '';
+        if (status === 'won') staffMap[name].Won++;
+        else if (status === 'lost') staffMap[name].Lost++;
+        else staffMap[name]['In Progress']++;
+      });
+
+      setStaffWinRate(Object.values(staffMap));
+    } catch (err) {
+      console.error("Staff Win Rate error:", err);
+    }
+  };
+
   useEffect(() => {
+    if (!hasLoadedFromStorage) return;
+    if (token) {
+      fetchKwGrowth(kwFilter);
+      fetchStaffWinRate(staffFilter);
+      fetchRevenueGrowth(revenueFilter);
+    }
+  }, [token, kwFilter, staffFilter, revenueFilter, fromDate, toDate, hasLoadedFromStorage]);
+
+  useEffect(() => {
+    if (!hasLoadedFromStorage) return;
     if (token) {
       fetchLeadSummary();
       fetchUpcomingFollowups(1);
@@ -314,7 +948,39 @@ export default function Dashboard() {
         fetchStaffPerformance();
       }
     }
-  }, [token, permissions, fromDate, toDate]);
+  }, [token, permissions, fromDate, toDate, hasLoadedFromStorage]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const storedPreset = window.localStorage.getItem("dashboardDatePreset");
+      const storedFromDate = window.localStorage.getItem("dashboardFromDate");
+      const storedToDate = window.localStorage.getItem("dashboardToDate");
+
+      if (storedPreset !== null || storedFromDate !== null || storedToDate !== null) {
+        setDatePreset(storedPreset as any);
+        setFromDate(storedFromDate || "");
+        setToDate(storedToDate || "");
+      } else {
+        const initial = getInitialDates('this-month');
+        setFromDate(initial.from);
+        setToDate(initial.to);
+        setDatePreset('this-month');
+      }
+      setHasLoadedFromStorage(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (hasLoadedFromStorage && typeof window !== "undefined") {
+      if (datePreset) {
+        window.localStorage.setItem("dashboardDatePreset", datePreset);
+      } else {
+        window.localStorage.removeItem("dashboardDatePreset");
+      }
+      window.localStorage.setItem("dashboardFromDate", fromDate);
+      window.localStorage.setItem("dashboardToDate", toDate);
+    }
+  }, [fromDate, toDate, datePreset, hasLoadedFromStorage]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -331,18 +997,16 @@ export default function Dashboard() {
     }
   }, []);
 
-  // Color palette for statuses
+  // Color palette for statuses (shades of orange)
   const statusColorPalette = [
-    "#4e0158ff", // blue-500 - New
-    "#146a05ff", // emerald-500 - Contacted
-    "#674307ff", // amber-500 - Follow-Up
-    "#936fe8ff", // violet-500 - Interested
-    "#037184ff", // cyan-500 - Qualified
-    "#43464bff", // gray-500 - Not Interested
-    "#971f1fff", // red-500 - Lost
-    "#557a1fff", // lime-500 - Won
-    "#83194eff", // pink-500
-    "#b3520cff", // orange-500
+    "#d87612", // Primary Brand Orange
+    "#f97316", // Bright Orange
+    "#fb923c", // Warm Peach Orange
+    "#c2410c", // Deep Rust Orange
+    "#ea580c", // Red-Orange
+    "#f59e0b", // Amber/Gold
+    "#fdba74", // Soft Sunset Orange
+    "#fed7aa", // Light Apricot
   ];
 
   const getStatusCount = (statusName: string) => {
@@ -367,7 +1031,6 @@ export default function Dashboard() {
         key: "total",
         label: "Total Leads",
         value: summary.totalLeads,
-        trend: 12.5,
         tone: "up",
         Icon: Users,
         iconBg: "bg-blue-500/10",
@@ -375,13 +1038,11 @@ export default function Dashboard() {
         type: "total",
         fill: "#3B82F6",
         name: "Total Leads",
-        description: "Leads in selected range"
       },
       {
         key: "new",
         label: "Total New Leads",
         value: getStatusCount("New Lead"),
-        trend: 8.2,
         tone: "up",
         Icon: TrendingUp,
         iconBg: "bg-purple-500/10",
@@ -390,7 +1051,6 @@ export default function Dashboard() {
         statusId: getStatusId("New Lead"),
         fill: "#8B5CF6",
         name: "New Leads",
-        description: "Total leads in New status"
       },
       {
         key: "won",
@@ -405,7 +1065,6 @@ export default function Dashboard() {
         statusId: getStatusId("Won"),
         fill: "#10B981",
         name: "Won Leads",
-        description: "Total won leads"
       },
       {
         key: "lost",
@@ -420,7 +1079,6 @@ export default function Dashboard() {
         statusId: getStatusId("Lost"),
         fill: "#EF4444",
         name: "Lost Leads",
-        description: "Total lost leads"
       },
       {
         key: "followups",
@@ -434,8 +1092,21 @@ export default function Dashboard() {
         type: "custom",
         fill: "#F59E0B",
         name: "Follow-ups",
-        description: "Scheduled follow-ups"
       },
+      {
+        key: "revenue",
+        label: "Total Revenue",
+        value: `₹${(summary.totalRevenue || 0).toLocaleString()}`,
+        trend: 15.4,
+        tone: "up",
+        Icon: Activity,
+        iconBg: "bg-amber-500/10",
+        iconColor: "text-amber-500",
+        type: "revenue",
+        fill: "#F59E0B",
+        name: "Revenue",
+        description: "Total from won leads"
+      }
       //  {
       //   key: "tasks",
       //   label: "Tasks",
@@ -450,20 +1121,6 @@ export default function Dashboard() {
       //   name: "Tasks",
       //   description: "Tasks for today"
       // },
-      // {
-      //   key: "revenue",
-      //   label: "Total Revenue",
-      //   value: `₹${(summary.totalRevenue || 0).toLocaleString()}`,
-      //   trend: 15.4,
-      //   tone: "up",
-      //   Icon: Activity,
-      //   iconBg: "bg-amber-500/10",
-      //   iconColor: "text-amber-500",
-      //   type: "revenue",
-      //   fill: "#F59E0B",
-      //   name: "Revenue",
-      //   description: "Total from won leads"
-      // }
     ]
     : [];
 
@@ -472,6 +1129,12 @@ export default function Dashboard() {
     value: s.count,
     fill: statusColorPalette[idx % statusColorPalette.length]
   })) || [];
+
+  const pieChartData = statusChartData.filter(s => s.value > 0);
+
+  const wonColor = statusChartData.find(s => s.name?.toLowerCase() === "won")?.fill || "#15803d";
+  const lostColor = statusChartData.find(s => s.name?.toLowerCase() === "lost")?.fill || "#b91c1c";
+  const inProgressColor = statusChartData.find(s => s.name?.toLowerCase() === "new lead")?.fill || "#4f46e5";
 
   const handleQuickFilter = (range: string) => {
     const now = new Date();
@@ -506,32 +1169,13 @@ export default function Dashboard() {
   };
 
   const handleCardClick = (card: SummaryCard) => {
-    // if (card.type === "total") {
-    //   router.push("/leads");
-    //   return;
-    // }
 
-    if (card.type === "month") {
-      const now = new Date();
-      const start = new Date(now.getFullYear(), now.getMonth(), 1);
-      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-      const format = (d: Date) => d.toISOString().split("T")[0];
-
-      const params = new URLSearchParams({
-        from: format(start),
-        to: format(end),
-      });
-
-      // router.push(`/leads?${params.toString()}`);
+    if (card.key === "followups") {
+      const element = document.getElementById("upcoming-followups-section");
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
       return;
-    }
-
-    if (card.type === "status" && card.statusId) {
-      const params = new URLSearchParams({
-        status: String(card.statusId),
-      });
-      // router.push(`/leads?${params.toString()}`);
     }
   };
 
@@ -544,22 +1188,22 @@ export default function Dashboard() {
     setPage: (p: number) => void,
     dateHeader: string = "Follow up Date",
   ) => (
-    <div className="rounded-md bg-white border border-gray-200 overflow-hidden h-full flex flex-col transition-all hover:shadow-xl">
+    <div className="rounded-3xl bg-white border border-gray-200 overflow-hidden h-full flex flex-col transition-all hover:shadow-lg">
       <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50/50 to-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-lg ${dateHeader === "Follow up Date" ? "bg-blue-50" : "bg-red-50"}`}>
+            <div className={`p-2 rounded-lg ${dateHeader === "Follow up Date" ? "bg-orange-50" : "bg-red-50"}`}>
               {dateHeader === "Follow up Date" ? (
-                <Clock className="h-5 w-5 text-blue-600" />
+                <Clock className="h-5 w-5 text-[#d87612]" />
               ) : (
                 <AlertCircle className="h-5 w-5 text-red-500" />
               )}
             </div>
             <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
           </div>
-          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${dateHeader === "Follow up Date"
-            ? "bg-blue-100 text-blue-700"
-            : "bg-red-100 text-red-700"
+          <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${dateHeader === "Follow up Date"
+            ? "bg-orange-50 text-[#d87612] border border-orange-100"
+            : "bg-red-50 text-red-700 border border-red-100"
             }`}>
             {items.length} {items.length === 1 ? 'Lead' : 'Leads'}
           </span>
@@ -568,7 +1212,7 @@ export default function Dashboard() {
 
       {loading ? (
         <div className="p-12 text-center flex-1 flex items-center justify-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent"></div>
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#d87612] border-r-transparent"></div>
         </div>
       ) : items.length === 0 ? (
         <div className="p-12 text-center flex-1 flex items-center justify-center">
@@ -581,68 +1225,88 @@ export default function Dashboard() {
         </div>
       ) : (
         <>
-          <div className="overflow-y-auto flex-1">
-            <div className="divide-y divide-gray-50">
-              {items.map((lead, index) => (
-                <div
-                  key={lead._id || lead.id || index}
-                  className="p-4 hover:bg-blue-50/20 transition-all cursor-pointer group"
-                // onClick={() => router.push(`/leads/list`)}
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold text-gray-900 text-sm">
-                          {lead.fullName || "Unknown"}
-                        </h4>
-                        {lead.contact && (
-                          <span className="text-xs text-gray-500 flex items-center gap-1">
-                            <Phone className="h-3 w-3" />
-                            {lead.contact}
-                          </span>
-                        )}
+          <div className="overflow-x-auto overflow-y-auto max-h-[360px] flex-1 p-1">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50/50">
+                <tr>
+                  <th scope="col" className="px-4 py-3 text-left text-[11px] text-gray-500 tracking-wider">
+                    Lead Name & Contact
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-[11px] text-gray-500 tracking-wider">
+                    Schedule
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-[11px] text-gray-500 tracking-wider">
+                    Status
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right text-[11px] text-gray-500 tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-100">
+                {items.map((lead, index) => (
+                  <tr
+                    key={lead._id || lead.id || index}
+                    className="hover:bg-slate-50/50 transition-colors"
+                  >
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="font-bold text-gray-900 text-sm">
+                        {lead.fullName || "Unknown"}
                       </div>
-                      <div className="flex items-center gap-3 text-xs mb-2">
-                        <span
-                          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${getStatusColor(
-                            lead.leadStatus?.name || "",
-                          )}`}
-                        >
-                          {lead.leadStatus?.name || "-"}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-2 shrink-0">
-                      <div className="text-xs font-semibold text-gray-700">
+                      {lead.contact && (
+                        <div className="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5 font-medium">
+                          <Phone className="h-3.5 w-3.5 text-gray-400" />
+                          {lead.contact}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="text-xs font-bold text-slate-700 flex items-center gap-1">
+
                         {lead.nextFollowupDate ? moment(lead.nextFollowupDate).format("DD-MM-YYYY") : "-"}
                       </div>
-                      <div className="text-[10px] font-medium text-gray-500">
-                        {lead.nextFollowupTime || "-"}
+                      {lead.nextFollowupTime && (
+                        <div className="text-[10px] font-semibold text-slate-500 mt-0.5">
+                          {lead.nextFollowupTime}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-bold ${getStatusColor(
+                          lead.leadStatus?.name || "",
+                        )}`}
+                      >
+                        {lead.leadStatus?.name || "-"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-right text-xs font-medium">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedLeadForUpdate(lead);
+                            setIsUpdateLeadDialogOpen(true);
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-100 text-[#d87612] border border-orange-200/30 text-[10px] font-bold transition-colors cursor-pointer"
+                        >
+                          Pending
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/leads/list`);
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/30 text-[10px] font-bold transition-colors cursor-pointer"
+                        >
+                          History
+                        </button>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedLeadForUpdate(lead);
-                          setIsUpdateLeadDialogOpen(true);
-                        }}
-                        className="px-3 py-1 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium transition-colors"
-                      >
-                        Pending
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          // router.push(`/leads/list`);
-                        }}
-                        className="px-3 py-1 rounded-full bg-gray-600 hover:bg-gray-700 text-white text-xs font-medium transition-colors"
-                      >
-                        History
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
           {totalPages > 1 && (
@@ -750,197 +1414,668 @@ export default function Dashboard() {
   // );
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <div className="space-y-8 max-w-[1600px] mx-auto w-full">
+    <div className="flex flex-col min-h-screen dashboard-page">
+      <style>{`
+        .dashboard-page .dashboard-scrollbar {
+          scrollbar-width: thin !important;
+          scrollbar-color: #4b5563 #f1f5f9 !important;
+        }
+        .dashboard-page .dashboard-scrollbar::-webkit-scrollbar {
+          width: 6px !important;
+          height: 8px !important;
+        }
+        .dashboard-page .dashboard-scrollbar::-webkit-scrollbar-track {
+          background: #f1f5f9 !important;
+          border-radius: 10px !important;
+        }
+        .dashboard-page .dashboard-scrollbar::-webkit-scrollbar-thumb {
+          background: #4b5563 !important;
+          border-radius: 10px !important;
+        }
+        .dashboard-page .dashboard-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #1f2937 !important;
+        }
+      `}</style>
+      <div className="space-y-8 mx-auto w-full">
 
         {/* Welcome Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 rounded-3xl border border-gray-200 shadow-sm">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900 tracking-tight">
+            <h2 className="text-3xl font-semibold text-gray-900 tracking-tight">
               {greeting}, {user?.fullName?.split(' ')[0] || 'User'}! 👋
             </h2>
             <p className="text-gray-500 mt-1 flex items-center gap-2">
-              <Activity className="h-4 w-4 text-blue-500" />
-              Here's what's happening with your projects today.
+              {/* <Activity className="h-4 w-4 text-blue-500" /> */}
+              {/* Here's what's happening with your projects today. */}
             </p>
           </div>
 
-          <div className="flex items-center gap-4">
-            {/* <div className="flex items-center gap-3 bg-gray-50/50 p-2 rounded-2xl border border-gray-100">
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <label className="absolute -top-2 left-3 px-1 bg-white text-[9px] font-bold text-blue-500 uppercase tracking-widest">From</label>
-                    <input 
-                      type="date" 
-                      value={fromDate}
-                      onChange={(e) => setFromDate(e.target.value)}
-                      className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 outline-none focus:border-blue-500 transition-all cursor-pointer"
+          <div className="flex flex-col xl:flex-row xl:items-center gap-4 shrink-0">
+            {/* Presets Group */}
+            <div className="flex flex-wrap items-center gap-1 bg-gray-50/50 p-1 rounded-2xl border border-gray-100">
+              {(['today', 'this-month', 'prev-month', 'this-year', 'custom'] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => applyDatePreset(p)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${datePreset === p
+                    ? 'bg-[#d87612] text-white shadow-sm shadow-[#d87612]/20'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    }`}
+                >
+                  {p === 'today' ? 'Today' :
+                    p === 'this-month' ? 'This Month' :
+                      p === 'prev-month' ? 'Previous Month' :
+                        p === 'this-year' ? 'This Year' :
+                          'Custom'}
+                </button>
+              ))}
+            </div>
+
+            {/* Custom Range Calendars */}
+            {datePreset === 'custom' && (
+              <div className="flex items-center gap-3 bg-gray-50/50 p-2 rounded-2xl border border-gray-100 animate-fade-in">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div className="relative w-40">
+                    <label className="absolute -top-2 left-3 px-1 bg-white text-[9px] font-bold text-[#d87612] uppercase tracking-widest z-10">From Date</label>
+                    <Calendar
+                      value={fromDate ? new Date(fromDate + 'T00:00:00') : null}
+                      onChange={handleFromDateChange}
+                      placeholder="Select from date"
+                      className="!py-1.5 !border-[#d87612]/30 hover:!border-[#d87612]"
                     />
                   </div>
-                  <div className="relative">
-                    <label className="absolute -top-2 left-3 px-1 bg-white text-[9px] font-bold text-blue-500 uppercase tracking-widest">To</label>
-                    <input 
-                      type="date" 
-                      value={toDate}
-                      onChange={(e) => setToDate(e.target.value)}
-                      className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-700 outline-none focus:border-blue-500 transition-all cursor-pointer"
+                  <div className="relative w-40">
+                    <label className="absolute -top-2 left-3 px-1 bg-white text-[9px] font-bold text-[#d87612] uppercase tracking-widest z-10">To Date</label>
+                    <Calendar
+                      value={toDate ? new Date(toDate + 'T00:00:00') : null}
+                      onChange={handleToDateChange}
+                      minDate={fromDate ? new Date(fromDate + 'T00:00:00') : undefined}
+                      placeholder="Select to date"
+                      className="!py-1.5 !border-[#d87612]/30 hover:!border-[#d87612]"
+                      align="right"
                     />
                   </div>
                 </div>
-                <button 
-                  onClick={() => handleQuickFilter('reset')}
-                  className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all rounded-xl"
-                  title="Reset Filter"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                </button>
-              </div> */}
+                {(fromDate || toDate) && (
+                  <button
+                    onClick={handleResetDates}
+                    className="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all rounded-lg cursor-pointer"
+                    title="Reset Filter"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
           {summaryCards.map((card) => (
             <div
               key={card.key}
               onClick={() => handleCardClick(card)}
-              className="group relative overflow-hidden bg-white p-6 rounded-2xl border border-gray-200 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 cursor-pointer"
+              className="group relative overflow-hidden bg-white p-5 rounded-3xl border border-gray-200 hover:shadow-lg transition-all duration-300 cursor-pointer flex items-center gap-4"
             >
-              <div className="flex items-start justify-between">
-                <div className={`p-3 rounded-xl ${card.iconBg} ${card.iconColor} transition-transform duration-300 group-hover:scale-110`}>
-                  <card.Icon className="h-6 w-6" />
-                </div>
-                {card.trend !== undefined && card.trend !== 0 && (
-                  <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${card.tone === 'up' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'
-                    }`}>
-                    {card.tone === 'up' ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                    {card.trend}%
-                  </div>
-                )}
+              <div className={`p-3 rounded-xl ${card.iconBg} ${card.iconColor} transition-transform duration-300 group-hover:scale-110 shrink-0`}>
+                <card.Icon className="h-6 w-6" />
               </div>
-              <div className="mt-4">
-                <h3 className="text-sm font-medium text-gray-500">{card.label}</h3>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-2xl font-bold text-gray-900">{card.value}</span>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-[14px] text-gray-500 tracking-wider truncate">{card.label}</h3>
+                <div className="flex items-baseline gap-2 mt-0.5">
+                  <span className="text-2xl text-gray-900">{card.value}</span>
                   {card.subtitle && <span className="text-xs text-gray-400">{card.subtitle}</span>}
                 </div>
-                <p className="text-xs text-gray-400 mt-2">{card.description}</p>
               </div>
-              {/* Decorative background element */}
-              <div className={`absolute -right-4 -bottom-4 h-24 w-24 rounded-full ${card.iconBg} opacity-0 group-hover:opacity-10 transition-opacity blur-3xl`}></div>
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        {/* Sales Executive */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-[450px]">
+          <div className="flex flex-col rounded-2xl border border-gray-100 p-6 min-w-0 bg-white rounded-3xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow min-h-[450px]">
+            <div className="flex items-center justify-between mb-4 shrink-0">
+              <div>
+                <div className="flex items-center gap-2.5">
+                  <h3 className="text-xl font-semibold text-gray-900">Sales Executive</h3>
+                  <span className="inline-flex items-center bg-orange-50 text-[#d87612] border border-orange-100 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                    {totalStaffLeads} Total Leads
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500 mt-1">Lead status performance by assigned executive</p>
+              </div>
+              {/* <div className="flex gap-1">
+                {(['all', 'week', 'month', 'year'] as const).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setStaffWinFilter(f)}
+                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${staffFilter === f
+                      ? 'bg-[#d87612] text-white'
+                      : 'text-gray-500 hover:bg-gray-100'
+                      }`}
+                  >
+                    {f.charAt(0).toUpperCase() + f.slice(1)}
+                  </button>
+                ))}
+              </div> */}
+            </div>
+
+            <div className="relative w-full">
+              {/* Fixed Y-Axis */}
+              <div className="absolute left-0 top-0 h-[320px] z-10 bg-white pr-2 pointer-events-none">
+                <BarChart
+                  width={35}
+                  height={320}
+                  data={staffWinRate}
+                  margin={{ top: 5, right: 0, left: 5, bottom: 5 }}
+                >
+                  <XAxis dataKey="name" tick={false} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#4b5563' }} axisLine={false} tickLine={false} width={30} />
+                  <Bar dataKey="In Progress" stackId="a" opacity={0} />
+                  <Bar dataKey="Lost" stackId="a" opacity={0} />
+                  <Bar dataKey="Won" stackId="a" opacity={0} />
+                </BarChart>
+              </div>
+              {/* Scrollable Chart */}
+              <div
+                ref={staffChartContainerRef}
+                className="h-[335px] w-full overflow-x-auto scrollbar-thin dashboard-scrollbar"
+              >
+                <BarChart
+                  width={Math.max(staffChartWidth, staffWinRate.length * (staffChartWidth / 8))}
+                  height={320}
+                  data={staffWinRate}
+                  margin={{ top: 5, right: 10, left: 35, bottom: 5 }}
+                  barSize={35}
+                  barCategoryGap="30%"
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#4b5563', fontWeight: '600' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={false} axisLine={false} tickLine={false} width={0} />
+                  <Tooltip
+                    cursor={false}
+                    content={({ active, payload }) => {
+                      if (active && payload?.length) {
+                        return (
+                          <div className="bg-white border border-gray-100 p-3 rounded-xl shadow-xl text-xs space-y-1">
+                            <p className="font-bold text-gray-900 mb-2">{payload[0]?.payload?.name}</p>
+                            {payload.map((p: any) => (
+                              <p key={p.name} style={{ color: p.fill }}>
+                                {p.name}: <span className="font-bold">{p.value}</span>
+                              </p>
+                            ))}
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar dataKey="Won" stackId="a" fill="#00bc7d" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="Lost" stackId="a" fill="#B22222" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="In Progress" stackId="a" fill="#fb923c" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </div>
+
+              {/* Custom Legend */}
+              <div className="flex items-center justify-center gap-6 mt-4 text-[11px] font-semibold text-gray-600">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#fb923c]" />
+                  <span>In Progress</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#B22222]" />
+                  <span>Lost</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#00bc7d]" />
+                  <span>Won</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* Right: Total Revenue Chart */}
+          <div className="min-h-[450px] rounded-3xl border border-gray-200 p-6 flex flex-col bg-white shadow-sm hover:shadow-md transition-shadow justify-between">
+            <div className="flex flex-col mb-2 shrink-0">
+              <div className="flex items-center justify-between">
+                <p className="text-xl font-semibold text-gray-900">Total Revenue</p>
+                <YearSelect
+                  value={revenueFilter}
+                  onChange={setRevenueFilter}
+                  options={last3Years}
+                />
+              </div>
+              <h3 className="text-lg text-gray-500 mt-1">₹{(totalRevenueChart || 0).toLocaleString()}</h3>
+            </div>
+
+            <div className="flex-1 mt-4 h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={revenueGrowthData} margin={{ top: 10, right: 10, left: 20, bottom: 5 }} barCategoryGap="30%">
+                  <defs>
+                    <linearGradient id="colorAmtGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#fdba74" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#d87612" stopOpacity={0.9} />
+                    </linearGradient>
+                    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b45309" />
+                    </marker>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#4b5563', fontWeight: '600', dy: 8 }} axisLine={false} tickLine={false} />
+                  <YAxis
+                    domain={[0, (max: number) => max * 1.05]}
+                    tickFormatter={(val) => {
+                      if (val === 0) return "0";
+                      if (val >= 100000) {
+                        const lakhs = val / 100000;
+                        return lakhs % 1 === 0 ? `${lakhs}L` : `${lakhs.toFixed(1)}L`;
+                      }
+                      if (val >= 1000) {
+                        const k = val / 1000;
+                        return k % 1 === 0 ? `${k}k` : `${k.toFixed(1)}k`;
+                      }
+                      return String(val);
+                    }}
+                    width={50}
+                    tick={{ fontSize: 11, fill: '#4b5563', dx: -8 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload?.length) {
+                        return (
+                          <div className="bg-white border border-gray-100 p-3 rounded-xl shadow-xl text-xs">
+                            <p className="font-bold text-gray-900">{payload[0].payload.name}</p>
+                            <p className="font-semibold" style={{ color: '#d87612' }}>₹{Number(payload[0].payload.amt).toLocaleString()}</p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar dataKey="amt" fill="url(#colorAmtGrad)" radius={[4, 4, 0, 0]} barSize={35} />
+                  <Line type="monotone" dataKey="lineAmt" stroke="#b45309" strokeWidth={3} dot={false} activeDot={false} markerEnd="url(#arrow)" />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Lead Statistics - Pie Chart */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow h-full min-h-[450px] flex flex-col justify-between">
+          <div className="bg-white rounded-3xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow h-full min-h-[450px] flex flex-col justify-between">
+
             <div className="flex items-center justify-between mb-6 shrink-0">
               <div>
-                <h3 className="text-xl font-bold text-gray-900">Lead Status Overview</h3>
+                <h3 className="text-xl font-semibold text-gray-900">Lead Status Overview</h3>
                 <p className="text-sm text-gray-500 mt-1">Performance by status categories</p>
               </div>
-              <div className="p-2 bg-gray-50 rounded-lg">
-                <PieChartIcon className="h-5 w-5 text-gray-400" />
+              <div className="flex flex-wrap items-center gap-1 bg-gray-50/50 p-1 rounded-2xl border border-gray-100">
+                <button
+                  onClick={() => setStatusView('pie')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${statusView === 'pie'
+                    ? 'bg-[#d87612] text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-900'
+                    }`}
+                >
+                  Pie
+                </button>
+                <button
+                  onClick={() => setStatusView('graph')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${statusView === 'graph'
+                    ? 'bg-[#d87612] text-white shadow-sm'
+                    : 'text-gray-500 hover:text-gray-900'
+                    }`}
+                >
+                  Graph
+                </button>
               </div>
             </div>
 
             <div className="flex-1 flex flex-col justify-center">
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-center">
-                <div className="h-[200px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={statusChartData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={70}
-                        paddingAngle={8}
-                        dataKey="value"
-                        nameKey="name"
-                      >
-                        {statusChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} stroke="white" strokeWidth={2} />
-                        ))}
-                      </Pie>
+              {statusView === 'pie' ? (
+                <div className="flex flex-col xl:flex-row items-center justify-center gap-6 xl:gap-8">
+                  <div className="relative h-[260px] w-[350px] shrink-0" style={{ perspective: '800px' }}>
+                    {/* Bottom extrusion layer 1 (Dark shadow base) */}
+                    {/* <div className="absolute inset-0 opacity-80" style={{ filter: 'brightness(0.50)' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart style={{ transform: 'translateY(12px) rotateX(28deg) rotateY(-8deg)', transformStyle: 'preserve-3d' }}>
+                          <defs>
+                            {statusChartData.map((entry, index) => {
+                              const orangeGradients = [
+                                { light: '#ffc38a', dark: '#d87612' },
+                                { light: '#ffdbb5', dark: '#f97316' },
+                                { light: '#ffebd6', dark: '#fb923c' },
+                                { light: '#e88258', dark: '#c2410c' },
+                                { light: '#ff9966', dark: '#ea580c' },
+                                { light: '#ffe2a6', dark: '#f59e0b' },
+                                { light: '#fedfb7', dark: '#fdba74' },
+                                { light: '#fff4e6', dark: '#fed7aa' },
+                              ];
+                              const grad = orangeGradients[index % orangeGradients.length];
+                              return (
+                                <linearGradient key={index} id={`orangeGrad-b1-${index}`} x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor={grad.light} />
+                                  <stop offset="100%" stopColor={grad.dark} />
+                                </linearGradient>
+                              );
+                            })}
+                          </defs>
+                          <Pie
+                            data={statusChartData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={110}
+                            paddingAngle={0}
+                            dataKey="value"
+                            nameKey="name"
+                          >
+                            {statusChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={`url(#orangeGrad-b1-${index})`} stroke="none" />
+                            ))}
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div> */}
+
+                    {/* Middle extrusion layer 2 (Transition shading) */}
+                    {/* <div className="absolute inset-0 opacity-90" style={{ filter: 'brightness(0.72)' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart style={{ transform: 'translateY(6px) rotateX(28deg) rotateY(-8deg)', transformStyle: 'preserve-3d' }}>
+                          <defs>
+                            {statusChartData.map((entry, index) => {
+                              const orangeGradients = [
+                                { light: '#ffc38a', dark: '#d87612' },
+                                { light: '#ffdbb5', dark: '#f97316' },
+                                { light: '#ffebd6', dark: '#fb923c' },
+                                { light: '#e88258', dark: '#c2410c' },
+                                { light: '#ff9966', dark: '#ea580c' },
+                                { light: '#ffe2a6', dark: '#f59e0b' },
+                                { light: '#fedfb7', dark: '#fdba74' },
+                                { light: '#fff4e6', dark: '#fed7aa' },
+                              ];
+                              const grad = orangeGradients[index % orangeGradients.length];
+                              return (
+                                <linearGradient key={index} id={`orangeGrad-b2-${index}`} x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor={grad.light} />
+                                  <stop offset="100%" stopColor={grad.dark} />
+                                </linearGradient>
+                              );
+                            })}
+                          </defs>
+                          <Pie
+                            data={statusChartData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={110}
+                            paddingAngle={0}
+                            dataKey="value"
+                            nameKey="name"
+                          >
+                            {statusChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={`url(#orangeGrad-b2-${index})`} stroke="none" />
+                            ))}
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div> */}
+
+                    {/* Top surface layer (with borders and tooltips) */}
+                    {/* <div className="absolute inset-0" style={{ filter: 'drop-shadow(0 14px 10px rgba(0, 0, 0, 0.18))' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart style={{ transform: 'rotateX(28deg) rotateY(-8deg)', transformStyle: 'preserve-3d' }}>
+                          <defs>
+                            {statusChartData.map((entry, index) => {
+                              const orangeGradients = [
+                                { light: '#ffc38a', dark: '#d87612' },
+                                { light: '#ffdbb5', dark: '#f97316' },
+                                { light: '#ffebd6', dark: '#fb923c' },
+                                { light: '#e88258', dark: '#c2410c' },
+                                { light: '#ff9966', dark: '#ea580c' },
+                                { light: '#ffe2a6', dark: '#f59e0b' },
+                                { light: '#fedfb7', dark: '#fdba74' },
+                                { light: '#fff4e6', dark: '#fed7aa' },
+                              ];
+                              const grad = orangeGradients[index % orangeGradients.length];
+                              return (
+                                <linearGradient key={index} id={`orangeGrad-t-${index}`} x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor={grad.light} />
+                                  <stop offset="100%" stopColor={grad.dark} />
+                                </linearGradient>
+                              );
+                            })}
+                          </defs>
+                          <Pie
+                            data={statusChartData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={110}
+                            paddingAngle={1}
+                            dataKey="value"
+                            nameKey="name"
+                          >
+                            {statusChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={`url(#orangeGrad-t-${index})`} stroke="#ffffff" strokeWidth={2.5} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                const matchedStatus = statusChartData.find(
+                                  s => s.name?.toLowerCase().replace(/\s+/g, '') === payload[0].name?.toLowerCase().replace(/\s+/g, '')
+                                );
+                                const actualColor = matchedStatus?.fill || '#d87612';
+                                return (
+                                  <div className="bg-white border border-gray-100 p-3 rounded-xl shadow-xl text-xs">
+                                    <p className="font-bold text-gray-900">{payload[0].name}</p>
+                                    <p className="font-semibold" style={{ color: actualColor }}>{payload[0].value} Leads</p>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div> */}
+
+                    {/* 2D Donut Chart */}
+                    <div className="absolute inset-0">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={pieChartData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={90}
+                            outerRadius={125}
+                            paddingAngle={4}
+                            dataKey="value"
+                            nameKey="name"
+                          >
+                            {pieChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} stroke="none" />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            content={({ active, payload }) => {
+                              if (active && payload && payload.length) {
+                                const matchedStatus = statusChartData.find(
+                                  s => s.name?.toLowerCase().replace(/\s+/g, '') === payload[0].name?.toLowerCase().replace(/\s+/g, '')
+                                );
+                                const actualColor = matchedStatus?.fill || '#d87612';
+                                return (
+                                  <div className="bg-white border border-gray-100 p-3 rounded-xl shadow-xl text-xs">
+                                    <p className="font-bold text-gray-900">{payload[0].name}</p>
+                                    <p className="font-semibold" style={{ color: actualColor }}>{payload[0].value} Leads</p>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1 flex-1 w-full dashboard-scrollbar">
+                    {statusChartData.map((s, i) => (
+                      <div key={i} className="flex items-center gap-2.5 ml-1 p-2 rounded-xl border border-gray-50 bg-gray-50/50 hover:bg-gray-100/50 transition-colors cursor-default">
+                        <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: s.fill }}></div>
+                        <span className="text-sm font-bold text-gray-700 flex-1 truncate">{s.name}</span>
+                        <span className="text-sm font-semibold bg-white px-2.5 py-1 rounded-lg border border-gray-100 shrink-0" style={{ color: s.fill }}>
+                          {s.value} {s.value === 1 ? 'Lead' : 'Leads'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="relative h-[280px] w-full">
+                  {/* Fixed Y-Axis */}
+                  <div className="absolute left-0 top-0 h-[260px] z-10 bg-white pr-2 pointer-events-none">
+                    <BarChart
+                      width={35}
+                      height={260}
+                      data={statusChartData}
+                      margin={{ top: 10, right: 0, left: 5, bottom: 5 }}
+                    >
+                      <XAxis dataKey="name" tick={false} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: '#4b5563' }} axisLine={false} tickLine={false} width={30} />
+                      <Bar dataKey="value" opacity={0} />
+                    </BarChart>
+                  </div>
+                  {/* Scrollable Chart */}
+                  <div
+                    ref={statusChartContainerRef}
+                    className="h-[280px] w-full overflow-x-auto scrollbar-thin dashboard-scrollbar"
+                  >
+                    <BarChart
+                      width={Math.max(statusChartWidth, statusChartData.length * (statusChartWidth / 8))}
+                      height={260}
+                      data={statusChartData}
+                      margin={{ top: 10, right: 10, left: 35, bottom: 5 }}
+                      barCategoryGap="30%"
+                    >
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                      <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#4b5563', fontWeight: '600' }} axisLine={false} tickLine={false} />
+                      <YAxis tick={false} axisLine={false} tickLine={false} width={0} />
                       <Tooltip
+                        cursor={false}
                         content={({ active, payload }) => {
                           if (active && payload && payload.length) {
+                            const actualColor = statusChartData.find(s => s.name === payload[0].name)?.fill || '#d87612';
                             return (
-                              <div className="bg-white border border-gray-100 p-3 rounded-xl shadow-xl">
-                                <p className="text-sm font-bold text-gray-900">{payload[0].name}</p>
-                                <p className="text-sm text-blue-600 font-semibold">{payload[0].value} Leads</p>
+                              <div className="bg-white border border-gray-100 p-3 rounded-xl shadow-xl text-xs">
+                                <p className="font-bold text-gray-900">{payload[0].name}</p>
+                                <p className="font-semibold" style={{ color: actualColor }}>{payload[0].value} Leads</p>
                               </div>
                             );
                           }
                           return null;
                         }}
                       />
-                    </PieChart>
-                  </ResponsiveContainer>
+                      <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={35}>
+                        {statusChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </div>
                 </div>
-
-                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                  {statusChartData.map((s, i) => (
-                    <div key={i} className="flex items-center gap-2 p-2 rounded-xl border border-gray-50 bg-gray-50/50 hover:bg-gray-100/50 transition-colors cursor-default">
-                      <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: s.fill }}></div>
-                      <span className="text-xs font-semibold text-gray-700 flex-1 truncate">{s.name}</span>
-                      <span className="text-xs font-bold text-gray-900 bg-white px-2 py-0.5 rounded-lg border border-gray-100 shrink-0">{s.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              )}
             </div>
           </div>
 
-          {/* Upcoming Follow-ups */}
-          <div className="h-full min-h-[450px]">
-            {renderFollowupTable(
-              "Upcoming Follow-ups",
-              upcomingFollowups,
-              upcomingLoading,
-              upcomingPage,
-              upcomingTotalPages,
-              (p) => {
-                if (p >= 1 && p <= upcomingTotalPages) fetchUpcomingFollowups(p);
-              },
-              "Follow up Date",
-            )}
-          </div>
+          {/* Total KW Growth */}
+          <div className="bg-white rounded-3xl border border-gray-200 p-6 shadow-sm hover:shadow-lg transition-shadow min-h-[450px] flex flex-col">
+            <div className="flex flex-col mb-2 shrink-0">
+              <div className="flex items-center justify-between">
+                <p className="text-xl font-semibold text-gray-900">Total KW Growth</p>
+                <YearSelect
+                  value={kwFilter}
+                  onChange={setKwFilter}
+                  options={last3Years}
+                />
+              </div>
+              <h3 className="text-lg text-gray-500 mt-1">{totalKw.toFixed(2)} KW</h3>
+            </div>
 
-          {/* Overdue Follow-ups */}
+            <div className="flex-1 mt-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={kwGrowthData} margin={{ top: 10, right: 10, left: 20, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="colorKwGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#d87612" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#d87612" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <XAxis dataKey="name" padding={{ left: 30, right: 30 }} tick={{ fontSize: 12, fill: '#4b5563', fontWeight: '600', dy: 8 }} axisLine={false} tickLine={false} />
+                  <YAxis width={50} tick={{ fontSize: 11, fill: '#4b5563', dx: -8 }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload?.length) {
+                        return (
+                          <div className="bg-white border border-gray-100 p-3 rounded-xl shadow-xl text-xs">
+                            <p className="font-bold text-gray-900">{payload[0].payload.name}</p>
+                            <p className="font-semibold" style={{ color: '#d87612' }}>{Number(payload[0].value).toFixed(2)} KW</p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="kw"
+                    stroke="#d87612"
+                    strokeWidth={3}
+                    fillOpacity={1}
+                    fill="url(#colorKwGrad)"
+                    dot={{ r: 4, stroke: '#d87612', strokeWidth: 2, fill: 'white' }}
+                    activeDot={{ r: 6, stroke: '#d87612', strokeWidth: 2, fill: '#d87612' }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        {/* Row 2: Follow-ups */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8" id="upcoming-followups-section">
           <div className="h-full min-h-[450px]">
-            {renderFollowupTable(
-              "Overdue Follow-ups",
-              dueFollowups,
-              dueLoading,
-              duePage,
-              dueTotalPages,
-              (p) => {
-                if (p >= 1 && p <= dueTotalPages) fetchDueFollowups(p);
-              },
-              "Due Date",
-            )}
+            {renderFollowupTable("Upcoming Follow-ups", upcomingFollowups, upcomingLoading, upcomingPage, upcomingTotalPages, (p) => { if (p >= 1 && p <= upcomingTotalPages) fetchUpcomingFollowups(p); }, "Follow up Date")}
+          </div>
+          <div className="h-full min-h-[450px]">
+            {renderFollowupTable("Overdue Follow-ups", dueFollowups, dueLoading, duePage, dueTotalPages, (p) => { if (p >= 1 && p <= dueTotalPages) fetchDueFollowups(p); }, "Due Date")}
           </div>
         </div>
 
       </div>
 
-      {isUpdateLeadDialogOpen && (
-        <DashboardLeadUpdateDialog
-          isOpen={isUpdateLeadDialogOpen}
-          onClose={() => {
-            setIsUpdateLeadDialogOpen(false);
-            setSelectedLeadForUpdate(null);
-          }}
-          lead={selectedLeadForUpdate}
-          onSuccess={() => {
-            fetchUpcomingFollowups(upcomingPage);
-            fetchDueFollowups(duePage);
-          }}
-        />
-      )}
-    </div>
+      {
+        isUpdateLeadDialogOpen && (
+          <DashboardLeadUpdateDialog
+            isOpen={isUpdateLeadDialogOpen}
+            onClose={() => {
+              setIsUpdateLeadDialogOpen(false);
+              setSelectedLeadForUpdate(null);
+            }}
+            lead={selectedLeadForUpdate}
+            onSuccess={() => {
+              fetchUpcomingFollowups(upcomingPage);
+              fetchDueFollowups(duePage);
+            }}
+          />
+        )
+      }
+    </div >
   );
 }

@@ -342,3 +342,15 @@ button {
   background: #d87612 !important;
   border-radius: 9999px !important;
 }
+
+.recharts-wrapper,
+.recharts-surface,
+.recharts-pie,
+.recharts-pie-sector {
+  outline: none !important;
+}
+
+.recharts-wrapper *:focus,
+.recharts-surface:focus {
+  outline: none !important;
+}

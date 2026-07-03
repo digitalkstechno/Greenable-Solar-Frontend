@@ -114,6 +114,21 @@ export default function LeadsPage() {
     fetchPermissions();
   }, [token]);
 
+  // ── Parse query params ───────────────────────────────────────────────────
+  useEffect(() => {
+    if (router.isReady) {
+      const statusParam = router.query.status;
+      if (statusParam) {
+        const statuses = Array.isArray(statusParam)
+          ? statusParam
+          : typeof statusParam === 'string'
+            ? statusParam.split(',')
+            : [];
+        setStatusFilter(statuses);
+      }
+    }
+  }, [router.isReady, router.query.status]);
+
   const filters = useMemo(
     () => ({
       search: debouncedSearch,
