@@ -10,9 +10,10 @@ interface CalendarProps {
     minDate?: Date;
     placeholder?: string;
     className?: string;
+    align?: 'left' | 'right';
 }
 
-export default function Calendar({ value, onChange, minDate, placeholder = 'Select date', className }: CalendarProps) {
+export default function Calendar({ value, onChange, minDate, placeholder = 'Select date', className, align = 'left' }: CalendarProps) {
     const today = new Date();
     const [open, setOpen] = useState(false);
     const [cur, setCur] = useState({ y: value?.getFullYear() || today.getFullYear(), m: value?.getMonth() || today.getMonth() });
@@ -63,7 +64,7 @@ export default function Calendar({ value, onChange, minDate, placeholder = 'Sele
 
             {/* Dropdown */}
             {open && (
-                <div className="absolute z-50 mt-1 bg-white rounded-xl border border-gray-200 p-4 w-72 shadow-lg">
+                <div className={`absolute z-50 mt-1 bg-white rounded-xl border border-gray-200 p-4 w-72 shadow-lg ${align === 'right' ? 'right-0' : 'left-0'}`}>
                     {/* Header */}
                     <div className="flex items-center justify-between mb-3">
                         <button onClick={prev} className="p-1 rounded-md hover:bg-gray-100 text-gray-500">
