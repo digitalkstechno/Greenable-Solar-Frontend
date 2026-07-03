@@ -49,7 +49,7 @@ export default function LeadAddDialog({
 
   const [requiredFields, setRequiredFields] = useState<string[]>([]);
 
-  const isSalesExecutive = currentUser?.role?.roleName === 'Sales Executive' || currentUser?.role?.name === 'Sales Executive' || currentUser?.role === 'Sales Executive';
+  const isSalesExecutive = !['sales executive', 'sales'].includes(currentUser?.role?.name?.toLowerCase()) && !['sales executive', 'sales'].includes(currentUser?.role?.roleName?.toLowerCase());
 
   useEffect(() => {
     const loadRequiredFields = () => {
@@ -84,7 +84,7 @@ export default function LeadAddDialog({
         .matches(
           /^[^\s@]+@[^\s@]+\.(com|in|ac\.in|org|net|edu|co\.in)$/i,
           'Invalid email format'
-      ),
+        ),
       kwRequirement: Yup.string(),
       discomName: Yup.string(),
       leadrefrance: Yup.string(),
@@ -96,20 +96,23 @@ export default function LeadAddDialog({
       isActive: Yup.boolean(),
     };
 
-    if (requiredFields.includes('fullName')) shape.fullName = shape.fullName.required('Full Name is required');
-    if (requiredFields.includes('contact')) shape.contact = shape.contact.required('Mobile Number is required');
-    if (requiredFields.includes('email')) shape.email = shape.email.required('Email is required');
-    if (requiredFields.includes('leadStatus')) shape.leadStatus = Yup.string().required('Please select a stage');
-    if (requiredFields.includes('assignedTo') && !isSalesExecutive) shape.assignedTo = Yup.string().required('Please assign a sales executive');
+    shape.fullName = shape.fullName.required('Full Name is required');
+    shape.contact = shape.contact.required('Mobile Number is required');
+    shape.email = shape.email.required('Email is required');
+    shape.kwRequirement = shape.kwRequirement.required('KW Requirement is required');
+    shape.leadStatus = Yup.string().required('Please select a stage');
+    if (!isSalesExecutive) {
+      shape.assignedTo = Yup.string().required('Please assign a user');
+    }
 
     return Yup.object().shape(shape);
-  }, [requiredFields, isSalesExecutive]);
+  }, [isSalesExecutive]);
 
   const isInitiallyWon = useMemo(() => {
     if (mode !== 'edit' || !initialData) return false;
     if (initialData.isWon) return true;
-    const statusId = typeof initialData.leadStatus === 'string' 
-      ? initialData.leadStatus 
+    const statusId = typeof initialData.leadStatus === 'string'
+      ? initialData.leadStatus
       : (initialData.leadStatus as any)?._id;
     return statuses.find(s => s._id === statusId)?.name?.match(/^won$/i) != null;
   }, [mode, initialData, statuses]);
@@ -215,10 +218,10 @@ export default function LeadAddDialog({
           const depts = deptRes.data?.data || [];
           const users = staffRes.data?.data || [];
           const salesExecs = users.filter((u: any) => {
-             const r = u.role;
-             if (!r) return false;
-             const roleName = r.roleName || r.name || (typeof r === 'string' ? r : '');
-             return roleName.toLowerCase() === 'sales executive';
+            const r = u.role;
+            if (!r) return false;
+            const roleName = r.roleName || r.name || (typeof r === 'string' ? r : '');
+            return roleName.toLowerCase() === 'sales executive';
           });
           const usersWithDepts = salesExecs.map((u: any) => {
             const d = depts.find((dept: any) => dept._id === u.department);
@@ -238,10 +241,10 @@ export default function LeadAddDialog({
           const depts = deptRes.data?.data || [];
           const users = staffRes.data?.data || [];
           const salesExecs = users.filter((u: any) => {
-             const r = u.role;
-             if (!r) return false;
-             const roleName = r.roleName || r.name || (typeof r === 'string' ? r : '');
-             return roleName.toLowerCase() === 'sales executive';
+            const r = u.role;
+            if (!r) return false;
+            const roleName = r.roleName || r.name || (typeof r === 'string' ? r : '');
+            return roleName.toLowerCase() === 'sales executive';
           });
           const usersWithDepts = salesExecs.map((u: any) => {
             const d = depts.find((dept: any) => dept._id === u.department);
@@ -348,8 +351,7 @@ export default function LeadAddDialog({
               <div className="w-full mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-sm font-semibold text-gray-700">
-                    Mobile Number
-                    {requiredFields.includes('contact') && <span className="text-red-500 ml-1">*</span>}
+                    Mobile Number <span className="text-red-500">*</span>
                   </label>
                 </div>
                 <div className="relative">
@@ -399,7 +401,7 @@ export default function LeadAddDialog({
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
                 error={getFieldError('email')}
-                required={requiredFields.includes('email')}
+                required={true}
               />
               <FormInput
                 label="KW Requirement"
@@ -413,7 +415,7 @@ export default function LeadAddDialog({
                 }}
                 onBlur={formik.handleBlur}
                 error={getFieldError('kwRequirement')}
-                required={requiredFields.includes('kwRequirement')}
+                required={true}
                 className="uppercase"
               />
             </div>
@@ -484,7 +486,7 @@ export default function LeadAddDialog({
                 options={statuses.map((s) => ({ value: s._id, label: s.name! }))}
                 error={getFieldError('leadStatus')}
                 placeholder="Select Stage"
-                required={requiredFields.includes('leadStatus')}
+                required={true}
                 disabled={isInitiallyWon}
               />
               {!isSalesExecutive && (
@@ -497,7 +499,7 @@ export default function LeadAddDialog({
                   options={staff.map((s) => ({ value: String(s._id), label: `${s.fullName || s.name!}${s.departmentName ? ` (${s.departmentName})` : ''}` }))}
                   error={getFieldError('assignedTo')}
                   placeholder="Select User"
-                  required={requiredFields.includes('assignedTo')}
+                  required={true}
                   maxHeight="max-h-44"
                 />
               )}
