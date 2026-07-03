@@ -397,16 +397,16 @@ input[type="search"]::-webkit-search-results-button,
 input[type="search"]::-webkit-search-results-decoration {
   display: none;
   -webkit-appearance: none;
+}
 
-  .recharts-wrapper,
-  .recharts-surface,
-  .recharts-pie,
-  .recharts-pie-sector {
-    outline: none !important;
-  }
+.recharts-wrapper,
+.recharts-surface,
+.recharts-pie,
+.recharts-pie-sector {
+  outline: none !important;
+}
 
-  .recharts-wrapper *:focus,
-  .recharts-surface:focus {
-    outline: none !important;
-  }
+.recharts-wrapper *:focus,
+.recharts-surface:focus {
+  outline: none !important;
 }

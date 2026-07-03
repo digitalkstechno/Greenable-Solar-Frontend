@@ -86,6 +86,16 @@ export default function DashboardLeadUpdateDialog({ isOpen, onClose, lead, onSuc
         payload.nextFollowupDate = null;
         payload.nextFollowupTime = null;
 
+        const completedFollowup: any = {
+          date: new Date().toISOString().split('T')[0],
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
+          note: 'Follow Up Done (Status set to Won)',
+          createdAt: new Date().toISOString(),
+        };
+
+        if (staffId) completedFollowup.staff = staffId;
+        payload.followUps = [...(lead.followUps || []), completedFollowup];
+
       } else if (actionType === 'stage') {
         if (!selectedStage) {
           toast.error('Please select a stage.');
@@ -149,7 +159,7 @@ export default function DashboardLeadUpdateDialog({ isOpen, onClose, lead, onSuc
           <button
             onClick={handleSubmit}
             disabled={loading}
-            className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
+            className="min-w-[80px] cursor-pointer rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {loading ? 'Saving...' : 'Save'}
           </button>
