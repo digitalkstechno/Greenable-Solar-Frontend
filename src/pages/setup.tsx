@@ -34,7 +34,7 @@ export default function Setup() {
   useEffect(() => {
     if (router.query.tab) {
       const tab = router.query.tab as string;
-      const validTabs = ['Department Management', 'User', 'Lead Sources', 'Lead Status', 'Kanban Status', 'Lead Labels', 'Teams', 'Organizations', 'Task Status', 'Field Settings', 'Category', 'Product', 'Stock In', 'Stock Out'];
+      const validTabs = ['Department Management', 'User', 'Lead Sources', 'Lead Status', 'Kanban Status', 'Lead Labels', 'Teams', 'Organizations', 'Task Status', 'Category', 'Product', 'Stock In', 'Stock Out'];
       if (validTabs.includes(tab)) {
         setActiveTab(tab as any);
       }
@@ -214,7 +214,7 @@ export default function Setup() {
       // { name: "Task Status", icon: Settings, visible: canViewTaskStatus },
       // { name: "Teams", icon: UsersRound, visible: canViewTeams },
       // { name: "Organizations", icon: Building2, visible: canViewOrgs },
-      { name: "Field Settings", icon: Settings2, visible: true },
+      // { name: "Field Settings", icon: Settings2, visible: true },
       // { name: "Category", icon: List, visible: canViewCategory },
       // { name: "Product", icon: Package, visible: canViewProduct },
       // { name: "Stock In", icon: PackagePlus, visible: canViewStock },
@@ -294,7 +294,6 @@ export default function Setup() {
               {activeTab === 'Teams' && <TeamsContent />}
               {activeTab === 'Organizations' && <OrganizationsContent />}
               {activeTab === 'Task Status' && <TaskStatusContent />}
-              {activeTab === 'Field Settings' && <FieldSettingsContent />}
               {activeTab === 'Product' && <ProductContent />}
               {activeTab === 'Category' && <CategoryContent />}
               {activeTab === 'Stock In' && <StockInContent />}

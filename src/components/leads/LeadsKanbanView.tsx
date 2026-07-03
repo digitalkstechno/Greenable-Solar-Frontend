@@ -215,7 +215,7 @@ export default function LeadsKanbanView({
             }
         }
 
-     
+
         if (!sourceStatusId) {
             setDraggingId(null);
             return;
@@ -236,9 +236,9 @@ export default function LeadsKanbanView({
             if (leadIndex > -1) {
                 const [lead] = sourceLeads.splice(leadIndex, 1);
                 next[sourceStatusId] = sourceLeads;
-                
+
                 const targetLeads = sourceStatusId === newStatusId ? sourceLeads : [...(next[newStatusId] || [])];
-                
+
                 if (targetIndex !== undefined && targetIndex >= 0) {
                     targetLeads.splice(targetIndex, 0, lead);
                 } else {
@@ -603,9 +603,9 @@ export default function LeadsKanbanView({
         { key: 'address', label: 'LOCATION', render: (v) => <span className="text-sm">{v || '-'}</span> },
         { key: 'contact', label: 'CONTACT', render: (v) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5">{v}</div></div> },
         { key: 'createdAt', label: 'CREATED DATE', render: (_, row) => row.createdAt ? new Date(row.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-' },
-        { 
-            key: 'wonDate', 
-            label: 'WON DATE', 
+        {
+            key: 'wonDate',
+            label: 'WON DATE',
             render: (v, row) => {
                 let dateStr = v;
                 if (!dateStr && row.activities && row.activities.length > 0) {
@@ -615,7 +615,7 @@ export default function LeadsKanbanView({
                     }
                 }
                 return dateStr ? new Date(dateStr).toLocaleDateString('en-GB') : 'N/A';
-            } 
+            }
         },
         { key: 'createdBy', label: 'CREATED BY', render: (v) => v?.fullName || v?.name || '-' },
         { key: 'assignedTo', label: 'ASSIGNED TO', render: (v) => v?.fullName || v?.name || '-' },
@@ -656,7 +656,7 @@ export default function LeadsKanbanView({
         }
     ];
 
-    const isSalesExecutive = currentUser?.role?.name === 'Sales Executive' || currentUser?.role?.roleName === 'Sales Executive' || currentUser?.role === 'Sales Executive';
+    const isSalesExecutive = !['sales executive', 'sales'].includes(currentUser?.role?.name?.toLowerCase()) && !['sales executive', 'sales'].includes(currentUser?.role?.roleName?.toLowerCase());
     const visibleLostLeadsColumns = lostLeadsColumns.filter(c => !(isSalesExecutive && c.key === 'assignedTo'));
     const visibleWonLeadsColumns = wonLeadsColumns.filter(c => !(isSalesExecutive && c.key === 'assignedTo'));
 
@@ -779,7 +779,7 @@ export default function LeadsKanbanView({
                                         ) : (
                                             <>
                                                 {group.leads.map((lead, index) => (
-                                                    <div 
+                                                    <div
                                                         key={lead._id}
                                                         onDragOver={(e) => {
                                                             e.preventDefault();

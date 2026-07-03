@@ -293,7 +293,7 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
   const [reassignOpen, setReassignOpen] = useState(false);
   const [reassignUsers, setReassignUsers] = useState<any[]>([]);
 
-  const isSalesExecutive = currentUser?.role?.roleName === 'Sales Executive' || currentUser?.role?.name === 'Sales Executive' || currentUser?.role === 'Sales Executive';
+  const isSalesExecutive = !['sales executive', 'sales'].includes(currentUser?.role?.name?.toLowerCase()) && !['sales executive', 'sales'].includes(currentUser?.role?.roleName?.toLowerCase());
 
   const [selectedReassignUser, setSelectedReassignUser] = useState('');
   const [reassigning, setReassigning] = useState(false);
@@ -303,8 +303,8 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
   const isWonLead = useMemo(() => {
     if (!lead) return false;
     if (lead.isWon) return true;
-    const statusId = typeof lead.leadStatus === 'string' 
-      ? lead.leadStatus 
+    const statusId = typeof lead.leadStatus === 'string'
+      ? lead.leadStatus
       : (lead.leadStatus as any)?._id;
     return statuses.find(s => s._id === statusId)?.name?.match(/^won$/i) != null;
   }, [lead, statuses]);

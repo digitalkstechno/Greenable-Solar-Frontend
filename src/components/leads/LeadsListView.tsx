@@ -250,7 +250,7 @@ export default function LeadsListView({
     },
   ];
 
-  const isSalesExecutive = currentUser?.role?.name === 'Sales Executive' || currentUser?.role?.roleName === 'Sales Executive' || currentUser?.role === 'Sales Executive';
+  const isSalesExecutive = !['sales executive', 'sales'].includes(currentUser?.role?.name?.toLowerCase()) && !['sales executive', 'sales'].includes(currentUser?.role?.roleName?.toLowerCase());
   const visibleColumns = columns.filter(c => !(isSalesExecutive && c.key === 'assignedTo'));
 
   if (activeStatusFilter === 'won') {
@@ -419,24 +419,24 @@ export default function LeadsListView({
           return actions.length > 0 ? actions : undefined;
         })()}
         footer={activeStatusFilter === 'won' && leads.length > 0 ? (
-        <tr className="sticky bottom-0 z-30 bg-[#F3F4F6] border-t border-gray-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)]">
-          {visibleColumns.map((col, idx) => {
-            if (idx === 0) {
-              return <td key={col.key as string} className="px-6 py-4 whitespace-nowrap text-right font-extrabold text-gray-900 text-base uppercase tracking-wider bg-[#F3F4F6]">Grand Totals</td>;
-            }
-            if (col.key === 'kwRequirement') {
-              return <td key={col.key as string} className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">{pageTotals.totalKwReq?.toLocaleString() || 0} <span className="text-xs text-slate-500 font-normal ml-1">KW</span></td>;
-            }
-            if (col.key === 'projectAmount') {
-              return <td key={col.key as string} className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">₹{pageTotals.totalAmount?.toLocaleString() || 0}</td>;
-            }
-            if (col.key === 'pendingAmount') {
-              return <td key={col.key as string} className="px-6 py-4 whitespace-nowrap text-left font-bold text-red-600 text-base border-l border-gray-300 bg-[#F3F4F6]">₹{pageTotals.totalPendingAmount?.toLocaleString() || 0}</td>;
-            }
-            return <td key={col.key as string} className="bg-[#F3F4F6] border-l border-gray-300"></td>;
-          })}
-          <td className="bg-[#F3F4F6] border-l border-gray-300"></td>
-        </tr>
+          <tr className="sticky bottom-0 z-30 bg-[#F3F4F6] border-t border-gray-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)]">
+            {visibleColumns.map((col, idx) => {
+              if (idx === 0) {
+                return <td key={col.key as string} className="px-6 py-4 whitespace-nowrap text-right font-extrabold text-gray-900 text-base uppercase tracking-wider bg-[#F3F4F6]">Grand Totals</td>;
+              }
+              if (col.key === 'kwRequirement') {
+                return <td key={col.key as string} className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">{pageTotals.totalKwReq?.toLocaleString() || 0} <span className="text-xs text-slate-500 font-normal ml-1">KW</span></td>;
+              }
+              if (col.key === 'projectAmount') {
+                return <td key={col.key as string} className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">₹{pageTotals.totalAmount?.toLocaleString() || 0}</td>;
+              }
+              if (col.key === 'pendingAmount') {
+                return <td key={col.key as string} className="px-6 py-4 whitespace-nowrap text-left font-bold text-red-600 text-base border-l border-gray-300 bg-[#F3F4F6]">₹{pageTotals.totalPendingAmount?.toLocaleString() || 0}</td>;
+              }
+              return <td key={col.key as string} className="bg-[#F3F4F6] border-l border-gray-300"></td>;
+            })}
+            <td className="bg-[#F3F4F6] border-l border-gray-300"></td>
+          </tr>
         ) : undefined}
       />
 
