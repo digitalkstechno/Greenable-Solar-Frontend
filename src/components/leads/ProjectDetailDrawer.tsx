@@ -255,42 +255,17 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
             const panelMake = matchSolar ? (matchSolar[1] || '').trim() : solarStr;
             const panelWp = matchSolar ? matchSolar[2] : '';
 
-            // Parse inverter
+            
             const inverterStr = lastQ.inverter || '';
             const matchInverter = inverterStr.match(/^([a-zA-Z\s\-]+)?\s*(\d+(\.\d+)?)/);
             const inverterMake = matchInverter ? (matchInverter[1] || '').trim() : inverterStr;
-            const inverterKw = matchInverter ? matchInverter[2] : '';
 
-            // Parse system capacity (kw) from first row
-            const firstRow = lastQ.rows?.find((r: any) =>
-              r.title && (
-                r.title.toLowerCase().includes('design') ||
-                r.title.toLowerCase().includes('solar power system') ||
-                r.title.toLowerCase().includes('capacity')
-              )
-            );
-            const capacityVal = firstRow ? (firstRow.values?.[0] || '') : '';
-            const matchKw = capacityVal.match(/(\d+(\.\d+)?)/);
-            const kw = matchKw ? parseFloat(matchKw[1]) : 0;
-
-            // Calculate no of panels
+        
             let noOfPanel = '';
-            if (kw > 0 && panelWp) {
-              const wpNum = parseInt(panelWp);
-              if (wpNum > 0) {
-                noOfPanel = Math.ceil((kw * 1000) / wpNum).toString();
-              }
-            }
 
-            // Parse project amount
-            const costRow = lastQ.rows?.find((r: any) =>
-              r.title && (
-                r.title.toLowerCase().includes('after subsidy') ||
-                r.title.toLowerCase().includes('consumer system cost') ||
-                r.title.toLowerCase().includes('effective price')
-              )
-            );
-            const costVal = costRow ? (costRow.values?.[0] || '') : '';
+           
+            const firstRow = lastQ.rows?.[0];
+            const costVal = firstRow ? (firstRow.values?.[0] || '') : '';
             const matchCost = costVal.replace(/[^\d]/g, '');
             const projectAmount = matchCost || '';
 
@@ -301,7 +276,6 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
               panelWp,
               noOfPanel,
               inverterMake,
-              inverterKw: inverterKw || (kw > 0 ? kw.toString() : ''),
               projectAmount,
             });
             setShowLoanDocs(false);

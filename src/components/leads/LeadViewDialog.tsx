@@ -862,7 +862,7 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
                   <button
                     type="button"
                     disabled={saving}
-                    className="text-xs bg-secondary text-white px-3 py-1.5 font-semibold rounded shadow-sm hover:bg-blue-700 pointer-events-none transition-colors"
+                    className="rounded-lg bg-secondary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary flex items-center gap-1"
                   >
                     + Add Attachments
                   </button>

@@ -8,8 +8,8 @@ import { Bell, CheckCircle, CheckCheck, LogOut, Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { io } from 'socket.io-client';
-import Swal from 'sweetalert2';
 import { CenterDialog } from "./Dialog";
+import DeleteDialog from "./DeleteDialog";
 import FormInput from "./ui/Input";
 
 interface Notification {
@@ -40,6 +40,7 @@ export default function Header({ toggleSidebar }: HeaderProps) {
   const [profilePassword, setProfilePassword] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileError, setProfileError] = useState('');
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -431,50 +432,17 @@ export default function Header({ toggleSidebar }: HeaderProps) {
   };
 
   const handleLogout = () => {
-    Swal.fire({
-      title: 'Are you sure?',
-      text: "You will be logged out of your account",
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#3085d6',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Yes, logout',
-      cancelButtonText: 'Cancel',
-      background: '#fff',
-      backdrop: true,
-      allowOutsideClick: false,
-      allowEscapeKey: true,
-    }).then((result) => {
-      if (result.isConfirmed) {
-        Swal.fire({
-          title: 'Logging out...',
-          text: 'Please wait',
-          icon: 'info',
-          showConfirmButton: false,
-          allowOutsideClick: false,
-          allowEscapeKey: false,
-          didOpen: () => {
-            Swal.showLoading();
-          }
-        });
+    setShowLogoutDialog(true);
+  };
 
-        clearAuthToken();
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("token");
-          localStorage.removeItem("auth");
-        }
-
-        Swal.fire({
-          title: 'Logged Out!',
-          text: 'You have been successfully logged out',
-          icon: 'success',
-          timer: 1500,
-          showConfirmButton: false,
-        }).then(() => {
-          router.replace("/login");
-        });
-      }
-    });
+  const handleConfirmLogout = async () => {
+    setShowLogoutDialog(false);
+    clearAuthToken();
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+      localStorage.removeItem("auth");
+    }
+    router.replace("/login");
   };
 
   // Calculate unread notifications count
@@ -695,6 +663,35 @@ export default function Header({ toggleSidebar }: HeaderProps) {
           </CenterDialog>
         )
       }
+
+      <DeleteDialog
+        isOpen={showLogoutDialog}
+        onClose={() => setShowLogoutDialog(false)}
+        title="Logout"
+        size="md"
+        footer={
+          <>
+            <button
+              onClick={() => setShowLogoutDialog(false)}
+              className="rounded-lg cursor-pointer border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmLogout}
+              className="rounded-lg cursor-pointer bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+            >
+              Logout
+            </button>
+          </>
+        }
+      >
+        <div className="py-4">
+          <p className="text-gray-700">
+            Are you sure you want to logout?
+          </p>
+        </div>
+      </DeleteDialog>
     </>
   );
 }
