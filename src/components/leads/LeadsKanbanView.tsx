@@ -731,6 +731,8 @@ export default function LeadsKanbanView({
         }, { totalKwReq: 0, totalAmount: 0, totalPendingAmount: 0 });
     }, [wonLeads]);
 
+    const formatNumber = (num: number) => num.toLocaleString('en-IN');
+
     return (
         <div className="flex h-full flex-col gap-4">
             {/* <div className="flex flex-wrap items-center justify-between gap-3 px-1">
@@ -955,16 +957,16 @@ export default function LeadsKanbanView({
                     
                     {wonLeads.length > 0 && (
                         <div 
-                            className="fixed bottom-16 right-0 bg-[#F3F4F6] border-t border-gray-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)] z-[60] px-6 py-4"
+                            className="fixed bottom-16 right-0 bg-[#F3F4F6] border-t border-gray-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)] z-30 px-6 py-4"
                             style={{ 
                                 left: isMobile ? '0' : (isSidebarOpen ? '16rem' : '5rem') 
                             }}
                         >
                             <div className="flex items-center gap-6 overflow-x-auto">
                                 <div className="whitespace-nowrap text-right font-extrabold text-gray-900 text-base uppercase tracking-wider flex-shrink-0">Grand Totals</div>
-                                <div className="whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 pl-6 flex-shrink-0">Total KW: {pageTotals.totalKwReq?.toLocaleString() || 0} <span className="text-xs text-slate-500 font-normal ml-1">KW</span></div>
-                                <div className="whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 pl-6 flex-shrink-0">Total Amount: ₹{pageTotals.totalAmount?.toLocaleString() || 0}</div>
-                                <div className="whitespace-nowrap text-left font-bold text-red-600 text-base border-l border-gray-300 pl-6 flex-shrink-0">Total Pending Amount: ₹{pageTotals.totalPendingAmount?.toLocaleString() || 0}</div>
+                                <div className="whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 pl-6 flex-shrink-0">Total KW: {formatNumber(pageTotals.totalKwReq)} <span className="text-xs text-slate-500 font-normal ml-1">KW</span></div>
+                                <div className="whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 pl-6 flex-shrink-0">Total Amount: ₹{formatNumber(pageTotals.totalAmount)}</div>
+                                <div className="whitespace-nowrap text-left font-bold text-red-600 text-base border-l border-gray-300 pl-6 flex-shrink-0">Total Pending Amount: ₹{formatNumber(pageTotals.totalPendingAmount)}</div>
                             </div>
                         </div>
                     )}

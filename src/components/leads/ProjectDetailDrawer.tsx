@@ -1005,7 +1005,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
               ) : (
                 <ChevronRight className="h-4 w-4" />
               )}
-              {saving ? 'Saving...' : activeSection === (showLoanDocs ? 'loanDocs' : 'payment') ? 'Save Details' : 'Next >'}
+              {saving ? 'Saving...' : activeSection === (showLoanDocs ? 'loanDocs' : 'payment') ? 'Save Details' : 'Next '}
             </button>
           </div>
         </div>
