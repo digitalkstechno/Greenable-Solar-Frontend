@@ -174,6 +174,8 @@ export default function Dashboard() {
   const [permissions, setPermissions] = useState<{ readAll: boolean; readOwn: boolean }>({ readAll: false, readOwn: false });
   const [user, setUser] = useState<any>(null);
   const [greeting, setGreeting] = useState("");
+  const isSalesUser = (user?.role?.roleName || user?.roleName || user?.department || '').toLowerCase() === 'sales executive' || (user?.role?.roleName || user?.roleName || user?.department || '').toLowerCase() === 'sales';
+  const isCallingUser = (user?.role?.roleName || user?.roleName || user?.department || '').toLowerCase() === 'calling';
   const getInitialDates = (preset: 'today' | 'this-month' | 'prev-month' | 'this-year' | 'custom') => {
     const now = new Date();
     const format = (d: Date) => {
@@ -319,39 +321,194 @@ export default function Dashboard() {
         params: {
           from: fromDate || undefined,
           to: toDate || undefined,
+          // limit: 2,
         }
       });
+
       setSummary(res.data.data);
     } catch (err) {
       console.error("Lead summary error:", err);
     }
   };
 
+  // const fetchLeadSummary = async () => {
+  //   if (!token) return;
+  //   try {
+  //     const isMyOnly = !permissions.readAll && permissions.readOwn;
+  //     const url = isMyOnly ? baseUrl.myLeadCountSummary : baseUrl.leadCountSummary;
+  //     const res = await axios.get(url, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //       params: {
+  //         from: fromDate || undefined,
+  //         to: toDate || undefined,
+  //       }
+  //     });
+  //     const data = res.data.data;
+  //     if (data?.statusWiseCounts) {
+  //       data.statusWiseCounts = data.statusWiseCounts.slice(0, 2); 
+  //     }
+  //     setSummary(data);
+  //   } catch (err) {
+  //     console.error("Lead summary error:", err);
+  //   }
+  // };
+
+  // const fetchLeadsBySource = async () => {
+  //   if (!token) return;
+  //   try {
+  //     const res = await axios.get(baseUrl.leadSources, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+
+  //     const colorPalette = [
+  //       "#3B82F6", // blue-500
+  //       "#10B981", // emerald-500
+  //       "#F59E0B", // amber-500
+  //       "#EF4444", // red-500
+  //       "#8B5CF6", // violet-500
+  //       "#EC4899", // pink-500
+  //       "#06B6D4", // cyan-500
+  //       "#84CC16", // lime-500
+  //       "#F97316", // orange-500
+  //       "#6366F1", // indigo-500
+  //     ];
+
+  //     const chartData = (res.data.data ?? []).map((item: any, idx: number) => ({
+  //       name: item.name,
+  //        value: item.count ?? item.total ?? item.leadCount ?? item.totalLeads ?? 0,
+  //       fill: colorPalette[idx % colorPalette.length],
+  //     }));
+
+  //     setLeadsBySource(chartData);
+  //   } catch (err) {
+  //     console.error("Leads by source error:", err);
+  //   }
+  // };
+
+  // const fetchLeadsBySource = async () => {
+  //   if (!token) return;
+  //   try {
+  //     const res = await axios.get(baseUrl.getAllLeads, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //       params: { limit: 1000 }
+  //     });
+  //     const leads = res.data?.data || [];
+
+  //     const colorPalette = [
+  //       "#fb923c", 
+  //       "#f97316", 
+  //       "#F59E0B", 
+  //       "#EF4444", 
+  //       "#c2410c", 
+  //       "#ea580c", 
+  //       "#fdba74", 
+  //       "#fed7aa", 
+  //       "#d87612", 
+  //       "#d87612", 
+  //     ];
+
+  //     // Apply date range filter same as other charts
+  //     const filteredLeads = leads.filter((lead: any) => {
+  //       const leadDate = new Date(lead.createdAt);
+  //       if (fromDate) {
+  //         const fromD = new Date(fromDate + 'T00:00:00');
+  //         if (leadDate < fromD) return false;
+  //       }
+  //       if (toDate) {
+  //         const toD = new Date(toDate + 'T23:59:59');
+  //         if (leadDate > toD) return false;
+  //       }
+  //       return true;
+  //     });
+
+  //     // Group by leadrefrance field
+  //     const grouped: Record<string, number> = {};
+  //     filteredLeads.forEach((lead: any) => {
+  //       const source = lead.leadrefrance || "Unknown";
+  //       grouped[source] = (grouped[source] || 0) + 1;
+  //     });
+
+  //     const chartData = Object.entries(grouped).map(([name, value], idx) => ({
+  //       name,
+  //       value,
+  //       fill: colorPalette[idx % colorPalette.length],
+  //     }));
+
+  //     setLeadsBySource(chartData);
+  //   } catch (err) {
+  //     console.error("Leads by source error:", err);
+  //   }
+  // };
+
   const fetchLeadsBySource = async () => {
     if (!token) return;
     try {
-      const res = await axios.get(baseUrl.leadSources, {
+      // 1. Master lead source list (Google Search, Website Signup, Client Referral, LinkedIn Ads)
+      const sourcesRes = await axios.get(baseUrl.leadSources, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      const masterSources = sourcesRes.data?.data || [];
+
+      // 2. Actual leads data
+      const leadsRes = await axios.get(baseUrl.getAllLeads, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { limit: 1000 }
+      });
+      const leads = leadsRes.data?.data || [];
 
       const colorPalette = [
-        "#3B82F6", // blue-500
-        "#10B981", // emerald-500
-        "#F59E0B", // amber-500
-        "#EF4444", // red-500
-        "#8B5CF6", // violet-500
-        "#EC4899", // pink-500
-        "#06B6D4", // cyan-500
-        "#84CC16", // lime-500
-        "#F97316", // orange-500
-        "#6366F1", // indigo-500
+        "#F59E0B",
+        "#EF4444",
+        "#f97316",
+        "#fb923c",
+        "#c2410c",
+        "#ea580c",
+        "#fdba74",
+        "#fed7aa",
+        "#d87612",
+        "#d87612",
       ];
 
-      const chartData = (res.data.data ?? []).map((item: any, idx: number) => ({
-        name: item.name,
-        value: item.count || 0,
-        fill: colorPalette[idx % colorPalette.length],
-      }));
+      // Apply date range filter
+      const filteredLeads = leads.filter((lead: any) => {
+        const leadDate = new Date(lead.createdAt);
+        if (fromDate) {
+          const fromD = new Date(fromDate + 'T00:00:00');
+          if (leadDate < fromD) return false;
+        }
+        if (toDate) {
+          const toD = new Date(toDate + 'T23:59:59');
+          if (leadDate > toD) return false;
+        }
+        return true;
+      });
+
+      // Count leads per source name
+      const countMap: Record<string, number> = {};
+      filteredLeads.forEach((lead: any) => {
+        const source = lead.leadrefrance || "Unknown";
+        countMap[source] = (countMap[source] || 0) + 1;
+      });
+
+      // Build chart data from master list first (so all sources always show)
+      const chartData = masterSources
+        .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0))
+        .map((src: any, idx: number) => ({
+          name: src.name,
+          value: countMap[src.name] || 0,
+          fill: colorPalette[idx % colorPalette.length],
+        }));
+
+      // Include any lead source not present in master list (e.g. "Unknown")
+      Object.keys(countMap).forEach((sourceName) => {
+        if (!chartData.some((c: any) => c.name === sourceName)) {
+          chartData.push({
+            name: sourceName,
+            value: countMap[sourceName],
+            fill: colorPalette[chartData.length % colorPalette.length],
+          });
+        }
+      });
 
       setLeadsBySource(chartData);
     } catch (err) {
@@ -364,7 +521,7 @@ export default function Dashboard() {
     try {
       const res = await axios.get(baseUrl.getAllUsers, {
         headers: { Authorization: `Bearer ${token}` },
-        params: { limit: 1000 }
+        params: { limit: 100 }
       });
       const chartData = (res.data.data ?? []).map((staff: any) => ({
         name: staff.fullName || "Unknown",
@@ -886,27 +1043,17 @@ export default function Dashboard() {
 
       // Count each lead's nextFollowupDate as upcoming (future) or completed (past)
       leads.forEach((lead: any) => {
-        // if (!lead.nextFollowupDate) return;
-        // const nextDate = new Date(lead.nextFollowupDate);
-        // if (nextDate.getFullYear() !== targetYear) return;
+
         const nextDateStr = formatDateStr(lead.nextFollowupDate);
         let upcomingCounted = false;
 
-        // const mLabel = months[nextDate.getMonth()];
-        // if (!grouped[mLabel]) return;
+
         // 1. Process all historical follow-ups in lead.followUps
         if (lead.followUps && Array.isArray(lead.followUps)) {
           lead.followUps.forEach((f: any) => {
             const fDate = new Date(f.date || f.createdAt);
             if (fDate.getFullYear() !== targetYear) return;
 
-            // If nextFollowupDate is before today → completed (follow-up date has passed)
-            // If nextFollowupDate is today or future → upcoming
-            // const followupDay = new Date(nextDate.getFullYear(), nextDate.getMonth(), nextDate.getDate());
-            // if (followupDay < todayStart) {
-            //   grouped[mLabel].completed++;
-            // } else {
-            //   grouped[mLabel].upcoming++;
             const mLabel = months[fDate.getMonth()];
             if (!grouped[mLabel]) return;
             const fDateStr = formatDateStr(f.date || f.createdAt);
@@ -968,12 +1115,12 @@ export default function Dashboard() {
       });
 
       // Prepopulate staffMap with users in "Sales Executive" department
-      const staffMap: Record<string, { name: string; Won: number; Lost: number; 'In Progress': number }> = {};
+      const staffMap: Record<string, { name: string; Won: number; Lost: number; 'In Progress': number; 'New Lead': number }> = {};
       users.forEach((u: any) => {
         const deptName = userDeptMap[String(u._id)] || '';
         if (deptName.toLowerCase() === 'sales executive') {
           const name = u.fullName || 'Unknown';
-          staffMap[name] = { name, Won: 0, Lost: 0, 'In Progress': 0 };
+          staffMap[name] = { name, Won: 0, Lost: 0, 'In Progress': 0, 'New Lead': 0 };
         }
       });
 
@@ -1011,12 +1158,15 @@ export default function Dashboard() {
       filtered.forEach((lead: any) => {
         const name = lead.assignedTo?.fullName || 'Unknown';
         if (!staffMap[name]) {
-          staffMap[name] = { name, Won: 0, Lost: 0, 'In Progress': 0 };
+          staffMap[name] = { name, Won: 0, Lost: 0, 'In Progress': 0, 'New Lead': 0 };
         }
         const status = lead.leadStatus?.name?.toLowerCase() || '';
         if (status === 'won') staffMap[name].Won++;
         else if (status === 'lost') staffMap[name].Lost++;
-        else staffMap[name]['In Progress']++;
+        else {
+          staffMap[name]['In Progress']++;
+          staffMap[name]['New Lead']++;
+        }
       });
 
       setStaffWinRate(Object.values(staffMap));
@@ -1043,13 +1193,13 @@ export default function Dashboard() {
       fetchDueFollowups(1);
       fetchTodayTasks();
 
-      // Only fetch staff stats if they have readAll
-      if (permissions.readAll) {
+      // Only fetch staff stats if they have readAll or if they are a calling user
+      if (permissions.readAll || isCallingUser) {
         fetchLeadsBySource();
         fetchStaffPerformance();
       }
     }
-  }, [token, permissions, fromDate, toDate, hasLoadedFromStorage]);
+  }, [token, permissions, fromDate, toDate, user, hasLoadedFromStorage]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -1505,8 +1655,6 @@ export default function Dashboard() {
   //   </div>
   // );
 
-  const isSalesUser = (user?.role?.roleName || user?.roleName || user?.department || '').toLowerCase() === 'sales executive' || (user?.role?.roleName || user?.roleName || user?.department || '').toLowerCase() === 'sales';
-
   const salesExecutiveCard = (
     <div className="flex flex-col rounded-2xl border border-gray-100 p-6 min-w-0 bg-white rounded-3xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow min-h-[450px]">
       <div className="flex items-center justify-between mb-4 shrink-0">
@@ -1946,6 +2094,116 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+  )
+  const leadSourceCard = (
+    <div className="bg-white rounded-3xl border border-gray-200 p-6 shadow-sm hover:shadow-lg transition-shadow min-h-[450px] flex flex-col justify-between">
+      <div className="flex flex-col mb-4 shrink-0">
+        <p className="text-xl font-semibold text-gray-900">Lead Source Overview</p>
+        <p className="text-sm text-gray-500 mt-1">Leads distribution by acquisition source</p>
+      </div>
+
+      <div className="flex-1 mt-4" style={{ minHeight: 280 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={leadsBySource} margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+            <XAxis
+              dataKey="name"
+              tick={{ fontSize: 11, fill: '#6b7280', fontWeight: 600 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              allowDecimals={false}
+              tick={{ fontSize: 11, fill: '#6b7280', dx: -4 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              content={({ active, payload }) => {
+                if (active && payload?.length) {
+                  return (
+                    <div className="bg-white border border-gray-100 p-3 rounded-xl shadow-xl text-xs">
+                      <p className="font-bold text-gray-900">{payload[0].payload.name}</p>
+                      <p className="font-semibold text-blue-600">{payload[0].value} Leads</p>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+            <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={30}>
+              {leadsBySource.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.fill} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+
+  const assignedUserLeadStatusCard = (
+    <div className="bg-white rounded-3xl border border-gray-200 p-6 shadow-sm hover:shadow-lg transition-shadow min-h-[450px] flex flex-col justify-between">
+      <div className="flex flex-col mb-4 shrink-0">
+        <p className="text-xl font-semibold text-gray-900">Lead Assignment Overview</p>
+        <p className="text-sm text-gray-500 mt-1">Lead status performance by assigned executive</p>
+      </div>
+
+      <div className="flex-1 mt-4" style={{ minHeight: 280 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={staffWinRate} margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+            <XAxis
+              dataKey="name"
+              tick={{ fontSize: 11, fill: '#6b7280', fontWeight: 600, dy: 8 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              allowDecimals={false}
+              tick={{ fontSize: 11, fill: '#6b7280', dx: -4 }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <Tooltip
+              content={({ active, payload }) => {
+                if (active && payload?.length) {
+                  return (
+                    <div className="bg-white border border-gray-100 p-3 rounded-xl shadow-xl text-xs space-y-1">
+                      <p className="font-bold text-gray-900 mb-2">{payload[0]?.payload?.name}</p>
+                      {payload.map((p: any) => (
+                        <p key={p.name} style={{ color: p.fill }} className="font-semibold">
+                          {p.name}: <span className="font-bold text-gray-800">{p.value}</span>
+                        </p>
+                      ))}
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+            <Bar dataKey="New Lead" stackId="a" fill="#fb923c" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="Won" stackId="a" fill="#00bc7d" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="Lost" stackId="a" fill="#B22222" radius={[6, 6, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="mt-4 shrink-0 flex items-center justify-center gap-6 py-2 px-4">
+        <div className="flex items-center gap-2">
+          <span className="inline-block w-3 h-3 rounded-full bg-[#fb923c]"></span>
+          <span className="text-[12px] font-semibold text-gray-500">New Lead</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-block w-3 h-3 rounded-full bg-[#00bc7d]"></span>
+          <span className="text-[12px] font-semibold text-gray-500">Won</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-block w-3 h-3 rounded-full bg-[#B22222]"></span>
+          <span className="text-[12px] font-semibold text-gray-500">Lost</span>
+        </div>
+      </div>
+    </div>
   );
 
   return (
@@ -2071,6 +2329,17 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {totalRevenueCard}
               {totalKwCard}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {leadStatusCard}
+              {followUpCard}
+            </div>
+          </div>
+        ) : isCallingUser ? (
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {leadSourceCard}
+              {assignedUserLeadStatusCard}
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {leadStatusCard}
