@@ -772,7 +772,7 @@ export default function LeadsKanbanView({
                                                     }`} />
                                             </div>
                                         ) : group.leads.length === 0 ? (
-                                            <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+                                            <div className="flex h-full flex-col items-center justify-center text-center text-gray-400">
                                                 <p className="text-sm font-medium">No leads yet</p>
                                                 <p className="text-xs mt-1">Drag and drop here</p>
                                             </div>
