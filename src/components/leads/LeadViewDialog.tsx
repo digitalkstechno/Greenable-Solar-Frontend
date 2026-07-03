@@ -482,6 +482,7 @@ import { FormSelect } from '../ui/FormSelect';
 import { generateQuotationPdf } from '@/components/leads/generateQuotationPdf';
 import Calendar from '@/components/ui/Calendar';
 import TimePicker from '@/components/ui/TimePicker';
+import Swal from 'sweetalert2';
 
 interface Props {
   lead: ApiLead | null;
@@ -763,7 +764,18 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
   };
 
   const handleDeleteAttachment = async (attachment: any) => {
-    if (!window.confirm(`Are you sure you want to delete "${attachment.originalName}"?`)) {
+    const result = await Swal.fire({
+        title: 'Delete Attachment?',
+        text: `Are you sure you want to delete "${attachment.originalName}"?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6D7A86',
+    });
+
+    if (!result.isConfirmed) {
       return;
     }
 
@@ -916,40 +928,29 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
             <h2 className="text-xl font-bold text-gray-900">{lead.fullName}</h2>
 
             {/* Info grid */}
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               <InfoCard label="KW Requirement" value={lead.kwRequirement} />
               <InfoCard label="Phone" value={lead.contact} />
               <InfoCard label="Email" value={lead.email} />
               <InfoCard label="Discom Name" value={lead.discomName} />
               <InfoCard label="Lead Reference" value={lead.leadrefrance} />
               <InfoCard label="Project Type" value={lead.projecttype} />
-              {/* <InfoCard label="Last Follow-Up" value={lead.lastFollowUp ? new Date(lead.lastFollowUp).toLocaleString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : '-'} /> */}
-              <InfoCard label="Last Follow-Up" value={lead.lastFollowUp ? new Date(lead.lastFollowUp).toLocaleString('en-IN', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false,
-                timeZone: 'Asia/Kolkata',
-              }) : '-'} />
-              <InfoCard label="Active" value={lead.isActive ? 'Yes' : 'No'} />
             </div>
 
-            {/* Address */}
-            {lead.address && <InfoCard label="Address" value={lead.address} />}
-
-            {/* Location Link */}
-            {lead.locationLink && (
-              <InfoCard
-                label="Location Link"
-                value={
-                  <a href={lead.locationLink} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline break-all">
-                    {lead.locationLink}
-                  </a>
-                }
-              />
-            )}
+            {/* Address & Location Link */}
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {lead.address && <InfoCard label="Address" value={lead.address} />}
+              {lead.locationLink && (
+                <InfoCard
+                  label="Location Link"
+                  value={
+                    <a href={lead.locationLink} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline break-all">
+                      {lead.locationLink}
+                    </a>
+                  }
+                />
+              )}
+            </div>
 
             <div className="rounded-lg border border-gray-200 bg-white p-4">
               <div className="mb-3 text-sm font-bold text-gray-800">Created By</div>

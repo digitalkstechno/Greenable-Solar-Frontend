@@ -341,7 +341,7 @@ export default function LeadsPage() {
                 {(['board', 'lost', 'won'] as KanbanSubView[]).map((v) => {
                   const lostCount = lostPagination?.totalItems ?? lostLeads.length;
                   const wonCount = wonPagination?.totalItems ?? wonLeads.length;
-                  const label = v === 'board' ? 'Kanban View' : v === 'lost' ? 'Lost Leads' : 'Won Leads';
+                  const label = v === 'board' ? 'New Lead' : v === 'lost' ? 'Lost' : 'Won';
                   const count = v === 'lost' ? lostCount : v === 'won' ? wonCount : null;
                   const activeClasses =
                     v === 'lost'
@@ -368,7 +368,13 @@ export default function LeadsPage() {
               </div>
             )}
             
-            <div className="relative w-full sm:w-80">
+          </div>
+
+          {/* Right side: Actions */}
+          <div className="flex flex-wrap items-center gap-2 md:gap-3 xl:ml-auto w-full xl:w-auto justify-end">
+
+            {/* Search Bar */}
+            <div className="relative w-full sm:w-80 mr-auto xl:mr-2">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
@@ -383,10 +389,6 @@ export default function LeadsPage() {
                 </button>
               )}
             </div>
-          </div>
-
-          {/* Right side: Actions */}
-          <div className="flex flex-wrap items-center gap-2 md:gap-3 xl:ml-auto w-full xl:w-auto justify-end">
 
             {/* Advanced Filter Button */}
             <button

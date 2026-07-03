@@ -610,7 +610,7 @@ export default function Header({ toggleSidebar }: HeaderProps) {
 
           {currentUser && (
             <div
-              className="hidden md:flex flex-col cursor-pointer hover:opacity-80 transition-opacity"
+              className="hidden md:flex flex-col items-end cursor-pointer hover:opacity-80 transition-opacity"
               onClick={handleOpenProfileDialog}
             >
               <span className="text-sm font-semibold text-gray-900 leading-tight">
@@ -619,6 +619,13 @@ export default function Header({ toggleSidebar }: HeaderProps) {
               <span className="text-xs text-gray-500 leading-tight">
                 {currentUser.email}
               </span>
+              {(currentUser.role || currentUser.department) && (
+                <span className="text-[10px] text-blue-600 font-medium leading-tight mt-0.5 px-1.5 py-0.5 bg-blue-50 rounded-full">
+                  {currentUser.department?.name || currentUser.department?.roleName || currentUser.department || ''}
+                  {currentUser.department && currentUser.role ? ' • ' : ''}
+                  {currentUser.role?.name || currentUser.role?.roleName || currentUser.role || ''}
+                </span>
+              )}
             </div>
           )}
 

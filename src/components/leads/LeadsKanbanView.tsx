@@ -258,9 +258,17 @@ export default function LeadsKanbanView({
             );
             toast.success(sourceStatusId === newStatusId ? 'Lead reordered' : `Lead moved to ${targetStatus.name}`);
 
-       
+            setColumnCounts(prevCounts => {
+                const newCounts = { ...prevCounts };
+                if (sourceStatusId !== newStatusId) {
+                    if (newCounts[sourceStatusId] !== undefined) newCounts[sourceStatusId] -= 1;
+                    if (newCounts[newStatusId] !== undefined) newCounts[newStatusId] += 1;
+                }
+                return newCounts;
+            });
 
-          
+            onRefresh();
+
         } catch {
             toast.error('Failed to update lead status');
             // Re-fetch with loader to show the revert
@@ -580,10 +588,9 @@ export default function LeadsKanbanView({
     const lostLeadsColumns: Column<ApiLead>[] = [
         { key: 'fullName', label: 'LEAD NAME', render: (v) => (<div><div className="font-semibold text-gray-900">{v}</div><span className="text-xs text-red-500">• Lost</span></div>) },
         { key: 'kwRequirement', label: 'KW REQ', render: (v) => <span className="text-sm">{v || '-'}</span> },
-        { key: 'discomName', label: 'DISCOM', render: (v) => <span className="text-sm">{v || '-'}</span> },
         { key: 'address', label: 'LOCATION', render: (v) => <span className="text-sm">{v || '-'}</span> },
-        { key: 'contact', label: 'CONTACT', render: (v) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5"><FiPhone className="h-3.5 w-3.5 text-gray-400" />{v}</div></div> },
-        { key: 'email', label: 'EMAIL', render: (_, row) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5"><FiMail className="h-3.5 w-3.5 text-gray-400" />{row.email || '-'}</div></div> },
+        { key: 'contact', label: 'CONTACT', render: (v) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5">{v}</div></div> },
+        { key: 'createdAt', label: 'CREATED DATE', render: (_, row) => row.createdAt ? new Date(row.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-' },
         { key: 'lostDate', label: 'LOST DATE', render: (v) => (v ? new Date(v).toLocaleDateString() : 'N/A') },
         { key: 'createdBy', label: 'CREATED BY', render: (v) => v?.fullName || v?.name || '-' },
         { key: 'assignedTo', label: 'ASSIGNED TO', render: (v) => v?.fullName || v?.name || '-' },
@@ -593,10 +600,9 @@ export default function LeadsKanbanView({
     const wonLeadsColumns: Column<ApiLead>[] = [
         { key: 'fullName', label: 'LEAD NAME', render: (v) => <span className="font-semibold text-gray-900">{v}</span> },
         { key: 'kwRequirement', label: 'KW REQ', render: (v) => <span className="text-sm">{v || '-'}</span> },
-        { key: 'discomName', label: 'DISCOM', render: (v) => <span className="text-sm">{v || '-'}</span> },
         { key: 'address', label: 'LOCATION', render: (v) => <span className="text-sm">{v || '-'}</span> },
-        { key: 'contact', label: 'CONTACT', render: (v) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5"><FiPhone className="h-3.5 w-3.5 text-gray-400" />{v}</div></div> },
-        { key: 'email', label: 'EMAIL', render: (_, row) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5"><FiMail className="h-3.5 w-3.5 text-gray-400" />{row.email || '-'}</div></div> },
+        { key: 'contact', label: 'CONTACT', render: (v) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5">{v}</div></div> },
+        { key: 'createdAt', label: 'CREATED DATE', render: (_, row) => row.createdAt ? new Date(row.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-' },
         { 
             key: 'wonDate', 
             label: 'WON DATE', 
@@ -813,19 +819,7 @@ export default function LeadsKanbanView({
             )}
 
             {subView === 'lost' && (
-                <div className="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm w-full">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-full bg-red-200 text-red-700 flex items-center justify-center font-bold text-lg">×</div>
-                            <div>
-                                <h2 className="text-xl font-semibold text-red-800">Lost Leads</h2>
-                                <p className="text-sm text-red-800 opacity-80">Leads that were not converted</p>
-                            </div>
-                        </div>
-                        <span className="rounded-full bg-red-200 px-3 py-1 text-sm font-semibold text-red-800">
-                            {lostPagination?.totalItems ?? lostLeads.length} Total
-                        </span>
-                    </div>
+                <div className="w-full">
                     <DataTable
                         data={lostLeads}
                         columns={visibleLostLeadsColumns}
@@ -847,19 +841,7 @@ export default function LeadsKanbanView({
             )}
 
             {subView === 'won' && (
-                <div className="rounded-2xl border border-green-200 bg-green-50 p-4 shadow-sm w-full">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-full bg-green-200 text-green-700 flex items-center justify-center font-bold text-lg">✓</div>
-                            <div>
-                                <h2 className="text-xl font-semibold text-green-800">Won Leads</h2>
-                                <p className="text-sm text-green-800 opacity-80">Leads that were converted</p>
-                            </div>
-                        </div>
-                        <span className="rounded-full bg-green-200 px-3 py-1 text-sm font-semibold text-green-800">
-                            {wonPagination?.totalItems ?? wonLeads.length} Total
-                        </span>
-                    </div>
+                <div className="w-full">
                     <DataTable
                         data={wonLeads}
                         columns={visibleWonLeadsColumns}
@@ -895,13 +877,13 @@ export default function LeadsKanbanView({
                             }
                             if (permissions?.update) {
                                 actions.push({
-                                    label: 'Add Details',
+                                    label: 'Add',
                                     icon: <Plus className="h-3.5 w-3.5" />,
                                     color: 'emerald',
                                     onClick: (row: ApiLead) => setProjectDetailLead(row),
                                 });
                                 actions.push({
-                                    label: 'Payment',
+                                    label: 'Pay',
                                     icon: <span className="text-xs font-bold">₹</span>,
                                     color: 'emerald',
                                     onClick: (row: ApiLead) => setPaymentLead(row),
@@ -912,27 +894,22 @@ export default function LeadsKanbanView({
                         searchable={false}
                         footer={wonLeads.length > 0 ? (
                             <tr className="sticky bottom-0 z-30 bg-[#F3F4F6] border-t border-gray-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)]">
-
-                                <td className="px-6 py-4 whitespace-nowrap text-right font-extrabold text-gray-900 text-base uppercase tracking-wider bg-[#F3F4F6]">
-                                    Grand Totals
-                                </td>
-
-                                <td className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">
-                                    {pageTotals.totalKwReq?.toLocaleString() || 0} <span className="text-xs text-slate-500 font-normal ml-1">KW</span>
-                                </td>
-
-                                <td colSpan={5} className="bg-[#F3F4F6] border-l border-gray-300"></td>
-
-                                <td className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">
-                                    ₹{pageTotals.totalAmount?.toLocaleString() || 0}
-                                </td>
-
-                                <td className="px-6 py-4 whitespace-nowrap text-left font-bold text-red-600 text-base border-l border-gray-300 bg-[#F3F4F6]">
-                                    ₹{pageTotals.totalPendingAmount?.toLocaleString() || 0}
-                                </td>
-
-                                <td colSpan={2} className="bg-[#F3F4F6] border-l border-gray-300"></td>
-
+                                {visibleWonLeadsColumns.map((col, idx) => {
+                                    if (idx === 0) {
+                                        return <td key={col.key} className="px-6 py-4 whitespace-nowrap text-right font-extrabold text-gray-900 text-base uppercase tracking-wider bg-[#F3F4F6]">Grand Totals</td>;
+                                    }
+                                    if (col.key === 'kwRequirement') {
+                                        return <td key={col.key} className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">{pageTotals.totalKwReq?.toLocaleString() || 0} <span className="text-xs text-slate-500 font-normal ml-1">KW</span></td>;
+                                    }
+                                    if (col.key === 'projectAmount') {
+                                        return <td key={col.key} className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">₹{pageTotals.totalAmount?.toLocaleString() || 0}</td>;
+                                    }
+                                    if (col.key === 'pendingAmount') {
+                                        return <td key={col.key} className="px-6 py-4 whitespace-nowrap text-left font-bold text-red-600 text-base border-l border-gray-300 bg-[#F3F4F6]">₹{pageTotals.totalPendingAmount?.toLocaleString() || 0}</td>;
+                                    }
+                                    return <td key={col.key} className="bg-[#F3F4F6] border-l border-gray-300"></td>;
+                                })}
+                                <td className="bg-[#F3F4F6] border-l border-gray-300"></td>
                             </tr>
                         ) : undefined}
                     />

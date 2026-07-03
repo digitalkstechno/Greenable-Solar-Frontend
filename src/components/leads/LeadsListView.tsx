@@ -171,7 +171,6 @@ export default function LeadsListView({
         <div className="space-y-1 text-sm">
           {/* Phone number */}
           <div className="flex items-center gap-1.5 text-gray-600">
-            <Phone className="h-3 w-3 text-gray-400" />
             <span>{row.contact || '-'}</span>
           </div>
           {/* Action icons */}
@@ -211,33 +210,22 @@ export default function LeadsListView({
         </div>
       ),
     },
-    {
-      key: 'email',
-      label: 'EMAIL',
-      render: (_, row) => (
-        <div className="flex items-center gap-1.5">
-          <Mail className="h-3 w-3 text-gray-400" />
-          {row.email ? (
-            <a
-              href={`mailto:${row.email}`}
-              title="Send Email"
-              onClick={(e) => e.stopPropagation()}
-              className="text-blue-500 hover:text-blue-700 hover:underline transition-colors text-sm"
-            >
-              {row.email}
-            </a>
-          ) : (
-            <span className="text-gray-500">-</span>
-          )}
-        </div>
-      ),
-    },
     { key: 'kwRequirement', label: 'KW REQ' },
-    { key: 'discomName', label: 'DISCOM' },
     { key: 'status', label: 'STATUS' },
     { key: 'staff', label: 'CREATED BY' },
+    {
+      key: 'createdAt',
+      label: 'CREATED DATE',
+      render: (_, row) => {
+        const rawLead: any = row._raw || row;
+        return rawLead.createdAt ? new Date(rawLead.createdAt).toLocaleDateString('en-IN', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        }) : '-';
+      },
+    },
     { key: 'assignedTo', label: 'ASSIGNED TO' },
-    { key: 'lastFollowUp', label: 'LAST FOLLOW-UP' },
     {
       key: 'docs',
       label: 'DOCS',
@@ -432,27 +420,23 @@ export default function LeadsListView({
         })()}
         footer={activeStatusFilter === 'won' && leads.length > 0 ? (
         <tr className="sticky bottom-0 z-30 bg-[#F3F4F6] border-t border-gray-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)]">
-  
-  <td colSpan={3} className="px-6 py-4 whitespace-nowrap text-right font-extrabold text-gray-900 text-base uppercase tracking-wider bg-[#F3F4F6]">
-    Grand Totals
-  </td>
-
-  <td className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">
-    {pageTotals.totalKwReq?.toLocaleString() || 0} <span className="text-xs text-slate-500 font-normal ml-1">KW</span>
-  </td>
-
-  <td colSpan={5} className="bg-[#F3F4F6] border-l border-gray-300"></td>
-
-  <td className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">
-    ₹{pageTotals.totalAmount?.toLocaleString() || 0}
-  </td>
-
-  <td className="px-6 py-4 whitespace-nowrap text-left font-bold text-red-600 text-base border-l border-gray-300 bg-[#F3F4F6]">
-    ₹{pageTotals.totalPendingAmount?.toLocaleString() || 0}
-  </td>
-
-  <td className="bg-[#F3F4F6] border-l border-gray-300"></td>
-</tr>
+          {visibleColumns.map((col, idx) => {
+            if (idx === 0) {
+              return <td key={col.key as string} className="px-6 py-4 whitespace-nowrap text-right font-extrabold text-gray-900 text-base uppercase tracking-wider bg-[#F3F4F6]">Grand Totals</td>;
+            }
+            if (col.key === 'kwRequirement') {
+              return <td key={col.key as string} className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">{pageTotals.totalKwReq?.toLocaleString() || 0} <span className="text-xs text-slate-500 font-normal ml-1">KW</span></td>;
+            }
+            if (col.key === 'projectAmount') {
+              return <td key={col.key as string} className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">₹{pageTotals.totalAmount?.toLocaleString() || 0}</td>;
+            }
+            if (col.key === 'pendingAmount') {
+              return <td key={col.key as string} className="px-6 py-4 whitespace-nowrap text-left font-bold text-red-600 text-base border-l border-gray-300 bg-[#F3F4F6]">₹{pageTotals.totalPendingAmount?.toLocaleString() || 0}</td>;
+            }
+            return <td key={col.key as string} className="bg-[#F3F4F6] border-l border-gray-300"></td>;
+          })}
+          <td className="bg-[#F3F4F6] border-l border-gray-300"></td>
+        </tr>
         ) : undefined}
       />
 

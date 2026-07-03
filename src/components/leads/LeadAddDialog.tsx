@@ -214,7 +214,13 @@ export default function LeadAddDialog({
           setLeadSources(sourceRes.data?.data || []);
           const depts = deptRes.data?.data || [];
           const users = staffRes.data?.data || [];
-          const usersWithDepts = users.map((u: any) => {
+          const salesExecs = users.filter((u: any) => {
+             const r = u.role;
+             if (!r) return false;
+             const roleName = r.roleName || r.name || (typeof r === 'string' ? r : '');
+             return roleName.toLowerCase() === 'sales executive';
+          });
+          const usersWithDepts = salesExecs.map((u: any) => {
             const d = depts.find((dept: any) => dept._id === u.department);
             return { ...u, departmentName: d ? (d.roleName || d.name) : '' };
           });
@@ -231,7 +237,13 @@ export default function LeadAddDialog({
           setLeadSources(sourceRes.data?.data || []);
           const depts = deptRes.data?.data || [];
           const users = staffRes.data?.data || [];
-          const usersWithDepts = users.map((u: any) => {
+          const salesExecs = users.filter((u: any) => {
+             const r = u.role;
+             if (!r) return false;
+             const roleName = r.roleName || r.name || (typeof r === 'string' ? r : '');
+             return roleName.toLowerCase() === 'sales executive';
+          });
+          const usersWithDepts = salesExecs.map((u: any) => {
             const d = depts.find((dept: any) => dept._id === u.department);
             return { ...u, departmentName: d ? (d.roleName || d.name) : '' };
           });
