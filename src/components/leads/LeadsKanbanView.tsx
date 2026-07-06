@@ -602,17 +602,17 @@ export default function LeadsKanbanView({
         { key: 'address', label: 'LOCATION', render: (v) => <span className="text-sm">{v || '-'}</span> },
         { key: 'contact', label: 'CONTACT', render: (v) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5">{v}</div></div> },
         {
-  key: 'createdAt',
-  label: 'CREATED DATE',
-  render: (_, row) =>
-    row.createdAt
-      ? new Date(row.createdAt).toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: '2-digit',
-          year: '2-digit',
-        })
-      : '-',
-},
+            key: 'createdAt',
+            label: 'CREATED DATE',
+            render: (_, row) =>
+                row.createdAt
+                    ? new Date(row.createdAt).toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: '2-digit',
+                    })
+                    : '-',
+        },
         { key: 'lostDate', label: 'LOST DATE', render: (v) => (v ? new Date(v).toLocaleDateString() : 'N/A') },
         { key: 'createdBy', label: 'CREATED BY', render: (v) => v?.fullName || v?.name || '-' },
         { key: 'assignedTo', label: 'ASSIGNED TO', render: (v) => v?.fullName || v?.name || '-' },
@@ -625,18 +625,18 @@ export default function LeadsKanbanView({
         { key: 'address', label: 'LOCATION', render: (v) => <span className="text-sm">{v || '-'}</span> },
         { key: 'contact', label: 'CONTACT', render: (v) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5">{v}</div></div> },
         {
-  key: 'createdAt',
-  label: 'CREATED DATE',
-  render: (_, row) =>
-    row.createdAt
-      ? new Date(row.createdAt).toLocaleDateString('en-GB', {
-          day: '2-digit',
-          month: '2-digit',
-          year: '2-digit',
-        })
-      : '-',
-}
-,
+            key: 'createdAt',
+            label: 'CREATED DATE',
+            render: (_, row) =>
+                row.createdAt
+                    ? new Date(row.createdAt).toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: '2-digit',
+                    })
+                    : '-',
+        }
+        ,
         {
             key: 'wonDate',
             label: 'WON DATE',
@@ -682,7 +682,7 @@ export default function LeadsKanbanView({
                         projectAmt = parseInt(value.replace(/[^\d]/g, ''), 10) || 0;
                     }
                 }
-                const pendingAmt = row.pendingAmount ?? (projectAmt - (row.paymentAmount || 0));
+                const pendingAmt = (projectAmt || 0) - (row.paymentAmount || 0);
                 return pendingAmt ? <span className="text-red-600 font-semibold">₹{Number(pendingAmt).toLocaleString()}</span> : '-';
             }
         },
@@ -706,7 +706,7 @@ export default function LeadsKanbanView({
         }
     ];
 
-        const isSalesExecutive = ['sales executive', 'sales'].includes(currentUser?.role?.name?.toLowerCase()) || ['sales executive', 'sales'].includes(currentUser?.role?.roleName?.toLowerCase());
+    const isSalesExecutive = ['sales executive', 'sales'].includes(currentUser?.role?.name?.toLowerCase()) || ['sales executive', 'sales'].includes(currentUser?.role?.roleName?.toLowerCase());
     const visibleLostLeadsColumns = lostLeadsColumns.filter(c => !(isSalesExecutive && c.key === 'assignedTo'));
     const visibleWonLeadsColumns = wonLeadsColumns.filter(c => !(isSalesExecutive && c.key === 'assignedTo'));
 
@@ -722,7 +722,7 @@ export default function LeadsKanbanView({
                     projectAmt = parseInt(value.replace(/[^\d]/g, ''), 10) || 0;
                 }
             }
-            const pendingAmt = lead.pendingAmount ?? (projectAmt - (lead.paymentAmount || 0));
+            const pendingAmt = (projectAmt || 0) - (lead.paymentAmount || 0);
             return {
                 totalKwReq: acc.totalKwReq + kw,
                 totalAmount: acc.totalAmount + projectAmt,
@@ -879,8 +879,9 @@ export default function LeadsKanbanView({
             )}
 
             {subView === 'lost' && (
-                <div className="w-full">
+                <div className="w-full h-[calc(100vh-240px)] flex flex-col">
                     <DataTable
+                        maxHeight="100%"
                         data={lostLeads}
                         columns={visibleLostLeadsColumns}
                         loading={false}
@@ -901,8 +902,9 @@ export default function LeadsKanbanView({
             )}
 
             {subView === 'won' && (
-                <div className="w-full pb-48">
+                <div className="w-full h-[calc(100vh-240px)] flex flex-col">
                     <DataTable
+                        maxHeight="100%"
                         data={wonLeads}
                         columns={visibleWonLeadsColumns}
                         loading={false}
@@ -952,24 +954,18 @@ export default function LeadsKanbanView({
                             return actions.length > 0 ? actions : undefined;
                         })()}
                         searchable={false}
-                        maxHeight="100vh"
-                    />
-                    
-                    {wonLeads.length > 0 && (
-                        <div 
-                            className="fixed bottom-16 right-0 bg-[#F3F4F6] border-t border-gray-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)] z-30 px-6 py-4"
-                            style={{ 
-                                left: isMobile ? '0' : (isSidebarOpen ? '16rem' : '5rem') 
-                            }}
-                        >
-                            <div className="flex items-center gap-6 overflow-x-auto">
-                                <div className="whitespace-nowrap text-right font-extrabold text-gray-900 text-base uppercase tracking-wider flex-shrink-0">Grand Totals</div>
-                                <div className="whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 pl-6 flex-shrink-0">Total KW: {formatNumber(pageTotals.totalKwReq)} <span className="text-xs text-slate-500 font-normal ml-1">KW</span></div>
-                                <div className="whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 pl-6 flex-shrink-0">Total Amount: ₹{formatNumber(pageTotals.totalAmount)}</div>
-                                <div className="whitespace-nowrap text-left font-bold text-red-600 text-base border-l border-gray-300 pl-6 flex-shrink-0">Total Pending Amount: ₹{formatNumber(pageTotals.totalPendingAmount)}</div>
+                        maxHeight="calc(100vh - 250px)"
+                        footer={wonLeads.length > 0 && (
+                            <div className="px-6 py-4">
+                                <div className="flex items-center gap-6 overflow-x-auto">
+                                    <div className="whitespace-nowrap text-right font-extrabold text-gray-900 text-base uppercase tracking-wider flex-shrink-0">Grand Totals</div>
+                                    <div className="whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 pl-6 flex-shrink-0">Total KW: {formatNumber(pageTotals.totalKwReq)} <span className="text-xs text-slate-500 font-normal ml-1">KW</span></div>
+                                    <div className="whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 pl-6 flex-shrink-0">Total Amount: ₹{formatNumber(pageTotals.totalAmount)}</div>
+                                    <div className="whitespace-nowrap text-left font-bold text-red-600 text-base border-l border-gray-300 pl-6 flex-shrink-0">Total Pending Amount: ₹{formatNumber(pageTotals.totalPendingAmount)}</div>
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    />
                 </div>
             )}
 

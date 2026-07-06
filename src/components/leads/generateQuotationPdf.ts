@@ -266,11 +266,40 @@ export const generateQuotationPdf = (q: any, lead: any) => {
   const amountHeaderLabel = optionsList.map(() => 'AMOUNT (INR)');
 
   const tableHead = [['SR. NO.', 'DESCRIPTION', ...amountHeaderLabel]];
-  const tableBody = (q.rows || []).map((row: any, idx: number) => [
-    letters[idx] || String(idx + 1),
-    row.title,
-    ...optionsList.map((_, optIdx) => row.values?.[optIdx] || '')
-  ]);
+  const formatAmount = (value: any): string => {
+    if (!value || value.toUpperCase() === 'INCLUDED') return value || '';
+    const cleanNum = String(value).replace(/[^\d]/g, '');
+    if (!cleanNum) return value || '';
+    const num = parseInt(cleanNum, 10);
+    return num.toLocaleString('en-IN') + '/-';
+  };
+
+  const tableBody = (q.rows || []).map((row: any, idx: number) => {
+    const isUnitsRow = row.title?.toLowerCase().includes('units generation');
+    return [
+      letters[idx] || String(idx + 1),
+      row.title,
+      ...optionsList.map((_, optIdx) => {
+        let val = row.values?.[optIdx] || '';
+        const hasMark = /<mark\b[^>]*>/i.test(val);
+        val = val.replace(/<[^>]*>?/gm, ''); // strip HTML tags
+        
+        let formattedVal = formatAmount(val);
+        
+        if (isUnitsRow && val) {
+          formattedVal = formattedVal.replace(/\/-$/, '').trim();
+          if (formattedVal && !formattedVal.toUpperCase().match(/\s*UNIT(S)?$/i)) {
+            formattedVal += ' UNIT';
+          }
+        }
+        
+        if (hasMark) {
+          return `<mark>${formattedVal}</mark>`;
+        }
+        return formattedVal;
+      })
+    ];
+  });
 
   // Build dynamic columnStyles: col 0 = SR.NO, col 1 = DESCRIPTION, remaining = one per option
   let descWidth = 340;
@@ -321,6 +350,17 @@ export const generateQuotationPdf = (q: any, lead: any) => {
     columnStyles: dynamicColumnStyles,
     margin: { left: 40, right: 40, bottom: 70 },
     rowPageBreak: 'avoid',
+    didParseCell: (data: any) => {
+      if (typeof data.cell.raw === 'string' && data.cell.raw.includes('<mark>')) {
+        data.cell.text = [data.cell.raw.replace(/<[^>]*>?/gm, '')];
+      }
+    },
+    willDrawCell: (data: any) => {
+      if (typeof data.cell.raw === 'string' && data.cell.raw.includes('<mark>')) {
+        doc.setFillColor(255, 255, 0);
+        doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+      }
+    },
   });
 
   currY = (doc as any).lastAutoTable.finalY + 25;

@@ -63,6 +63,7 @@ interface DataTableProps<T> {
   }[];
   searchValue?: string;
   footer?: React.ReactNode;
+  maxHeight?: string;
 }
 
 export default function DataTable<T extends Record<string, any>>({
@@ -208,7 +209,7 @@ export default function DataTable<T extends Record<string, any>>({
   }, [pagination, currentPage, data.length, totalRecords, onPageChange]);
 
   return (
-    <div className="w-full flex flex-col gap-4">
+    <div className={`w-full flex flex-col gap-4 ${maxHeight ? 'h-full' : ''}`}>
       {/* Header - Premium Design */}
       {(onRefresh || onExport || searchable || addButton) && (
         <div className="w-full">
@@ -281,9 +282,9 @@ export default function DataTable<T extends Record<string, any>>({
       )}
 
       {/* Table - Modern Design */}
-      <div className="rounded-md bg-white border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-2xl">
+      <div className={`rounded-md bg-white border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-2xl flex flex-col ${maxHeight ? 'flex-1' : ''}`}>
         <div 
-          className="border-t border-gray-100 overflow-auto relative"
+          className="border-t border-gray-100 overflow-auto relative flex-1"
           style={{ maxHeight: maxHeight || 'calc(100vh - 340px)' }}
         >
         <table className="w-full divide-y divide-gray-100">
@@ -423,12 +424,13 @@ export default function DataTable<T extends Record<string, any>>({
               ))
             )}
           </tbody>
-          {footer && (
-            <tfoot className="sticky bottom-0 z-20">
-              {footer}
-            </tfoot>
-          )}
         </table>
+        </div>
+        {footer && (
+          <div className="bg-[#F3F4F6] border-t border-gray-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)] mt-auto z-20">
+            {footer}
+          </div>
+        )}
       </div>
 
       {/* Pagination - Modern Design */}
@@ -538,7 +540,6 @@ export default function DataTable<T extends Record<string, any>>({
           </div>
         </div>
       )}
-      </div>
     </div>
   );
 }
