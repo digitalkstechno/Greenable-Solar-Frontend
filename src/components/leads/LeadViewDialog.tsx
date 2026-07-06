@@ -293,7 +293,7 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
   const [reassignOpen, setReassignOpen] = useState(false);
   const [reassignUsers, setReassignUsers] = useState<any[]>([]);
 
-  const isSalesExecutive = !['sales executive', 'sales'].includes(currentUser?.role?.name?.toLowerCase()) && !['sales executive', 'sales'].includes(currentUser?.role?.roleName?.toLowerCase());
+  const isSalesExecutive = ['sales executive', 'sales'].includes(currentUser?.role?.name?.toLowerCase()) || ['sales executive', 'sales'].includes(currentUser?.role?.roleName?.toLowerCase());
 
   const [selectedReassignUser, setSelectedReassignUser] = useState('');
   const [reassigning, setReassigning] = useState(false);
@@ -654,34 +654,32 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
                     <div className="text-xs text-gray-500">{lead.createdBy?.role?.roleName || assignedToDeptName || localAssignedTo?.role?.name || 'Sales Executive'}</div>
                   </div>
                 </div>
-                {!isSalesExecutive && (
-                  <div className="w-56 relative flex items-center gap-2">
-                    {reassigning && <span className="text-xs text-blue-600 font-medium whitespace-nowrap">Saving...</span>}
-                    <div className="relative w-full">
-                      <select
-                        value={selectedReassignUser || localAssignedTo?._id || ''}
-                        onChange={(e) => {
-                          setSelectedReassignUser(e.target.value);
-                          if (e.target.value) {
-                            handleReassign(e.target.value);
-                          }
-                        }}
-                        disabled={reassigning}
-                        className="w-full appearance-none rounded-full border border-orange-200 bg-orange-50 px-4 py-1.5 pr-8 text-sm font-semibold text-orange-700 focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-400 cursor-pointer shadow-sm hover:bg-orange-100 transition-colors disabled:opacity-50"
-                      >
-                        <option value="">Reassign...</option>
-                        {reassignUsers.map(u => (
-                          <option key={u._id} value={u._id}>
-                            {u.fullName} {u.departmentName ? `(${u.departmentName})` : ''}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-orange-700">
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                <div className="w-56 relative flex items-center gap-2">
+                  {reassigning && <span className="text-xs text-blue-600 font-medium whitespace-nowrap">Saving...</span>}
+                  <div className="relative w-full">
+                    <select
+                      value={selectedReassignUser || localAssignedTo?._id || ''}
+                      onChange={(e) => {
+                        setSelectedReassignUser(e.target.value);
+                        if (e.target.value) {
+                          handleReassign(e.target.value);
+                        }
+                      }}
+                      disabled={reassigning || isSalesExecutive}
+                      className="w-full appearance-none rounded-full border border-orange-200 bg-orange-50 px-4 py-1.5 pr-8 text-sm font-semibold text-orange-700 focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-400 cursor-pointer shadow-sm hover:bg-orange-100 transition-colors disabled:opacity-50"
+                    >
+                      <option value="">Reassign...</option>
+                      {reassignUsers.map(u => (
+                        <option key={u._id} value={u._id}>
+                          {u.fullName} {u.departmentName ? `(${u.departmentName})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-orange-700">
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
                       </div>
                     </div>
                   </div>
-                )}
               </div>
             </div>
 

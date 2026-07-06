@@ -66,9 +66,18 @@ export default function SalesExecutiveForm({
           .email('Invalid email format')
           .max(50, 'Email must not exceed 50 characters')
           .matches(
-            /^[^\s@]+@[^\s@]+\.(com|in|ac\.in|org|net|edu|co\.in)$/i,
+            /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/i,
             'Invalid email format'
-          ),
+          )
+          .test('strict-domain', 'Invalid email domain (e.g. misspelled gmail)', (value) => {
+            if (!value) return false;
+            const domain = value.split('@')[1]?.toLowerCase();
+            if (!domain) return false;
+            // Prevent common misspellings of gmail like gmaillllll.com
+            if (domain.startsWith('gmail') && domain !== 'gmail.com') return false;
+            if (domain.startsWith('yaho') && domain !== 'yahoo.com' && domain !== 'yahoo.in') return false;
+            return true;
+          }),
 
         department: Yup.string().required('Department is required'),
         password: isUpdate

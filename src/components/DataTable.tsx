@@ -63,6 +63,7 @@ interface DataTableProps<T> {
   }[];
   searchValue?: string;
   footer?: React.ReactNode;
+  tableFooterRow?: React.ReactNode;
   maxHeight?: string;
 }
 
@@ -94,6 +95,7 @@ export default function DataTable<T extends Record<string, any>>({
   extraActions,
   searchValue: searchValueProp = '',
   footer,
+  tableFooterRow,
   maxHeight,
 }: DataTableProps<T>) {
   const [searchValue, setSearchValue] = useState(searchValueProp);
@@ -284,10 +286,10 @@ export default function DataTable<T extends Record<string, any>>({
       {/* Table - Modern Design */}
       <div className={`rounded-md bg-white border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-2xl flex flex-col ${maxHeight ? 'flex-1' : ''}`}>
         <div 
-          className="border-t border-gray-100 overflow-auto relative flex-1"
+          className={`border-t border-gray-100 overflow-auto relative flex-1`}
           style={{ maxHeight: maxHeight || 'calc(100vh - 340px)' }}
         >
-        <table className="w-full divide-y divide-gray-100">
+        <table className={`w-full divide-y divide-gray-100 ${tableFooterRow ? 'h-full' : ''}`}>
           <thead className="sticky top-0 z-10 bg-gray-100 shadow-[0_1px_0_0_rgba(0,0,0,0.1)]">
             <tr>
               {columns.map((column) => (
@@ -306,7 +308,7 @@ export default function DataTable<T extends Record<string, any>>({
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-gray-50 bg-white">
+          <tbody className={`divide-y divide-gray-50 bg-white ${tableFooterRow ? 'align-top' : ''}`}>
             {loading ? (
               <tr>
                 <td colSpan={columns.length + (actions ? 1 : 0)} className="px-6 py-16 text-center">
@@ -423,7 +425,17 @@ export default function DataTable<T extends Record<string, any>>({
                 </tr>
               ))
             )}
+            {tableFooterRow && data.length > 0 && !loading && (
+              <tr className="h-full border-0 p-0">
+                <td colSpan={columns.length + (actions ? 1 : 0)} className="border-0 p-0"></td>
+              </tr>
+            )}
           </tbody>
+        {tableFooterRow && (
+          <tfoot className="bg-gray-50 sticky bottom-0 z-10">
+            {tableFooterRow}
+          </tfoot>
+        )}
         </table>
         </div>
         {footer && (
