@@ -657,28 +657,25 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
                 <div className="w-56 relative flex items-center gap-2">
                   {reassigning && <span className="text-xs text-blue-600 font-medium whitespace-nowrap">Saving...</span>}
                   <div className="relative w-full">
-                    <select
+                    <FormSelect
                       value={selectedReassignUser || localAssignedTo?._id || ''}
-                      onChange={(e) => {
-                        setSelectedReassignUser(e.target.value);
-                        if (e.target.value) {
-                          handleReassign(e.target.value);
+                      onChange={(val) => {
+                        setSelectedReassignUser(val);
+                        if (val) {
+                          handleReassign(val);
                         }
                       }}
                       disabled={reassigning || isSalesExecutive}
-                      className="w-full appearance-none rounded-full border border-orange-200 bg-orange-50 px-4 py-1.5 pr-8 text-sm font-semibold text-orange-700 focus:border-orange-400 focus:outline-none focus:ring-1 focus:ring-orange-400 cursor-pointer shadow-sm hover:bg-orange-100 transition-colors disabled:opacity-50"
-                    >
-                      <option value="">Reassign...</option>
-                      {reassignUsers.map(u => (
-                        <option key={u._id} value={u._id}>
-                          {u.fullName} {u.departmentName ? `(${u.departmentName})` : ''}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-orange-700">
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
-                      </div>
-                    </div>
+                      options={[
+                        { value: '', label: 'Reassign...' },
+                        ...reassignUsers.map(u => ({
+                          value: u._id,
+                          label: `${u.fullName} ${u.departmentName ? `(${u.departmentName})` : ''}`
+                        }))
+                      ]}
+                      className="!rounded-md !border-gray-200 !bg-white !px-3 !py-1.5 !text-sm !font-semibold !text-gray-900 shadow-sm"
+                    />
+                  </div>
                   </div>
               </div>
             </div>

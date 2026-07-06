@@ -7,6 +7,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { ListCollapse, Plus, Filter, Kanban, Search, Download, Upload, X } from 'lucide-react';
 import axios from 'axios';
 import { baseUrl, getAuthToken } from '@/config';
+import { toast } from 'react-toastify';
 
 // ── Sub-components ──────────────────────────────────────────────────────────
 import LeadsListView from '@/components/leads/LeadsListView';
@@ -26,7 +27,7 @@ import {
 // ── Hooks / Config ───────────────────────────────────────────────────────────
 import { useLeadsData } from '@/components/leads/useLeadsData';
 import FormInput from '@/components/ui/Input';
-import { FormMultiSelect } from '@/components/ui/FormSelect';
+import { FormMultiSelect, FormSelect } from '@/components/ui/FormSelect';
 
 export type ViewMode = 'list' | 'kanban';
 export type KanbanSubView = 'board' | 'lost' | 'won';
@@ -55,7 +56,7 @@ export default function LeadsPage({ isSidebarOpen }: { isSidebarOpen: boolean })
   // ── Search & Filters ─────────────────────────────────────────────────────
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
-  const [sourceFilter, setSourceFilter] = useState<string[]>([]);
+  const [sourceFilter, setSourceFilter] = useState<string>('');
   const [staffFilter, setStaffFilter] = useState<string[]>([]);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -133,7 +134,7 @@ export default function LeadsPage({ isSidebarOpen }: { isSidebarOpen: boolean })
     () => ({
       search: debouncedSearch,
       status: (viewMode === 'kanban' || statusFilter.length === 0) ? '' : statusFilter.join(','),
-      source: sourceFilter.length > 0 ? sourceFilter.join(',') : '',
+      source: sourceFilter,
       staff: staffFilter.length > 0 ? staffFilter.join(',') : '',
       from: fromDate,
       to: toDate,
@@ -257,8 +258,8 @@ export default function LeadsPage({ isSidebarOpen }: { isSidebarOpen: boolean })
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Export failed:', err);
-      alert('Export failed. Please try again.');
+      console.error('Export error:', err);
+      toast.error('Export failed. Please try again.');
     } finally {
       setExporting(false);
     }
@@ -277,20 +278,20 @@ export default function LeadsPage({ isSidebarOpen }: { isSidebarOpen: boolean })
 
   const clearFilters = () => {
     setStatusFilter([]);
-    setSourceFilter([]);
+    setSourceFilter('');
     setStaffFilter([]);
     setFromDate('');
     setToDate('');
     setSearch('');
   };
 
-  const hasActiveFilters = !!(
+  const hasFilters =
+    debouncedSearch ||
     statusFilter.length > 0 ||
-    sourceFilter.length > 0 ||
+    sourceFilter ||
     staffFilter.length > 0 ||
     fromDate ||
-    toDate
-  );
+    toDate;
 
   // ── Access denied ─────────────────────────────────────────────────────────
   if (!canRead && !loading && leadPermissions !== null) {
@@ -408,7 +409,7 @@ export default function LeadsPage({ isSidebarOpen }: { isSidebarOpen: boolean })
             {/* Advanced Filter Button */}
             <button
               onClick={() => setShowFilterDrawer(!showFilterDrawer)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs md:text-sm font-medium transition-all cursor-pointer ${showFilterDrawer || hasActiveFilters
+              className={`flex items-center gap-2 px-3 py-2 rounded-md text-xs md:text-sm font-medium transition-all cursor-pointer ${showFilterDrawer || hasFilters
                 ? 'bg-primary-100 text-primary-600 border border-primary-300 hover:bg-primary-100'
                 : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
                 }`}
@@ -493,12 +494,13 @@ export default function LeadsPage({ isSidebarOpen }: { isSidebarOpen: boolean })
               )}
 
               <div className="space-y-2">
-                <FormMultiSelect
+                <FormSelect
                   name="leadSource"
                   label="Lead Source"
                   value={sourceFilter}
-                  onChange={(e) => setSourceFilter(e)}
-                  options={sources.map((s) => ({ value: s.name, label: s.name }))}
+                  onChange={(val) => setSourceFilter(val)}
+                  options={[...sources.map((s) => ({ value: s._id, label: s.name })), { value: 'Other', label: 'Other' }]}
+                  placeholder="All Sources"
                 />
               </div>
 
@@ -523,7 +525,6 @@ export default function LeadsPage({ isSidebarOpen }: { isSidebarOpen: boolean })
                     const d = String(date.getDate()).padStart(2, '0');
                     setFromDate(`${y}-${m}-${d}`);
                   }}
-                  minDate={new Date(new Date().setHours(0, 0, 0, 0))}
                   placeholder="dd-mm-yyyy"
                   className="min-h-11.5"
                 />
@@ -540,7 +541,7 @@ export default function LeadsPage({ isSidebarOpen }: { isSidebarOpen: boolean })
                     const d = String(date.getDate()).padStart(2, '0');
                     setToDate(`${y}-${m}-${d}`);
                   }}
-                  minDate={new Date(new Date().setHours(0, 0, 0, 0))}
+                  minDate={fromDate ? new Date(fromDate + 'T00:00:00') : undefined}
                   placeholder="dd-mm-yyyy"
                   className="min-h-11.5"
                 />

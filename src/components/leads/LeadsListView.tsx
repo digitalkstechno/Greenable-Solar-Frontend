@@ -28,6 +28,7 @@ interface TableLead extends Record<string, any> {
   name: string;
   contact: string;
   email: string;
+  leadSource?: string;
   kwRequirement?: string;
   discomName?: string;
   address?: string;
@@ -107,6 +108,7 @@ function mapLead(item: any): TableLead {
     name: item.fullName,
     contact: item.contact || item.phone,
     email: item.email,
+    leadSource: item.leadSource?.name || item.leadrefrance?.name || item.leadrefrance || item.source?.name || '-',
     kwRequirement: item.kwRequirement || '-',
     discomName: item.discomName || '-',
     address: item.address,
@@ -222,6 +224,7 @@ export default function LeadsListView({
       ),
     },
     { key: 'kwRequirement', label: 'KW REQ' },
+    { key: 'leadSource', label: 'SOURCE' },
     { key: 'status', label: 'STATUS' },
     { key: 'staff', label: 'CREATED BY' },
     {
