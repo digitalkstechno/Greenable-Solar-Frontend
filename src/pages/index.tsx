@@ -254,15 +254,46 @@ export default function Dashboard() {
           readAll: !!lp.readAll,
           readOwn: !!lp.readOwn,
         });
-
-        // Set greeting based on time
-        const hour = new Date().getHours();
-        if (hour < 12) setGreeting("Good Morning");
-        else if (hour < 17) setGreeting("Good Afternoon");
-        else setGreeting("Good Evening");
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem("crm_user", JSON.stringify({ token, staff }));
+        }
       })
       .catch(console.error);
   }, [token]);
+
+  // Restore cached user and permissions on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const currentToken = getAuthToken();
+      const saved = window.localStorage.getItem("crm_user");
+      if (saved && currentToken) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.token === currentToken) {
+            const staff = parsed.staff || {};
+            setUser(staff);
+            const role = staff.role || {};
+            const rawPerms = Array.isArray(role.permissions) ? role.permissions[0] : role.permissions || {};
+            const lp = rawPerms.lead || {};
+            setPermissions({
+              readAll: !!lp.readAll,
+              readOwn: !!lp.readOwn,
+            });
+          }
+        } catch (err) {
+          console.error("Failed to restore cached user info:", err);
+        }
+      }
+    }
+  }, []);
+
+  // Set greeting based on time
+  useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting("Good Morning");
+    else if (hour < 17) setGreeting("Good Afternoon");
+    else setGreeting("Good Evening");
+  }, []);
 
   // Redirect if no token
   useEffect(() => {
@@ -1344,7 +1375,7 @@ export default function Dashboard() {
         fill: "#F59E0B",
         name: "Follow-ups",
       },
-      {
+      ...(!isCallingUser ? [{
         key: "revenue",
         label: "Total Revenue",
         value: `₹${(summary.totalRevenue || 0).toLocaleString()}`,
@@ -1357,7 +1388,7 @@ export default function Dashboard() {
         fill: "#F59E0B",
         name: "Revenue",
         description: "Total from won leads"
-      }
+      }] : [])
       //  {
       //   key: "tasks",
       //   label: "Tasks",
@@ -1726,7 +1757,7 @@ export default function Dashboard() {
         </div>
 
         {/* Custom Legend */}
-        <div className="flex items-center justify-center gap-6 mt-4 text-[11px] font-semibold text-gray-600">
+        <div className="flex items-center justify-center gap-6 text-[11px] font-semibold text-gray-600">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-[#fb923c]" />
             <span>In Progress</span>
@@ -2083,7 +2114,7 @@ export default function Dashboard() {
       </div>
 
       {/* Legend box at the bottom */}
-      <div className="mt-4 shrink-0 flex items-center justify-center gap-6 py-2 px-4 ">
+      <div className="mt-2 shrink-0 flex items-center justify-center gap-6 py-1 px-4 ">
         <div className="flex items-center gap-2">
           <span className="inline-block w-3 h-3 rounded-full bg-[#10B981]"></span>
           <span className="text-[12px] font-semibold text-gray-500">Completed Follow-ups</span>
@@ -2104,7 +2135,7 @@ export default function Dashboard() {
 
       <div className="flex-1 mt-4" style={{ minHeight: 280 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={leadsBySource} margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
+          <BarChart data={leadsBySource} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
             <XAxis
               dataKey="name"
@@ -2151,7 +2182,15 @@ export default function Dashboard() {
 
       <div className="flex-1 mt-4" style={{ minHeight: 280 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={staffWinRate} margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
+          {/* <BarChart data={staffWinRate} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}> */}
+          <BarChart
+            width={Math.max(staffChartWidth, staffWinRate.length * (staffChartWidth / 8))}
+            height={320}
+            data={staffWinRate}
+            margin={{ top: 10, right: 10, left: -20, bottom: 5 }}
+            barSize={35}
+            barCategoryGap="30%"
+          >
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
             <XAxis
               dataKey="name"
@@ -2173,7 +2212,7 @@ export default function Dashboard() {
                       <p className="font-bold text-gray-900 mb-2">{payload[0]?.payload?.name}</p>
                       {payload.map((p: any) => (
                         <p key={p.name} style={{ color: p.fill }} className="font-semibold">
-                          {p.name}: <span className="font-bold text-gray-800">{p.value}</span>
+                          {p.name}: <span className="font-bold" style={{ color: p.fill }}>{p.value}</span>
                         </p>
                       ))}
                     </div>
@@ -2189,7 +2228,7 @@ export default function Dashboard() {
         </ResponsiveContainer>
       </div>
 
-      <div className="mt-4 shrink-0 flex items-center justify-center gap-6 py-2 px-4">
+      <div className="mt-3 shrink-0 flex items-center justify-center gap-6 px-4">
         <div className="flex items-center gap-2">
           <span className="inline-block w-3 h-3 rounded-full bg-[#fb923c]"></span>
           <span className="text-[12px] font-semibold text-gray-500">New Lead</span>
@@ -2229,12 +2268,14 @@ export default function Dashboard() {
           background: #94a3b8 !important;
         }
       `}</style>
-      <div className="flex-1 p-8 space-y-8 min-w-0">
+      <div className="flex-1 space-y-8 min-w-0">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-3xl border border-gray-200 shadow-sm">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-              {greeting}, {user?.fullName?.split(' ')[0] || 'Admin'}! 👋
+              {greeting && (
+                user ? `${greeting}, ${user?.fullName?.split(' ')[0] || 'Admin'}! 👋` : `${greeting}! 👋`
+              )}
             </h1>
             <p className="text-sm text-gray-500 mt-1">Here's what's happening with your leads today.</p>
           </div>
@@ -2301,7 +2342,7 @@ export default function Dashboard() {
         </div>
 
         {/* Lead Count Stats Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-6">
+        <div className={`grid grid-cols-2 md:grid-cols-3 ${isCallingUser ? 'xl:grid-cols-5' : 'xl:grid-cols-6'} gap-6`}>
           {summaryCards.map((card) => (
             <div
               key={card.key}
