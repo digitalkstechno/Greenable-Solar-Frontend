@@ -140,6 +140,7 @@ export default function LeadAddDialog({
     onSubmit: async (values, { setSubmitting, setStatus, setErrors }) => {
       setStatus(null);
       try {
+        const assignedTo = values.assignedTo || (mode === 'add' ? String(currentUser?._id || '') : '');
         const payload: any = {
           fullName: values.fullName.trim(),
           contact: values.contact.trim(),
@@ -151,7 +152,7 @@ export default function LeadAddDialog({
           address: values.address.trim(),
           locationLink: values.locationLink.trim(),
           leadStatus: values.leadStatus,
-          assignedTo: values.assignedTo,
+          assignedTo: assignedTo || undefined,
           isActive: values.isActive,
         };
 
@@ -285,6 +286,13 @@ export default function LeadAddDialog({
     formik.setStatus(null);
   }, [isOpen, mode, initialData]);
 
+  useEffect(() => {
+    if (!isOpen || mode !== 'add') return;
+    const creatorId = currentUser?._id || currentUser?.id || '';
+    if (creatorId && !formik.values.assignedTo) {
+      formik.setFieldValue('assignedTo', String(creatorId));
+    }
+  }, [isOpen, mode, currentUser, formik]);
 
   const getFieldError = (fieldName: string) => {
     const isTouched = formik.touched[fieldName as keyof typeof formik.touched];

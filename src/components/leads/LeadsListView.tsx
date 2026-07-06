@@ -432,7 +432,7 @@ export default function LeadsListView({
             return actions.length > 0 ? actions : undefined;
           })()}
           maxHeight={activeStatusFilter === 'won' ? 'calc(100vh - 250px)' : undefined}
-          footer={activeStatusFilter === 'won' && leads.length > 0 ? (
+          tableFooterRow={activeStatusFilter === 'won' && leads.length > 0 ? (
             <tr className="sticky bottom-0 z-30 bg-[#F3F4F6] border-t border-gray-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)]">
               {visibleColumns.map((col, idx) => {
                 if (idx === 0) {

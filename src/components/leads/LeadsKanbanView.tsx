@@ -599,7 +599,14 @@ export default function LeadsKanbanView({
     const lostLeadsColumns: Column<ApiLead>[] = [
         { key: 'fullName', label: 'LEAD NAME', render: (v) => (<div><div className="font-semibold text-gray-900">{v}</div><span className="text-xs text-red-500">• Lost</span></div>) },
         { key: 'kwRequirement', label: 'KW REQ', render: (v) => <span className="text-sm">{v || '-'}</span> },
-        { key: 'address', label: 'LOCATION', render: (v) => <span className="text-sm">{v || '-'}</span> },
+        { key: 'address', label: 'LOCATION', render: (v) => (
+            <span
+                className="block max-w-[140px] truncate overflow-hidden text-sm text-gray-700"
+                title={v || ''}
+            >
+                {v || '-'}
+            </span>
+        ) },
         { key: 'contact', label: 'CONTACT', render: (v) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5">{v}</div></div> },
         {
             key: 'createdAt',
@@ -622,7 +629,14 @@ export default function LeadsKanbanView({
     const wonLeadsColumns: Column<ApiLead>[] = [
         { key: 'fullName', label: 'LEAD NAME', render: (v) => <span className="font-semibold text-gray-900">{v}</span> },
         { key: 'kwRequirement', label: 'KW REQ', render: (v) => <span className="text-sm">{v || '-'}</span> },
-        { key: 'address', label: 'LOCATION', render: (v) => <span className="text-sm">{v || '-'}</span> },
+        { key: 'address', label: 'LOCATION', render: (v) => (
+            <span
+                className="block max-w-[140px] truncate overflow-hidden text-sm text-gray-700"
+                title={v || ''}
+            >
+                {v || '-'}
+            </span>
+        ) },
         { key: 'contact', label: 'CONTACT', render: (v) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5">{v}</div></div> },
         {
             key: 'createdAt',
@@ -708,7 +722,7 @@ export default function LeadsKanbanView({
 
     const isSalesExecutive = ['sales executive', 'sales'].includes(currentUser?.role?.name?.toLowerCase()) || ['sales executive', 'sales'].includes(currentUser?.role?.roleName?.toLowerCase());
     const visibleLostLeadsColumns = lostLeadsColumns.filter(c => !(isSalesExecutive && c.key === 'assignedTo'));
-    const visibleWonLeadsColumns = wonLeadsColumns.filter(c => !(isSalesExecutive && c.key === 'assignedTo'));
+    const visibleWonLeadsColumns = wonLeadsColumns;
 
     const pageTotals = React.useMemo(() => {
         return wonLeads.reduce((acc, lead) => {
@@ -955,16 +969,22 @@ export default function LeadsKanbanView({
                         })()}
                         searchable={false}
                         maxHeight="calc(100vh - 250px)"
-                        footer={wonLeads.length > 0 && (
-                            <div className="px-6 py-4">
-                                <div className="flex items-center gap-6 overflow-x-auto">
-                                    <div className="whitespace-nowrap text-right font-extrabold text-gray-900 text-base uppercase tracking-wider flex-shrink-0">Grand Totals</div>
-                                    <div className="whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 pl-6 flex-shrink-0">Total KW: {formatNumber(pageTotals.totalKwReq)} <span className="text-xs text-slate-500 font-normal ml-1">KW</span></div>
-                                    <div className="whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 pl-6 flex-shrink-0">Total Amount: ₹{formatNumber(pageTotals.totalAmount)}</div>
-                                    <div className="whitespace-nowrap text-left font-bold text-red-600 text-base border-l border-gray-300 pl-6 flex-shrink-0">Total Pending Amount: ₹{formatNumber(pageTotals.totalPendingAmount)}</div>
-                                </div>
-                            </div>
-                        )}
+                        tableFooterRow={wonLeads.length > 0 ? (
+                            <tr className="bg-gray-50">
+                                <td className="px-6 py-3 text-left font-semibold uppercase tracking-wider text-gray-600">Grand Totals</td>
+                                <td className="px-6 py-3 text-sm font-semibold text-slate-800">{formatNumber(pageTotals.totalKwReq)}</td>
+                                <td className="px-6 py-3" />
+                                <td className="px-6 py-3" />
+                                <td className="px-6 py-3" />
+                                <td className="px-6 py-3" />
+                                <td className="px-6 py-3" />
+                                <td className="px-6 py-3" />
+                                <td className="px-6 py-3 text-sm font-semibold text-slate-800">₹{formatNumber(pageTotals.totalAmount)}</td>
+                                <td className="px-6 py-3 text-sm font-semibold text-red-600">₹{formatNumber(pageTotals.totalPendingAmount)}</td>
+                                <td className="px-6 py-3" />
+                                <td className="px-6 py-3" />
+                            </tr>
+                        ) : undefined}
                     />
                 </div>
             )}
