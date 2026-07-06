@@ -112,7 +112,7 @@ export default function PaymentModal({ isOpen, lead, onClose, onPaymentAdded }: 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-orange-500 to-amber-500 px-6 py-4 flex items-center justify-between">
+        <div className="bg-primary px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-white">
             {showAddPayment ? 'Add Payment' : 'Payment History'}
           </h2>

@@ -83,14 +83,14 @@ export default function KanbanCard({
                 </div>
                 <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
-                        {lead.createdBy?.avatar ? (
-                            <img src={lead.createdBy.avatar} className="h-5 w-5 rounded-full object-cover flex-shrink-0" alt="" />
+                        {lead.assignedTo?.avatar ? (
+                            <img src={lead.assignedTo.avatar} className="h-5 w-5 rounded-full object-cover flex-shrink-0" alt="" />
                         ) : (
                             <div className="h-5 w-5 rounded-full bg-gradient-to-r from-purple-500 to-purple-300 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
-                                {lead.createdBy?.fullName?.charAt(0).toUpperCase() || lead.createdBy?.name?.charAt(0).toUpperCase() || '?'}
+                                {lead.assignedTo?.fullName?.charAt(0).toUpperCase() || lead.assignedTo?.name?.charAt(0).toUpperCase() || '?'}
                             </div>
                         )}
-                        <span className="truncate text-xs">{lead.createdBy?.fullName || lead.createdBy?.name || 'Unassigned'}</span>
+                        <span className="truncate text-xs">{lead.assignedTo?.fullName || lead.assignedTo?.name || 'Unassigned'}</span>
                     </div>
                     {lead.discomName && (
                         <span className="px-2 py-0.5 text-xs font-semibold rounded-full flex-shrink-0 bg-blue-100 text-blue-700">

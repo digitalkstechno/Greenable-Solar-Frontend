@@ -16,6 +16,18 @@ interface Props {
   onQuotationSaved?: (quotations: any[]) => void;
 }
 
+const formatNumberWithCommas = (num: string) => {
+  if (!num || num.toUpperCase() === 'INCLUDED') return num;
+  const cleanNum = num.replace(/\D/g, '');
+  if (!cleanNum) return num;
+  return parseInt(cleanNum, 10).toLocaleString('en-IN');
+};
+
+const stripCommas = (str: string) => {
+  if (!str || str.toUpperCase() === 'INCLUDED') return str;
+  return str.replace(/,/g, '');
+};
+
 const HighlightableInput = ({ value, onChange, placeholder, className }: { value: string; onChange: (val: string) => void; placeholder?: string; className?: string }) => {
   const ref = useRef<HTMLDivElement>(null);
   const isFocused = useRef(false);
@@ -357,7 +369,20 @@ export default function LeadQuotationDialog({ isOpen, onClose, lead, onRefresh, 
 
   const handleRowValueChange = (rowIndex: number, colIndex: number, val: string) => {
     const newRows = [...rows];
-    const cleanVal = val.toUpperCase() === 'INCLUDED' ? 'INCLUDED' : val.replace(/\D/g, '');
+    const rowTitle = newRows[rowIndex].title.toLowerCase();
+    const isAutoCleaningRow = rowTitle.includes('auto cleaning');
+    
+    let cleanVal;
+    if (val.toUpperCase() === 'INCLUDED') {
+      cleanVal = 'INCLUDED';
+    } else if (isAutoCleaningRow) {
+      // Allow alphanumeric and spaces for auto cleaning row
+      cleanVal = val;
+    } else {
+      // For other rows, keep only digits (and commas for display, but store clean)
+      cleanVal = stripCommas(val).replace(/[^\d]/g, '');
+    }
+    
     newRows[rowIndex].values[colIndex] = cleanVal;
 
     // Auto-calculate "After Subsidy" if relevant rows exist
@@ -365,7 +390,7 @@ export default function LeadQuotationDialog({ isOpen, onClose, lead, onRefresh, 
     const subsidyIdx = newRows.findIndex(r => r.title.toLowerCase().includes('total applicable subsidy'));
     const finalCostIdx = newRows.findIndex(r => r.title.toLowerCase().includes('after subsidy received'));
 
-    if (baseCostIdx !== -1 && subsidyIdx !== -1 && finalCostIdx !== -1) {
+    if (baseCostIdx !== -1 && subsidyIdx !== -1 && finalCostIdx !== -1 && !isAutoCleaningRow) {
       const baseCost = parseInt(newRows[baseCostIdx].values[colIndex] || '0', 10) || 0;
       const subsidy = parseInt(newRows[subsidyIdx].values[colIndex] || '0', 10) || 0;
       
@@ -541,7 +566,7 @@ export default function LeadQuotationDialog({ isOpen, onClose, lead, onRefresh, 
                       <td key={cIdx} className="p-1 border-r border-gray-200">
                         <input
                           type="text"
-                          value={val}
+                          value={formatNumberWithCommas(val)}
                           onChange={(e) => handleRowValueChange(rIdx, cIdx, e.target.value)}
                           className="w-full text-sm px-2 py-1 outline-none border border-transparent focus:border-gray-300 focus:bg-white bg-gray-50 rounded"
                           placeholder="Value"
