@@ -28,28 +28,39 @@ const stripCommas = (str: string) => {
   return str.replace(/,/g, '');
 };
 
-const HighlightableInput = ({ value, onChange, placeholder, className }: { value: string; onChange: (val: string) => void; placeholder?: string; className?: string }) => {
+const HighlightableInput = ({ 
+  value, 
+  onChange, 
+  placeholder, 
+  className,
+  requiredType = 'any'
+}: { 
+  value: string; 
+  onChange: (val: string) => void; 
+  placeholder?: string; 
+  className?: string;
+  requiredType?: 'digit' | 'alphabet' | 'any';
+}) => {
   const ref = useRef<HTMLDivElement>(null);
-  const isFocused = useRef(false);
+  const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
-    if (ref.current && ref.current.innerHTML !== value) {
+    if (ref.current && ref.current.innerHTML !== value && !isFocused) {
       ref.current.innerHTML = value || '';
     }
-  }, [value]);
+  }, [value, isFocused]);
 
-  const handleFocus = () => {
-    isFocused.current = true;
-  };
+  const handleFocus = () => setIsFocused(true);
 
   const handleBlur = () => {
-    isFocused.current = false;
+    setIsFocused(false);
     if (ref.current) onChange(ref.current.innerHTML);
   };
 
   const handleMouseUp = () => {
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed || !ref.current) return;
+
     const range = selection.getRangeAt(0);
     if (!ref.current.contains(range.commonAncestorContainer)) return;
 
@@ -95,6 +106,46 @@ const HighlightableInput = ({ value, onChange, placeholder, className }: { value
     if (ref.current) onChange(ref.current.innerHTML);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (requiredType === 'any') return;
+    
+    // Allow control keys (backspace, delete, arrows, tab, ctrl/cmd + A/C/V/X, shift)
+    if (
+      e.key === 'Backspace' || e.key === 'Delete' || e.key === 'ArrowLeft' || 
+      e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown' || 
+      e.key === 'Tab' || e.metaKey || e.ctrlKey || e.altKey || e.key === 'Shift' || e.key === 'Enter'
+    ) {
+      return;
+    }
+
+    if (requiredType === 'digit') {
+      // Allow only numbers, comma, dot
+      if (!/[\d,\.]/.test(e.key)) {
+        e.preventDefault();
+      }
+    } else if (requiredType === 'alphabet') {
+      // Allow only letters and spaces
+      if (!/[a-zA-Z\s]/.test(e.key)) {
+        e.preventDefault();
+      }
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    if (requiredType === 'any') return;
+    
+    e.preventDefault();
+    let text = e.clipboardData.getData('text/plain');
+    if (requiredType === 'digit') {
+      text = text.replace(/[^\d,\.]/g, '');
+    } else if (requiredType === 'alphabet') {
+      text = text.replace(/[^a-zA-Z\s]/g, '');
+    }
+    
+    document.execCommand('insertText', false, text);
+    if (ref.current) onChange(ref.current.innerHTML);
+  };
+
   const handleInput = () => {
     if (ref.current) onChange(ref.current.innerHTML);
   };
@@ -108,6 +159,8 @@ const HighlightableInput = ({ value, onChange, placeholder, className }: { value
       onBlur={handleBlur}
       onMouseUp={handleMouseUp}
       onInput={handleInput}
+      onKeyDown={handleKeyDown}
+      onPaste={handlePaste}
       data-placeholder={placeholder}
       className={className}
       style={{ minHeight: '1.5em', outline: 'none' }}
@@ -371,18 +424,15 @@ export default function LeadQuotationDialog({ isOpen, onClose, lead, onRefresh, 
     const newRows = [...rows];
     const rowTitle = newRows[rowIndex].title.toLowerCase();
     const isAutoCleaningRow = rowTitle.includes('auto cleaning');
-    
-    let cleanVal;
-    if (val.toUpperCase() === 'INCLUDED') {
-      cleanVal = 'INCLUDED';
-    } else if (isAutoCleaningRow) {
-      // Allow alphanumeric and spaces for auto cleaning row
+    const isUnitsRow = rowTitle.includes('units generation');
+
+    let cleanVal = val;
+    const rawText = val.replace(/<[^>]*>?/gm, '').trim().toUpperCase();
+
+    if (rawText === 'INCLUDED') {
       cleanVal = val;
-    } else {
-      // For other rows, keep only digits (and commas for display, but store clean)
-      cleanVal = stripCommas(val).replace(/[^\d]/g, '');
     }
-    
+
     newRows[rowIndex].values[colIndex] = cleanVal;
 
     // Auto-calculate "After Subsidy" if relevant rows exist
@@ -390,12 +440,19 @@ export default function LeadQuotationDialog({ isOpen, onClose, lead, onRefresh, 
     const subsidyIdx = newRows.findIndex(r => r.title.toLowerCase().includes('total applicable subsidy'));
     const finalCostIdx = newRows.findIndex(r => r.title.toLowerCase().includes('after subsidy received'));
 
-    if (baseCostIdx !== -1 && subsidyIdx !== -1 && finalCostIdx !== -1 && !isAutoCleaningRow) {
-      const baseCost = parseInt(newRows[baseCostIdx].values[colIndex] || '0', 10) || 0;
-      const subsidy = parseInt(newRows[subsidyIdx].values[colIndex] || '0', 10) || 0;
+    if (baseCostIdx !== -1 && subsidyIdx !== -1 && finalCostIdx !== -1 && !isAutoCleaningRow && !isUnitsRow) {
+      const parseAmount = (htmlStr: string) => {
+        if (!htmlStr) return 0;
+        const cleanStr = htmlStr.replace(/<[^>]*>?/gm, '').replace(/[^\d]/g, '');
+        return parseInt(cleanStr, 10) || 0;
+      };
       
-      // If either has a value, calculate it (prevents overriding if user explicitly wants it empty, but auto-updates normally)
-      if (newRows[baseCostIdx].values[colIndex] || newRows[subsidyIdx].values[colIndex]) {
+      const baseCost = parseAmount(newRows[baseCostIdx].values[colIndex]);
+      const subsidy = parseAmount(newRows[subsidyIdx].values[colIndex]);
+
+      // If either has a value, calculate it only if we are editing the base cost or subsidy row
+      // This prevents overriding explicit manual edits or highlights on the final cost row itself
+      if ((rowIndex === baseCostIdx || rowIndex === subsidyIdx) && (newRows[baseCostIdx].values[colIndex] || newRows[subsidyIdx].values[colIndex])) {
         newRows[finalCostIdx].values[colIndex] = String(Math.max(0, baseCost - subsidy));
       }
     }
@@ -551,40 +608,49 @@ export default function LeadQuotationDialog({ isOpen, onClose, lead, onRefresh, 
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row, rIdx) => (
-                  <tr key={rIdx} className="bg-white hover:bg-gray-50 border-b border-gray-200">
-                    <td className="p-1 border-r border-gray-200">
-                      <input
-                        type="text"
-                        value={row.title}
-                        onChange={(e) => handleRowTitleChange(rIdx, e.target.value)}
-                        className="w-full uppercase text-xs font-semibold text-gray-700 px-2 py-1 outline-none border border-transparent focus:border-gray-300 focus:bg-white bg-gray-50 rounded"
-                        placeholder="Row Title"
-                      />
-                    </td>
-                    {row.values.map((val, cIdx) => (
-                      <td key={cIdx} className="p-1 border-r border-gray-200">
+                {rows.map((row, rIdx) => {
+                  return (
+                    <tr key={rIdx} className="bg-white hover:bg-gray-50 border-b border-gray-200">
+                      <td className="p-1 border-r border-gray-200">
                         <input
                           type="text"
-                          value={formatNumberWithCommas(val)}
-                          onChange={(e) => handleRowValueChange(rIdx, cIdx, e.target.value)}
-                          className="w-full text-sm px-2 py-1 outline-none border border-transparent focus:border-gray-300 focus:bg-white bg-gray-50 rounded"
-                          placeholder="Value"
+                          value={row.title}
+                          onChange={(e) => handleRowTitleChange(rIdx, e.target.value)}
+                          className="w-full uppercase text-xs font-semibold text-gray-700 px-2 py-1 outline-none border border-transparent focus:border-gray-300 focus:bg-white bg-gray-50 rounded"
+                          placeholder="Row Title"
                         />
                       </td>
-                    ))}
-                    <td className="p-1 text-center">
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveRow(rIdx)}
-                        className="text-gray-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors"
-                        title="Delete Row"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      {row.values.map((val, cIdx) => {
+                        let displayVal = val;
+                        if (!/<[a-z][\s\S]*>/i.test(val) && val && !isNaN(Number(val.replace(/,/g, '')))) {
+                          displayVal = formatNumberWithCommas(val.replace(/,/g, ''));
+                        }
+                        const isAutoCleaningRow = row.title.toLowerCase().includes('auto cleaning');
+                        return (
+                          <td key={cIdx} className="p-1 border-r border-gray-200">
+                            <HighlightableInput
+                              value={displayVal}
+                              onChange={(newVal) => handleRowValueChange(rIdx, cIdx, newVal)}
+                              requiredType={isAutoCleaningRow ? 'alphabet' : 'digit'}
+                              placeholder="Value"
+                              className="w-full text-sm px-2 py-1 outline-none border border-transparent focus:border-gray-300 focus:bg-white bg-gray-50 rounded"
+                            />
+                          </td>
+                        );
+                      })}
+                      <td className="p-1 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveRow(rIdx)}
+                          className="text-gray-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors"
+                          title="Delete Row"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             <div className="p-2 bg-gray-50">
@@ -609,16 +675,16 @@ export default function LeadQuotationDialog({ isOpen, onClose, lead, onRefresh, 
             </button>
           </div>
           <div className="overflow-x-auto border border-gray-300 rounded">
-            <table className="w-full text-left text-sm border-collapse">
+            <table className="w-full text-left text-sm border-collapse table-fixed">
               <thead>
                 <tr className="bg-secondary text-white">
                   <th className="p-2 border border-secondary uppercase text-xs font-bold w-16">SR. NO.</th>
-                  <th className="p-2 border border-secondary uppercase text-xs font-bold">DESCRIPTION</th>
-                  <th className="p-2 border border-secondary uppercase text-xs font-bold">UOM</th>
-                  <th className="p-2 border border-secondary uppercase text-xs font-bold">QTY.</th>
-                  <th className="p-2 border border-secondary uppercase text-xs font-bold">SIZE</th>
-                  <th className="p-2 border border-secondary uppercase text-xs font-bold">MAKE</th>
-                  <th className="p-2 border border-secondary w-10 text-center"></th>
+                  <th className="p-2 border border-secondary uppercase text-xs font-bold" style={{ width: '40%' }}>DESCRIPTION</th>
+                  <th className="p-2 border border-secondary uppercase text-xs font-bold" style={{ width: '10%' }}>UOM</th>
+                  <th className="p-2 border border-secondary uppercase text-xs font-bold" style={{ width: '10%' }}>QTY.</th>
+                  <th className="p-2 border border-secondary uppercase text-xs font-bold" style={{ width: '15%' }}>SIZE</th>
+                  <th className="p-2 border border-secondary uppercase text-xs font-bold" style={{ width: '15%' }}>MAKE</th>
+                  <th className="p-2 border border-secondary w-10 text-center">DELETE</th>
                 </tr>
               </thead>
               <tbody>
