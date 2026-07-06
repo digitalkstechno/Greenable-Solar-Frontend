@@ -101,6 +101,7 @@ export default function LeadAddDialog({
     shape.email = shape.email.required('Email is required');
     shape.kwRequirement = shape.kwRequirement.required('KW Requirement is required');
     shape.leadStatus = Yup.string().required('Please select a stage');
+    shape.leadrefrance = Yup.string().required('Lead Source is required');
     if (!isSalesExecutive) {
       shape.assignedTo = Yup.string().required('Please assign a user');
     }

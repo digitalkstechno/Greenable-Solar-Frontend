@@ -678,13 +678,13 @@ export default function LeadQuotationDialog({ isOpen, onClose, lead, onRefresh, 
             <table className="w-full text-left text-sm border-collapse table-fixed">
               <thead>
                 <tr className="bg-secondary text-white">
-                  <th className="p-2 border border-secondary uppercase text-xs font-bold w-16">SR. NO.</th>
-                  <th className="p-2 border border-secondary uppercase text-xs font-bold" style={{ width: '40%' }}>DESCRIPTION</th>
-                  <th className="p-2 border border-secondary uppercase text-xs font-bold" style={{ width: '10%' }}>UOM</th>
-                  <th className="p-2 border border-secondary uppercase text-xs font-bold" style={{ width: '10%' }}>QTY.</th>
+                  <th className="p-2 border border-secondary uppercase text-xs font-bold w-12 text-center">SR. NO.</th>
+                  <th className="p-2 border border-secondary uppercase text-xs font-bold" style={{ width: '30%' }}>DESCRIPTION</th>
+                  <th className="p-2 border border-secondary uppercase text-xs font-bold" style={{ width: '12%' }}>UOM</th>
+                  <th className="p-2 border border-secondary uppercase text-xs font-bold" style={{ width: '12%' }}>QTY.</th>
                   <th className="p-2 border border-secondary uppercase text-xs font-bold" style={{ width: '15%' }}>SIZE</th>
                   <th className="p-2 border border-secondary uppercase text-xs font-bold" style={{ width: '15%' }}>MAKE</th>
-                  <th className="p-2 border border-secondary w-10 text-center">DELETE</th>
+                  <th className="p-2 border border-secondary w-12 text-center">DELETE</th>
                 </tr>
               </thead>
               <tbody>
