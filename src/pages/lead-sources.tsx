@@ -104,7 +104,6 @@ export function LeadSourcesContent() {
       setAllData(items);
       setTotalRecords(res.data.pagination?.totalRecords || items.length);
     } catch (err) {
-      console.error('Failed to load lead sources');
       setAllData([]);
       setTotalRecords(0);
     }
@@ -141,7 +140,6 @@ export function LeadSourcesContent() {
       setIsDialogOpen(false);
       formik.resetForm();
     } catch (err: any) {
-      console.error('Failed to save lead source');
       toast.error(err.response?.data?.message || 'Operation failed');
     } finally {
       setIsSubmitting(false);
@@ -166,7 +164,6 @@ export function LeadSourcesContent() {
       setShowDeleteDialog(false);
       setSourceToDelete(null);
     } catch (err: any) {
-      console.error('Failed to delete');
       toast.error(err.response?.data?.message || 'Delete failed');
     }
   };
@@ -212,7 +209,6 @@ export function LeadSourcesContent() {
             });
             setIsDialogOpen(true);
           } catch (err: any) {
-            console.error('Failed to fetch by id');
             toast.error(err.response?.data?.message || 'Failed to fetch data');
           }
         }}
