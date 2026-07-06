@@ -237,6 +237,12 @@ export default function LeadsKanbanView({
 
         const currentDropId = draggingId;
         setDraggingId(null);
+
+        if (targetStatus.name.match(/^lost$/i)) {
+            markLost(currentDropId);
+            return;
+        }
+
         setUpdatingId(currentDropId);
 
         // Optimistic UI update
