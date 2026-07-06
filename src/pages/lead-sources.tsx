@@ -139,9 +139,9 @@ export function LeadSourcesContent() {
       // Close dialog and reset form
       setIsDialogOpen(false);
       formik.resetForm();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to save lead source', err);
-      alert('Operation failed');
+      alert(err.response?.data?.message || 'Operation failed');
     } finally {
       setIsSubmitting(false);
     }
@@ -220,7 +220,7 @@ export function LeadSourcesContent() {
           label: 'Add Source',
           onClick: () => {
             formik.resetForm();
-            formik.setFieldValue('order', allData.length + 1);
+            formik.setFieldValue('order', totalRecords + 1);
             setIsDialogOpen(true);
           },
         }}

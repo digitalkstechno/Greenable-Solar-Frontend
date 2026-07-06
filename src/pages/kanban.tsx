@@ -97,6 +97,7 @@ export default function LeadsPage() {
   const [statuses, setStatuses] = useState<ApiStatus[]>([]);
   const [staffMembers, setStaffMembers] = useState<ApiUser[]>([]);
   const [leadLabels, setLeadLabels] = useState<LeadLabel[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "board" | "lost" | "won">("board");
   const [search, setSearch] = useState("");
@@ -315,17 +316,36 @@ export default function LeadsPage() {
     }
   };
 
+  const fetchCurrentUser = async () => {
+    try {
+      const token = getAuthToken();
+      const res = await axios.get(baseUrl.currentStaff, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setCurrentUser(res.data?.data || null);
+    } catch (error) {
+      console.error("Failed to fetch current user", error);
+      setCurrentUser(null);
+    }
+  };
+
   useEffect(() => {
     fetchLeads();
     fetchSources();
     fetchStatuses();
     fetchStaff();
+    fetchCurrentUser();
     fetchLostLeads();
     fetchWonLeads();
     fetchLeadLabels();
   }, []);
 
   const handleSaveLead = async () => {
+    // Ensure default assignment is set for sales-created leads
+    if (!addForm.staff && currentUser?._id) {
+      setAddForm((prev) => ({ ...prev, staff: String(currentUser._id) }));
+    }
+
     // Dynamic validation based on settings
     const missingFields: string[] = [];
     if (requiredFields.includes('fullName') && !addForm.name) missingFields.push('Full Name');
@@ -355,7 +375,7 @@ export default function LeadsPage() {
         email: addForm.email.trim().toLowerCase(),
         leadSource: addForm.source,
         leadStatus: addForm.status,
-        assignedTo: addForm.staff,
+        assignedTo: addForm.staff || String(currentUser?._id || ''),
         priority: addForm.priority.toLowerCase(),
         lastFollowUp: addForm.lastFollowUp,
         nextFollowupDate: addForm.nextFollowupDate || null,
@@ -609,6 +629,11 @@ export default function LeadsPage() {
       lead.fullName.toLowerCase().includes(wonSearch.toLowerCase()) ||
       lead.companyName?.toLowerCase().includes(wonSearch.toLowerCase())
   );
+
+  const wonTotalAmount = wonLeads.reduce((sum, lead) => {
+    const amount = typeof lead.amount === 'number' ? lead.amount : parseFloat(String(lead.amount || 0));
+    return sum + (isNaN(amount) ? 0 : amount);
+  }, 0);
 
   const statusGroups: StatusGroup[] = statuses.map((status) => ({
     id: status._id,
@@ -940,25 +965,45 @@ export default function LeadsPage() {
                                 <span className="text-xs text-red-600">• Lost</span>
                               </div>
                             </td>
-                            <td className="px-4 py-3">{l.companyName}</td>
-                            <td className="px-4 py-3">{l.address}</td>
+                            <td className="px-4 py-3">
+                              <span className="block max-w-[180px] truncate text-sm text-gray-700" title={l.companyName || ''}>
+                                {l.companyName || '-'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="block max-w-[220px] truncate text-sm text-gray-700" title={l.address || ''}>
+                                {l.address || '-'}
+                              </span>
+                            </td>
                             <td className="px-4 py-3">
                               <div className="flex flex-col gap-1 text-sm text-gray-700">
                                 <div className="flex items-center gap-2">
                                   <FiPhone className="h-4 w-4 text-gray-500" />
-                                  {l.contact}
+                                  <span title={l.contact || ''} className="truncate max-w-[140px] block">
+                                    {l.contact}
+                                  </span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <FiMail className="h-4 w-4 text-gray-500" />
-                                  {l.email}
+                                  <span title={l.email || ''} className="truncate max-w-[140px] block">
+                                    {l.email}
+                                  </span>
                                 </div>
                               </div>
                             </td>
                             <td className="px-4 py-3">
                               {l.lostDate ? new Date(l.lostDate).toLocaleDateString() : 'N/A'}
                             </td>
-                            <td className="px-4 py-3">{l.assignedTo?.fullName || '-'}</td>
-                            <td className="px-4 py-3">{l.lostReason || 'Not specified'}</td>
+                            <td className="px-4 py-3">
+                              <span className="block max-w-[160px] truncate text-sm text-gray-700" title={l.assignedTo?.fullName || ''}>
+                                {l.assignedTo?.fullName || '-'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="block max-w-[160px] truncate text-sm text-gray-700" title={l.lostReason || ''}>
+                                {l.lostReason || 'Not specified'}
+                              </span>
+                            </td>
                             <td className="sticky right-0 z-10 bg-white px-4 py-3 shadow-[-4px_0_10px_-3px_rgba(0,0,0,0.1)]">
                               <div className="flex gap-2">
                                 <button
@@ -1058,30 +1103,63 @@ export default function LeadsPage() {
                         wonLeads.map((l) => (
                           <tr key={l._id} className="border-b">
                             <td className="px-4 py-3">
-                              <span className="font-semibold text-gray-900">
+                              <span
+                                className="block max-w-[140px] truncate text-sm font-semibold text-gray-900"
+                                title={l.fullName}
+                              >
                                 {l.fullName}
                               </span>
                             </td>
-                            <td className="px-4 py-3">{l.companyName}</td>
-                            <td className="px-4 py-3">{l.address}</td>
+                            <td className="px-4 py-3">
+                              <span
+                                className="block max-w-[180px] truncate text-sm text-gray-700"
+                                title={l.companyName || ''}
+                              >
+                                {l.companyName || '-'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span
+                                className="block max-w-[100px] truncate overflow-hidden overflow-hidden text-sm text-red-700"
+                                title={l.address || ''}
+                              >
+                                {l.address || '-'}
+                              </span>
+                            </td>
                             <td className="px-4 py-3">
                               <div className="flex flex-col gap-1 text-sm text-gray-700">
                                 <div className="flex items-center gap-2">
                                   <FiPhone className="h-4 w-4 text-gray-500" />
-                                  {l.contact}
+                                  <span title={l.contact || ''} className="truncate max-w-[140px] block">
+                                    {l.contact}
+                                  </span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <FiMail className="h-4 w-4 text-gray-500" />
-                                  {l.email}
+                                  <span title={l.email || ''} className="truncate max-w-[140px] block">
+                                    {l.email}
+                                  </span>
                                 </div>
                               </div>
                             </td>
                             <td className="px-4 py-3">
                               {l.wonDate ? new Date(l.wonDate).toLocaleDateString() : 'N/A'}
                             </td>
-                            <td className="px-4 py-3">{l.assignedTo?.fullName || '-'}</td>
                             <td className="px-4 py-3">
-                              {l.amount ? `₹${l.amount.toLocaleString()}` : "-"}
+                              <span
+                                className="block max-w-[160px] truncate text-sm text-gray-700"
+                                title={l.assignedTo?.fullName || ''}
+                              >
+                                {l.assignedTo?.fullName || '-'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              <span
+                                className="block max-w-[120px] truncate overflow-hidden text-sm text-gray-700"
+                                title={l.amount ? `₹${l.amount.toLocaleString()}` : ''}
+                              >
+                                {l.amount ? `₹${l.amount.toLocaleString()}` : "-"}
+                              </span>
                             </td>
                             <td className="sticky right-0 z-10 bg-white px-4 py-3 shadow-[-4px_0_10px_-3px_rgba(0,0,0,0.1)]">
                               <div className="flex gap-2">
@@ -1103,6 +1181,15 @@ export default function LeadsPage() {
                         ))
                       )}
                     </tbody>
+                    {wonLeads.length > 0 && (
+                      <tfoot>
+                        <tr className="bg-gray-50 text-sm font-semibold text-gray-900">
+                          <td colSpan={6} className="px-4 py-3 text-right">Total</td>
+                          <td className="px-4 py-3">₹{wonTotalAmount.toLocaleString()}</td>
+                          <td className="px-4 py-3">&nbsp;</td>
+                        </tr>
+                      </tfoot>
+                    )}
                   </table>
                 </div>
               </div>
