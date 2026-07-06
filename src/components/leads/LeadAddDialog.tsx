@@ -437,7 +437,7 @@ export default function LeadAddDialog({
               <FormSelect
                 label="Lead Source"
                 name="leadrefrence"
-                
+
                 value={formik.values.leadrefrance || ''}
                 onChange={(val) => { formik.setFieldValue('leadrefrance', val); }}
                 onBlur={() => formik.setFieldTouched('leadrefrance')}
@@ -516,6 +516,8 @@ export default function LeadAddDialog({
                   { value: 'resident', label: 'Resident' },
                   { value: 'industrial', label: 'Industrial' },
                   { value: 'commercial', label: 'Commercial' },
+                  { value: 'industrial', label: 'Industrial' },
+
                 ]}
                 error={getFieldError('projecttype')}
                 placeholder="Select Project Type"

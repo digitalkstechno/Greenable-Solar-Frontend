@@ -278,7 +278,7 @@ export default function LeadsListView({
       label: 'Pending Amount',
       render: (_v, row) => {
         const projectAmt = row.projectAmount ?? row._raw?.projectDetail?.projectAmount ?? 0;
-        const pendingAmt = row.pendingAmount ?? (projectAmt - (row._raw?.paymentAmount || 0));
+        const pendingAmt = (projectAmt || 0) - (row._raw?.paymentAmount || 0);
         return pendingAmt ? <span className="text-red-600 font-semibold">₹{Number(pendingAmt).toLocaleString()}</span> : '-';
       },
     });
@@ -365,7 +365,7 @@ export default function LeadsListView({
     return leads.reduce((acc, row) => {
       const kw = parseFloat(row.kwRequirement || '0') || 0;
       const projectAmt = row.projectAmount ?? row._raw?.projectDetail?.projectAmount ?? 0;
-      const pendingAmt = row.pendingAmount ?? (projectAmt - (row._raw?.paymentAmount || 0));
+      const pendingAmt = (projectAmt || 0) - (row._raw?.paymentAmount || 0);
       return {
         totalKwReq: acc.totalKwReq + kw,
         totalAmount: acc.totalAmount + projectAmt,
@@ -375,81 +375,85 @@ export default function LeadsListView({
   }, [leads]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 h-[calc(100vh-220px)] flex flex-col">
 
       {/* Data table */}
-      <DataTable
-        data={leads}
-        columns={visibleColumns}
-        loading={loading}
-        pagination
-        searchable={false}
-        searchValue={searchValue || ''}
-        onSearch={onSearch}
-        currentPage={pagination?.currentPage || 1}
-        totalPages={pagination?.totalPages || 1}
-        totalRecords={pagination?.totalItems || 0}
-        pageSize={pagination?.rowsPerPage || 10}
-        onPageChange={handlePageChange}
-        onPageSizeChange={handlePageSizeChange}
-        actions
-        onView={handleView}
-        onEdit={permissions?.update ? handleEdit : undefined}
-        onDelete={permissions?.delete ? (row) => { setDeleteTarget(row); setShowDelete(true); } : undefined}
-        extraActions={(() => {
-          const actions: {
-            label: string;
-            onClick: (row: TableLead) => void;
-            icon?: React.ReactNode;
-            color?: 'blue' | 'green' | 'red' | 'orange' | 'purple' | 'emerald';
-            show?: (row: TableLead) => boolean;
-          }[] = [];
-          const roleName = currentUser?.role?.roleName || '';
-          if (permissions?.update) {
-            actions.push({
-              label: 'Add ',
-              icon: <Plus className="h-3.5 w-3.5" />,
-              color: 'emerald' as const,
-              show: (row: TableLead) => row.status?.toLowerCase() === 'won',
-              onClick: (row: TableLead) => {
-                const rawLead: ApiLead = row._raw || row;
-                setProjectDetailLead(rawLead);
-              },
-            });
-            actions.push({
-              label: 'Pay',
-              icon: <span className="text-xs font-bold">₹</span>,
-              color: 'emerald' as const,
-              show: (row: TableLead) => row.status?.toLowerCase() === 'won',
-              onClick: (row: TableLead) => {
-                const rawLead: ApiLead = row._raw || row;
-                setPaymentLead(rawLead);
-              },
-            });
-          }
-          return actions.length > 0 ? actions : undefined;
-        })()}
-        footer={activeStatusFilter === 'won' && leads.length > 0 ? (
-          <tr className="sticky bottom-0 z-30 bg-[#F3F4F6] border-t border-gray-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)]">
-            {visibleColumns.map((col, idx) => {
-              if (idx === 0) {
-                return <td key={col.key as string} className="px-6 py-4 whitespace-nowrap text-right font-extrabold text-gray-900 text-base uppercase tracking-wider bg-[#F3F4F6]">Grand Totals</td>;
-              }
-              if (col.key === 'kwRequirement') {
-                return <td key={col.key as string} className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">{pageTotals.totalKwReq?.toLocaleString() || 0} <span className="text-xs text-slate-500 font-normal ml-1">KW</span></td>;
-              }
-              if (col.key === 'projectAmount') {
-                return <td key={col.key as string} className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">₹{pageTotals.totalAmount?.toLocaleString() || 0}</td>;
-              }
-              if (col.key === 'pendingAmount') {
-                return <td key={col.key as string} className="px-6 py-4 whitespace-nowrap text-left font-bold text-red-600 text-base border-l border-gray-300 bg-[#F3F4F6]">₹{pageTotals.totalPendingAmount?.toLocaleString() || 0}</td>;
-              }
-              return <td key={col.key as string} className="bg-[#F3F4F6] border-l border-gray-300"></td>;
-            })}
-            <td className="bg-[#F3F4F6] border-l border-gray-300"></td>
-          </tr>
-        ) : undefined}
-      />
+      <div className="h-full flex flex-col">
+        <DataTable
+          maxHeight="100%"
+          data={leads}
+          columns={visibleColumns}
+          loading={loading}
+          pagination
+          searchable={false}
+          searchValue={searchValue || ''}
+          onSearch={onSearch}
+          currentPage={pagination?.currentPage || 1}
+          totalPages={pagination?.totalPages || 1}
+          totalRecords={pagination?.totalItems || 0}
+          pageSize={pagination?.rowsPerPage || 10}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          actions
+          onView={handleView}
+          onEdit={permissions?.update ? handleEdit : undefined}
+          onDelete={permissions?.delete ? (row) => { setDeleteTarget(row); setShowDelete(true); } : undefined}
+          extraActions={(() => {
+            const actions: {
+              label: string;
+              onClick: (row: TableLead) => void;
+              icon?: React.ReactNode;
+              color?: 'blue' | 'green' | 'red' | 'orange' | 'purple' | 'emerald';
+              show?: (row: TableLead) => boolean;
+            }[] = [];
+            const roleName = currentUser?.role?.roleName || '';
+            if (permissions?.update) {
+              actions.push({
+                label: 'Add ',
+                icon: <Plus className="h-3.5 w-3.5" />,
+                color: 'emerald' as const,
+                show: (row: TableLead) => row.status?.toLowerCase() === 'won',
+                onClick: (row: TableLead) => {
+                  const rawLead: ApiLead = row._raw || row;
+                  setProjectDetailLead(rawLead);
+                },
+              });
+              actions.push({
+                label: 'Pay',
+                icon: <span className="text-xs font-bold">₹</span>,
+                color: 'emerald' as const,
+                show: (row: TableLead) => row.status?.toLowerCase() === 'won',
+                onClick: (row: TableLead) => {
+                  const rawLead: ApiLead = row._raw || row;
+                  setPaymentLead(rawLead);
+                },
+              });
+            }
+            return actions.length > 0 ? actions : undefined;
+          })()}
+          maxHeight={activeStatusFilter === 'won' ? 'calc(100vh - 250px)' : undefined}
+          footer={activeStatusFilter === 'won' && leads.length > 0 ? (
+            <tr className="sticky bottom-0 z-30 bg-[#F3F4F6] border-t border-gray-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)]">
+              {visibleColumns.map((col, idx) => {
+                if (idx === 0) {
+                  return <td key={col.key as string} className="px-6 py-4 whitespace-nowrap text-right font-extrabold text-gray-900 text-base uppercase tracking-wider bg-[#F3F4F6]">Grand Totals</td>;
+                }
+                if (col.key === 'kwRequirement') {
+                  return <td key={col.key as string} className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">{pageTotals.totalKwReq?.toLocaleString() || 0} <span className="text-xs text-slate-500 font-normal ml-1">KW</span></td>;
+                }
+                if (col.key === 'projectAmount') {
+                  return <td key={col.key as string} className="px-6 py-4 whitespace-nowrap text-left font-bold text-slate-800 text-sm border-l border-gray-300 bg-[#F3F4F6]">₹{pageTotals.totalAmount?.toLocaleString() || 0}</td>;
+                }
+                if (col.key === 'pendingAmount') {
+                  return <td key={col.key as string} className="px-6 py-4 whitespace-nowrap text-left font-bold text-red-600 text-base border-l border-gray-300 bg-[#F3F4F6]">₹{pageTotals.totalPendingAmount?.toLocaleString() || 0}</td>;
+                }
+                return <td key={col.key as string} className="bg-[#F3F4F6] border-l border-gray-300"></td>;
+              })}
+              <td className="bg-[#F3F4F6] border-l border-gray-300"></td>
+            </tr>
+          ) : undefined}
+        />
+      </div>
 
       {/* Delete dialog */}
       <DeleteDialog
