@@ -56,7 +56,7 @@ export default function LeadsPage({ isSidebarOpen }: { isSidebarOpen: boolean })
   // ── Search & Filters ─────────────────────────────────────────────────────
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
-  const [sourceFilter, setSourceFilter] = useState<string>('');
+  const [sourceFilter, setSourceFilter] = useState<string[]>([]);
   const [staffFilter, setStaffFilter] = useState<string[]>([]);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -134,7 +134,7 @@ export default function LeadsPage({ isSidebarOpen }: { isSidebarOpen: boolean })
     () => ({
       search: debouncedSearch,
       status: (viewMode === 'kanban' || statusFilter.length === 0) ? '' : statusFilter.join(','),
-      source: sourceFilter,
+      source: sourceFilter.length > 0 ? sourceFilter.join(',') : '',
       staff: staffFilter.length > 0 ? staffFilter.join(',') : '',
       from: fromDate,
       to: toDate,
@@ -278,7 +278,7 @@ export default function LeadsPage({ isSidebarOpen }: { isSidebarOpen: boolean })
 
   const clearFilters = () => {
     setStatusFilter([]);
-    setSourceFilter('');
+    setSourceFilter([]);
     setStaffFilter([]);
     setFromDate('');
     setToDate('');
@@ -288,7 +288,7 @@ export default function LeadsPage({ isSidebarOpen }: { isSidebarOpen: boolean })
   const hasFilters =
     debouncedSearch ||
     statusFilter.length > 0 ||
-    sourceFilter ||
+    sourceFilter.length > 0 ||
     staffFilter.length > 0 ||
     fromDate ||
     toDate;
@@ -494,13 +494,13 @@ export default function LeadsPage({ isSidebarOpen }: { isSidebarOpen: boolean })
               )}
 
               <div className="space-y-2">
-                <FormSelect
+                <FormMultiSelect
                   name="leadSource"
                   label="Lead Source"
                   value={sourceFilter}
-                  onChange={(val) => setSourceFilter(val)}
+                  onChange={(e) => setSourceFilter(e)}
                   options={[...sources.map((s) => ({ value: s._id, label: s.name })), { value: 'Other', label: 'Other' }]}
-                  placeholder="All Sources"
+                  placeholder="Select Lead Source"
                 />
               </div>
 
@@ -526,7 +526,7 @@ export default function LeadsPage({ isSidebarOpen }: { isSidebarOpen: boolean })
                     setFromDate(`${y}-${m}-${d}`);
                   }}
                   placeholder="dd-mm-yyyy"
-                  className="min-h-11.5"
+                  className="!h-[46px] !rounded-xl !py-2.5 shadow-sm hover:shadow-md hover:!border-gray-400 transition-all duration-300"
                 />
               </div>
 
@@ -543,7 +543,7 @@ export default function LeadsPage({ isSidebarOpen }: { isSidebarOpen: boolean })
                   }}
                   minDate={fromDate ? new Date(fromDate + 'T00:00:00') : undefined}
                   placeholder="dd-mm-yyyy"
-                  className="min-h-11.5"
+                  className="!h-[46px] !rounded-xl !py-2.5 shadow-sm hover:shadow-md hover:!border-gray-400 transition-all duration-300"
                 />
               </div>
 

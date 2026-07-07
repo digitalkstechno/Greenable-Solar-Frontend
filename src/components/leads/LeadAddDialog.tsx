@@ -446,7 +446,7 @@ export default function LeadAddDialog({
               <FormSelect
                 label="Lead Source"
                 name="leadrefrence"
-
+                required={true}
                 value={formik.values.leadrefrance || ''}
                 onChange={(val) => { formik.setFieldValue('leadrefrance', val); }}
                 onBlur={() => formik.setFieldTouched('leadrefrance')}
