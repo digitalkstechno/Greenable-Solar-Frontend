@@ -1850,7 +1850,7 @@ export default function Dashboard() {
           <h3 className="text-xl font-semibold text-gray-900">Lead Status Overview</h3>
           <p className="text-sm text-gray-500 mt-1">Performance by status categories</p>
         </div>
-        {!isSalesUser && (
+        {!(isSalesUser || isCallingUser) && (
           <div className="flex flex-wrap items-center gap-1 bg-gray-50/50 p-1 rounded-2xl border border-gray-100">
             <button
               onClick={() => setStatusView('pie')}
@@ -1875,7 +1875,7 @@ export default function Dashboard() {
       </div>
 
       <div className="flex-1 flex flex-col justify-center">
-        {statusView === 'pie' || isSalesUser ? (
+        {statusView === 'pie' || isSalesUser || isCallingUser ? (
           <div className="flex flex-col xl:flex-row items-center justify-center gap-6 xl:gap-8">
             <div className="relative h-[260px] w-[350px] shrink-0" style={{ perspective: '800px' }}>
               {/* 2D Donut Chart */}
