@@ -49,7 +49,8 @@ export default function LeadAddDialog({
 
   const [requiredFields, setRequiredFields] = useState<string[]>([]);
 
-  const isSalesExecutive = ['sales executive', 'sales'].includes(currentUser?.role?.name?.toLowerCase()) || ['sales executive', 'sales'].includes(currentUser?.role?.roleName?.toLowerCase());
+  const roleStr = `${currentUser?.role?.roleName || ''} ${currentUser?.role?.name || ''} ${currentUser?.roleName || ''} ${typeof currentUser?.department === 'string' ? currentUser.department : ''} ${currentUser?.department?.roleName || ''} ${currentUser?.department?.name || ''} ${currentUser?.departmentName || ''}`.toLowerCase();
+  const isSalesExecutive = roleStr.includes('sales');
 
   useEffect(() => {
     const loadRequiredFields = () => {
@@ -221,9 +222,10 @@ export default function LeadAddDialog({
           const users = staffRes.data?.data || [];
           const salesExecs = users.filter((u: any) => {
             const r = u.role;
-            if (!r) return false;
-            const roleName = r.roleName || r.name || (typeof r === 'string' ? r : '');
-            return roleName.toLowerCase() === 'sales executive';
+            const roleName = r ? (r.roleName || r.name || (typeof r === 'string' ? r : '')) : '';
+            const d = depts.find((dept: any) => dept._id === u.department);
+            const deptName = d ? (d.roleName || d.name || '') : '';
+            return roleName.toLowerCase().includes('sales') || deptName.toLowerCase().includes('sales');
           });
           const usersWithDepts = salesExecs.map((u: any) => {
             const d = depts.find((dept: any) => dept._id === u.department);
@@ -244,9 +246,10 @@ export default function LeadAddDialog({
           const users = staffRes.data?.data || [];
           const salesExecs = users.filter((u: any) => {
             const r = u.role;
-            if (!r) return false;
-            const roleName = r.roleName || r.name || (typeof r === 'string' ? r : '');
-            return roleName.toLowerCase() === 'sales executive';
+            const roleName = r ? (r.roleName || r.name || (typeof r === 'string' ? r : '')) : '';
+            const d = depts.find((dept: any) => dept._id === u.department);
+            const deptName = d ? (d.roleName || d.name || '') : '';
+            return roleName.toLowerCase().includes('sales') || deptName.toLowerCase().includes('sales');
           });
           const usersWithDepts = salesExecs.map((u: any) => {
             const d = depts.find((dept: any) => dept._id === u.department);

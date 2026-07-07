@@ -174,7 +174,8 @@ export default function Dashboard() {
   const [permissions, setPermissions] = useState<{ readAll: boolean; readOwn: boolean }>({ readAll: false, readOwn: false });
   const [user, setUser] = useState<any>(null);
   const [greeting, setGreeting] = useState("");
-  const isSalesUser = (user?.role?.roleName || user?.roleName || user?.department || '').toLowerCase() === 'sales executive' || (user?.role?.roleName || user?.roleName || user?.department || '').toLowerCase() === 'sales';
+  const roleStr = `${user?.role?.roleName || ''} ${user?.role?.name || ''} ${user?.roleName || ''} ${typeof user?.department === 'string' ? user.department : ''} ${user?.department?.roleName || ''} ${user?.department?.name || ''} ${user?.departmentName || ''}`.toLowerCase();
+  const isSalesUser = roleStr.includes('sales');
   const isCallingUser = (user?.role?.roleName || user?.roleName || user?.department || '').toLowerCase() === 'calling';
   const getInitialDates = (preset: 'today' | 'this-month' | 'prev-month' | 'this-year' | 'custom') => {
     const now = new Date();
@@ -1145,11 +1146,11 @@ export default function Dashboard() {
         userDeptMap[String(u._id)] = deptName;
       });
 
-      // Prepopulate staffMap with users in "Sales Executive" department
+      // Prepopulate staffMap with users in a "Sales" department
       const staffMap: Record<string, { name: string; Won: number; Lost: number; 'In Progress': number; 'New Lead': number }> = {};
       users.forEach((u: any) => {
         const deptName = userDeptMap[String(u._id)] || '';
-        if (deptName.toLowerCase() === 'sales executive') {
+        if (deptName.toLowerCase().includes('sales')) {
           const name = u.fullName || 'Unknown';
           staffMap[name] = { name, Won: 0, Lost: 0, 'In Progress': 0, 'New Lead': 0 };
         }
@@ -1160,9 +1161,9 @@ export default function Dashboard() {
         const userId = lead.assignedTo?._id || lead.assignedTo;
         if (!userId) return false;
 
-        // Only count leads assigned to a Sales Executive
+        // Only count leads assigned to a Sales user
         const deptName = userDeptMap[String(userId)] || '';
-        if (deptName.toLowerCase() !== 'sales executive') return false;
+        if (!deptName.toLowerCase().includes('sales')) return false;
 
         // Date range filter
         const leadDate = new Date(lead.createdAt);

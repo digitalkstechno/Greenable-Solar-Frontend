@@ -264,7 +264,8 @@ export default function LeadsListView({
     },
   ];
 
-  const isSalesExecutive = ['sales executive', 'sales'].includes(currentUser?.role?.name?.toLowerCase()) || ['sales executive', 'sales'].includes(currentUser?.role?.roleName?.toLowerCase());
+  const roleStr = `${currentUser?.role?.roleName || ''} ${currentUser?.role?.name || ''} ${currentUser?.roleName || ''} ${typeof currentUser?.department === 'string' ? currentUser.department : ''} ${currentUser?.department?.roleName || ''} ${currentUser?.department?.name || ''} ${currentUser?.departmentName || ''}`.toLowerCase();
+  const isSalesExecutive = roleStr.includes('sales');
   const visibleColumns = columns.filter(c => !(isSalesExecutive && c.key === 'assignedTo'));
 
   if (activeStatusFilter === 'won') {
