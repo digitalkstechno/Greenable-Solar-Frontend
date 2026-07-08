@@ -572,8 +572,7 @@ export default function LeadQuotationDialog({ isOpen, onClose, lead, onRefresh, 
 
         <div>
           <div className="flex items-center gap-4 mb-2">
-            <span className="text-sm font-medium text-gray-700">Options (Columns):</span>
-            <span className="text-xs text-gray-400">Max 5 options</span>
+            <span className="text-sm font-medium text-gray-700">Options (Columns)</span>
           </div>
 
           <div className="overflow-x-auto border border-gray-300 rounded">
