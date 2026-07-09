@@ -644,7 +644,10 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
             </div>
 
             <div className="rounded-lg border border-gray-200 bg-white p-4">
-              <div className="mb-3 text-sm font-bold text-gray-800">Created By</div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-sm font-bold text-gray-800">Created By</div>
+                <div className="text-sm font-bold text-gray-800 w-56 text-left">Reassign</div>
+              </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-lg">
@@ -652,11 +655,10 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
                   </div>
                   <div>
                     <div className="font-semibold text-gray-900">{lead.createdBy?.fullName || lead.createdBy?.name || localAssignedTo?.fullName || 'Unassigned'}</div>
-                    <div className="text-xs text-gray-500">{lead.createdBy?.role?.roleName || assignedToDeptName || localAssignedTo?.role?.name || 'Sales Executive'}</div>
                   </div>
                 </div>
                 <div className="w-56 relative flex items-center gap-2">
-                  {reassigning && <span className="text-xs text-blue-600 font-medium whitespace-nowrap">Saving...</span>}
+                  {reassigning && <span className="text-xs text-blue-600 font-medium whitespace-nowrap absolute right-full mr-2 top-1/2 -translate-y-1/2">Saving...</span>}
                   <div className="relative w-full">
                     <FormSelect
                       value={selectedReassignUser || localAssignedTo?._id || ''}
@@ -677,7 +679,7 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
                       className="!rounded-md !border-gray-200 !bg-white !px-3 !py-1.5 !text-sm !font-semibold !text-gray-900 shadow-sm"
                     />
                   </div>
-                  </div>
+                </div>
               </div>
             </div>
 

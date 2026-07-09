@@ -341,8 +341,11 @@ export default function LeadsPage() {
   }, []);
 
   const handleSaveLead = async () => {
+    const roleStr = `${currentUser?.role?.roleName || ''} ${currentUser?.role?.name || ''} ${currentUser?.roleName || ''} ${typeof currentUser?.department === 'string' ? currentUser.department : ''} ${currentUser?.department?.roleName || ''} ${currentUser?.department?.name || ''} ${currentUser?.departmentName || ''}`.toLowerCase();
+    const isSalesExecutive = roleStr.includes('sales');
+
     // Ensure default assignment is set for sales-created leads
-    if (!addForm.staff && currentUser?._id) {
+    if (!addForm.staff && currentUser?._id && isSalesExecutive) {
       setAddForm((prev) => ({ ...prev, staff: String(currentUser._id) }));
     }
 
@@ -375,7 +378,7 @@ export default function LeadsPage() {
         email: addForm.email.trim().toLowerCase(),
         leadSource: addForm.source,
         leadStatus: addForm.status,
-        assignedTo: addForm.staff || String(currentUser?._id || ''),
+        assignedTo: addForm.staff || (isSalesExecutive ? String(currentUser?._id || '') : undefined),
         priority: addForm.priority.toLowerCase(),
         lastFollowUp: addForm.lastFollowUp,
         nextFollowupDate: addForm.nextFollowupDate || null,

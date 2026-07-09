@@ -142,7 +142,7 @@ export default function LeadAddDialog({
     onSubmit: async (values, { setSubmitting, setStatus, setErrors }) => {
       setStatus(null);
       try {
-        const assignedTo = values.assignedTo || (mode === 'add' ? String(currentUser?._id || '') : '');
+        const assignedTo = values.assignedTo || (isSalesExecutive && mode === 'add' ? String(currentUser?._id || '') : '');
         const payload: any = {
           fullName: values.fullName.trim(),
           contact: values.contact.trim(),
@@ -292,11 +292,13 @@ export default function LeadAddDialog({
 
   useEffect(() => {
     if (!isOpen || mode !== 'add') return;
-    const creatorId = currentUser?._id || currentUser?.id || '';
-    if (creatorId && !formik.values.assignedTo) {
-      formik.setFieldValue('assignedTo', String(creatorId));
+    if (isSalesExecutive) {
+      const creatorId = currentUser?._id || currentUser?.id || '';
+      if (creatorId && !formik.values.assignedTo) {
+        formik.setFieldValue('assignedTo', String(creatorId));
+      }
     }
-  }, [isOpen, mode, currentUser, formik]);
+  }, [isOpen, mode, currentUser, formik, isSalesExecutive]);
 
   const getFieldError = (fieldName: string) => {
     const isTouched = formik.touched[fieldName as keyof typeof formik.touched];
@@ -537,7 +539,7 @@ export default function LeadAddDialog({
             </div>
 
             {/* Active */}
-            <label className="flex items-center gap-2 cursor-pointer">
+            {/* <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
                 name="isActive"
@@ -546,7 +548,7 @@ export default function LeadAddDialog({
                 className="h-4 w-4 rounded border-gray-300 text-blue-600"
               />
               <span className="text-sm font-medium text-gray-700">Active Lead</span>
-            </label>
+            </label> */}
           </form>
         )}
       </Dialog>

@@ -129,6 +129,8 @@ const wrapSegmentsToLines = (
 
 const stripHtml = (html: string) => (html || '').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ');
 
+import { logoBase64 } from './logoBase64';
+
 export const generateQuotationPdf = (q: any, lead: any) => {
   console.log('PDF generation started', q, lead);
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
@@ -140,7 +142,7 @@ export const generateQuotationPdf = (q: any, lead: any) => {
 
   // Logo (Top-Right)
   try {
-    doc.addImage('/logo/greeneable-logo.png', 'PNG', pageWidth - 40 - 150, 25, 150, 45);
+    doc.addImage(logoBase64, 'PNG', pageWidth - 40 - 150, 25, 150, 45);
   } catch (e) {
     console.error('Logo load failed', e);
   }
