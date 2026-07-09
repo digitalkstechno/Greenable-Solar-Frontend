@@ -22,7 +22,7 @@ interface Props {
 type FileOrNull = File | null;
 
 interface FormState {
-  leadRefrance: string;
+  creatorName: string;
   panelMake: string;
   panelWp: string;
   noOfPanel: string;
@@ -51,7 +51,7 @@ interface FormState {
 }
 
 const EMPTY_FORM: FormState = {
-  leadRefrance: '', panelMake: '', panelWp: '', noOfPanel: '',
+  creatorName: '', panelMake: '', panelWp: '', noOfPanel: '',
   inverterMake: '', inverterKw: '', inverterPhase: '', installationRoof: '',
   discom: '', consumerConnectionType: '', elcbInstalled: '', elcbProvideBy: '',
   wiringType: '', homeFloor: '', walkway: '', walkwayLengthFeet: '',
@@ -208,7 +208,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
         const d = res.data?.data;
         if (d) {
           setForm({
-            leadRefrance: d.leadRefrance || lead.createdBy?.fullName || lead.createdBy?.name || '',
+            creatorName: d.creatorName || d.leadRefrance || lead.createdBy?.fullName || lead.createdBy?.name || '',
             panelMake: d.panelMake || '',
             panelWp: d.panelWp?.toString() || '',
             noOfPanel: d.noOfPanel?.toString() || '',
@@ -271,7 +271,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
 
             setForm({
               ...EMPTY_FORM,
-              leadRefrance: lead.createdBy?.fullName || lead.createdBy?.name || '',
+              creatorName: lead.createdBy?.fullName || lead.createdBy?.name || '',
               panelMake,
               panelWp,
               noOfPanel,
@@ -282,7 +282,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
           } else {
             setForm({
               ...EMPTY_FORM,
-              leadRefrance: lead.createdBy?.fullName || lead.createdBy?.name || '',
+              creatorName: lead.createdBy?.fullName || lead.createdBy?.name || '',
             });
             setShowLoanDocs(false);
           }
@@ -331,7 +331,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
 
     if (section === 'project') {
       const projectFields = [
-        'leadRefrance', 'panelMake', 'panelWp', 'noOfPanel',
+        'creatorName', 'panelMake', 'panelWp', 'noOfPanel',
         'inverterMake', 'inverterKw', 'inverterPhase', 'installationRoof',
         'discom', 'consumerConnectionType', 'elcbInstalled', 'elcbProvideBy',
         'wiringType', 'homeFloor', 'walkway', 'walkwayLengthFeet', 'ladder', 'ladderLengthFeet', 'hdgiPipeMake'
@@ -339,7 +339,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
       projectFields.forEach(f => delete newErrors[f]);
 
       const requiredFields: (keyof FormState)[] = [
-        'leadRefrance', 'panelMake', 'panelWp', 'noOfPanel',
+        'creatorName', 'panelMake', 'panelWp', 'noOfPanel',
         'inverterMake', 'inverterKw', 'inverterPhase', 'installationRoof',
         'discom', 'consumerConnectionType', 'elcbInstalled', 'elcbProvideBy',
         'wiringType', 'homeFloor', 'walkway', 'ladder', 'hdgiPipeMake'
@@ -348,7 +348,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
       requiredFields.forEach(field => {
         if (!form[field]) {
           const fieldNames: Record<string, string> = {
-            leadRefrance: 'Lead Reference',
+            creatorName: 'Lead Reference',
             panelMake: 'Panel Make',
             panelWp: 'Panel WP',
             noOfPanel: 'No. of Panels',
@@ -418,7 +418,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
 
     if (section === 'project') {
       const projectFields = [
-        'leadRefrance', 'panelMake', 'panelWp', 'noOfPanel',
+        'creatorName', 'panelMake', 'panelWp', 'noOfPanel',
         'inverterMake', 'inverterKw', 'inverterPhase', 'installationRoof',
         'discom', 'consumerConnectionType', 'elcbInstalled', 'elcbProvideBy',
         'wiringType', 'homeFloor', 'walkway', 'walkwayLengthFeet', 'ladder', 'ladderLengthFeet', 'hdgiPipeMake'
@@ -607,11 +607,11 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <FormInput
                       label="Lead Reference"
-                      name="leadRefrance"
+                      name="creatorName"
                       placeholder="Lead ref..."
-                      value={form.leadRefrance}
-                      onChange={(e) => handleFormChange('leadRefrance', e.target.value)}
-                      error={errors.leadRefrance}
+                      value={form.creatorName}
+                      onChange={(e) => handleFormChange('creatorName', e.target.value)}
+                      error={errors.creatorName}
                       required
                     />
                     <FormInput
