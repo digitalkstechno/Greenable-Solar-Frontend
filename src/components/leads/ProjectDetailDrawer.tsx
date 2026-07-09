@@ -241,7 +241,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
           });
           setExistingFiles(ef);
 
-          const hasLoan = !!(d.loanDocQuotation || d.loanDocBankStatement || d.loanDocITRReturn || d.loanDocPanCard || d.loanDocAadhaarCard);
+          const hasLoan = d.applyForLoan === true || d.applyForLoan === 'true' || !!(d.loanDocQuotation || d.loanDocBankStatement || d.loanDocITRReturn || d.loanDocPanCard || d.loanDocAadhaarCard);
           setShowLoanDocs(hasLoan);
         } else {
           // If no existing project detail, try to autofill from the last quotation
@@ -521,8 +521,16 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
     try {
       const token = getAuthToken();
       const fd = new FormData();
-      Object.entries(form).forEach(([k, v]) => { if (v !== '') fd.append(k, v); });
+      Object.entries(form).forEach(([k, v]) => { 
+        if (v !== '') {
+          fd.append(k, v); 
+          if (k === 'creatorName') {
+            fd.append('leadRefrance', v);
+          }
+        }
+      });
       Object.entries(files).forEach(([k, f]) => { if (f) fd.append(k, f); });
+      fd.append('applyForLoan', showLoanDocs ? 'true' : 'false');
 
       await axios.post(`${baseUrl.projectDetail}/${lead._id}`, fd, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
@@ -943,7 +951,23 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                       <input
                         type="checkbox"
                         checked={showLoanDocs}
-                        onChange={(e) => setShowLoanDocs(e.target.checked)}
+                        onChange={async (e) => {
+                          const checked = e.target.checked;
+                          setShowLoanDocs(checked);
+                          if (!lead) return;
+                          try {
+                            const token = getAuthToken();
+                            const fd = new FormData();
+                            fd.append('applyForLoan', checked ? 'true' : 'false');
+                            await axios.post(`${baseUrl.projectDetail}/${lead._id}`, fd, {
+                              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
+                            });
+                            toast.success(`Loan status updated to ${checked ? 'Applied' : 'Removed'}`);
+                          } catch (err: any) {
+                            toast.error(err?.response?.data?.message || 'Failed to update loan status');
+                            setShowLoanDocs(!checked); // revert on failure
+                          }
+                        }}
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
