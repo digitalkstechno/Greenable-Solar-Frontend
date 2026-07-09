@@ -375,22 +375,32 @@ export default function DataTable<T extends Record<string, any>>({
                         )}
 
                         {/* EDIT */}
-                        {onEdit && (!canEdit || canEdit(row)) && (
+                        {onEdit && (
                           <button
-                            onClick={() => onEdit(row)}
-                            className="group h-9 w-9 flex items-center justify-center rounded-lg bg-gray-100 text-green-600 transition-all duration-200 hover:bg-green-600 hover:text-white hover:shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 active:scale-95"
+                            onClick={() => (!canEdit || canEdit(row)) && onEdit(row)}
+                            disabled={canEdit ? !canEdit(row) : false}
+                            className={`group h-9 w-9 flex items-center justify-center rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95 ${
+                              (canEdit && !canEdit(row))
+                                ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
+                                : 'bg-gray-100 text-green-600 hover:bg-green-600 hover:text-white hover:shadow-md focus:ring-green-500'
+                            }`}
                           >
-                            <FiEdit className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                            <FiEdit className={`h-4 w-4 ${(!canEdit || canEdit(row)) ? 'group-hover:scale-110' : ''} transition-transform`} />
                           </button>
                         )}
 
                         {/* DELETE */}
-                        {onDelete && (!canDelete || canDelete(row)) && (
+                        {onDelete && (
                           <button
-                            onClick={() => onDelete(row)}
-                            className="group h-9 w-9 flex items-center justify-center rounded-lg bg-gray-100 text-red-600 transition-all duration-200 hover:bg-red-500 hover:text-white hover:shadow-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 active:scale-95"
+                            onClick={() => (!canDelete || canDelete(row)) && onDelete(row)}
+                            disabled={canDelete ? !canDelete(row) : false}
+                            className={`group h-9 w-9 flex items-center justify-center rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95 ${
+                              (canDelete && !canDelete(row))
+                                ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
+                                : 'bg-gray-100 text-red-600 hover:bg-red-500 hover:text-white hover:shadow-md focus:ring-red-500'
+                            }`}
                           >
-                            <FiTrash2 className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                            <FiTrash2 className={`h-4 w-4 ${(!canDelete || canDelete(row)) ? 'group-hover:scale-110' : ''} transition-transform`} />
                           </button>
                         )}
 
