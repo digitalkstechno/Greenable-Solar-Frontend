@@ -252,6 +252,9 @@ export default function Dashboard() {
       setToDate("");
     } else {
       setDatePreset(preset);
+      const currentYear = new Date().getFullYear();
+      setKwFilter(currentYear);
+      setRevenueFilter(currentYear);
       if (preset === "custom") return;
       const dates = getInitialDates(preset);
       setFromDate(dates.from);
@@ -739,8 +742,27 @@ export default function Dashboard() {
       const now = new Date();
       let grouped: Record<string, number> = {};
 
-      if (datePreset === "today") {
-        const targetYear = now.getFullYear();
+      let targetYear = filter;
+      if (datePreset === "prev-month") {
+        const prevMonthDate = new Date(filter, now.getMonth() - 1, 1);
+        targetYear = prevMonthDate.getFullYear();
+      }
+
+      const adjustYear = (dateStr: string, targetYr: number) => {
+        if (!dateStr) return "";
+        const parts = dateStr.split("-");
+        if (parts.length === 3) {
+          return `${targetYr}-${parts[1]}-${parts[2]}`;
+        }
+        return dateStr;
+      };
+
+      const adjustedFromDate = adjustYear(fromDate, targetYear);
+      const adjustedToDate = adjustYear(toDate, targetYear);
+
+      const isCurrentYear = filter === now.getFullYear();
+
+      if (isCurrentYear && datePreset === "today") {
         const targetMonth = now.getMonth();
         const targetDate = now.getDate();
         const hourSlots = [
@@ -765,12 +787,12 @@ export default function Dashboard() {
 
         leads.forEach((lead: any) => {
           const leadDate = new Date(lead.createdAt);
-          if (fromDate) {
-            const fromD = new Date(fromDate + "T00:00:00");
+          if (adjustedFromDate) {
+            const fromD = new Date(adjustedFromDate + "T00:00:00");
             if (leadDate < fromD) return;
           }
-          if (toDate) {
-            const toD = new Date(toDate + "T23:59:59");
+          if (adjustedToDate) {
+            const toD = new Date(adjustedToDate + "T23:59:59");
             if (leadDate > toD) return;
           }
 
@@ -799,8 +821,7 @@ export default function Dashboard() {
             }
           }
         });
-      } else if (datePreset === "this-month") {
-        const targetYear = now.getFullYear();
+      } else if (isCurrentYear && datePreset === "this-month") {
         const targetMonth = now.getMonth();
         const weekLabels = [
           "Week 1 (1-7)",
@@ -820,12 +841,12 @@ export default function Dashboard() {
 
         leads.forEach((lead: any) => {
           const leadDate = new Date(lead.createdAt);
-          if (fromDate) {
-            const fromD = new Date(fromDate + "T00:00:00");
+          if (adjustedFromDate) {
+            const fromD = new Date(adjustedFromDate + "T00:00:00");
             if (leadDate < fromD) return;
           }
-          if (toDate) {
-            const toD = new Date(toDate + "T23:59:59");
+          if (adjustedToDate) {
+            const toD = new Date(adjustedToDate + "T23:59:59");
             if (leadDate > toD) return;
           }
 
@@ -851,14 +872,8 @@ export default function Dashboard() {
             }
           }
         });
-      } else if (datePreset === "prev-month") {
-        const prevMonthDate = new Date(
-          now.getFullYear(),
-          now.getMonth() - 1,
-          1,
-        );
-        const targetYear = prevMonthDate.getFullYear();
-        const targetMonth = prevMonthDate.getMonth();
+      } else if (isCurrentYear && datePreset === "prev-month") {
+        const targetMonth = (new Date(filter, now.getMonth() - 1, 1)).getMonth();
         const weekLabels = [
           "Week 1 (1-7)",
           "Week 2 (8-14)",
@@ -869,12 +884,12 @@ export default function Dashboard() {
 
         leads.forEach((lead: any) => {
           const leadDate = new Date(lead.createdAt);
-          if (fromDate) {
-            const fromD = new Date(fromDate + "T00:00:00");
+          if (adjustedFromDate) {
+            const fromD = new Date(adjustedFromDate + "T00:00:00");
             if (leadDate < fromD) return;
           }
-          if (toDate) {
-            const toD = new Date(toDate + "T23:59:59");
+          if (adjustedToDate) {
+            const toD = new Date(adjustedToDate + "T23:59:59");
             if (leadDate > toD) return;
           }
 
@@ -901,7 +916,6 @@ export default function Dashboard() {
           }
         });
       } else {
-        const targetYear = filter;
         const months = [
           "Jan",
           "Feb",
@@ -924,13 +938,13 @@ export default function Dashboard() {
 
         leads.forEach((lead: any) => {
           const leadDate = new Date(lead.createdAt);
-          if (datePreset !== "custom") {
-            if (fromDate) {
-              const fromD = new Date(fromDate + "T00:00:00");
+          if (targetYear === now.getFullYear() && datePreset !== "custom") {
+            if (adjustedFromDate) {
+              const fromD = new Date(adjustedFromDate + "T00:00:00");
               if (leadDate < fromD) return;
             }
-            if (toDate) {
-              const toD = new Date(toDate + "T23:59:59");
+            if (adjustedToDate) {
+              const toD = new Date(adjustedToDate + "T23:59:59");
               if (leadDate > toD) return;
             }
           }
@@ -974,8 +988,27 @@ export default function Dashboard() {
       const now = new Date();
       let grouped: Record<string, number> = {};
 
-      if (datePreset === "today") {
-        const targetYear = now.getFullYear();
+      let targetYear = filter;
+      if (datePreset === "prev-month") {
+        const prevMonthDate = new Date(filter, now.getMonth() - 1, 1);
+        targetYear = prevMonthDate.getFullYear();
+      }
+
+      const adjustYear = (dateStr: string, targetYr: number) => {
+        if (!dateStr) return "";
+        const parts = dateStr.split("-");
+        if (parts.length === 3) {
+          return `${targetYr}-${parts[1]}-${parts[2]}`;
+        }
+        return dateStr;
+      };
+
+      const adjustedFromDate = adjustYear(fromDate, targetYear);
+      const adjustedToDate = adjustYear(toDate, targetYear);
+
+      const isCurrentYear = filter === now.getFullYear();
+
+      if (isCurrentYear && datePreset === "today") {
         const targetMonth = now.getMonth();
         const targetDate = now.getDate();
         const hourSlots = [
@@ -1000,12 +1033,12 @@ export default function Dashboard() {
 
         leads.forEach((lead: any) => {
           const leadDate = new Date(lead.createdAt);
-          if (fromDate) {
-            const fromD = new Date(fromDate + "T00:00:00");
+          if (adjustedFromDate) {
+            const fromD = new Date(adjustedFromDate + "T00:00:00");
             if (leadDate < fromD) return;
           }
-          if (toDate) {
-            const toD = new Date(toDate + "T23:59:59");
+          if (adjustedToDate) {
+            const toD = new Date(adjustedToDate + "T23:59:59");
             if (leadDate > toD) return;
           }
 
@@ -1034,8 +1067,7 @@ export default function Dashboard() {
             }
           }
         });
-      } else if (datePreset === "this-month") {
-        const targetYear = now.getFullYear();
+      } else if (isCurrentYear && datePreset === "this-month") {
         const targetMonth = now.getMonth();
         const weekLabels = [
           "Week 1 (1-7)",
@@ -1055,12 +1087,12 @@ export default function Dashboard() {
 
         leads.forEach((lead: any) => {
           const leadDate = new Date(lead.createdAt);
-          if (fromDate) {
-            const fromD = new Date(fromDate + "T00:00:00");
+          if (adjustedFromDate) {
+            const fromD = new Date(adjustedFromDate + "T00:00:00");
             if (leadDate < fromD) return;
           }
-          if (toDate) {
-            const toD = new Date(toDate + "T23:59:59");
+          if (adjustedToDate) {
+            const toD = new Date(adjustedToDate + "T23:59:59");
             if (leadDate > toD) return;
           }
 
@@ -1086,14 +1118,8 @@ export default function Dashboard() {
             }
           }
         });
-      } else if (datePreset === "prev-month") {
-        const prevMonthDate = new Date(
-          now.getFullYear(),
-          now.getMonth() - 1,
-          1,
-        );
-        const targetYear = prevMonthDate.getFullYear();
-        const targetMonth = prevMonthDate.getMonth();
+      } else if (isCurrentYear && datePreset === "prev-month") {
+        const targetMonth = (new Date(filter, now.getMonth() - 1, 1)).getMonth();
         const weekLabels = [
           "Week 1 (1-7)",
           "Week 2 (8-14)",
@@ -1104,12 +1130,12 @@ export default function Dashboard() {
 
         leads.forEach((lead: any) => {
           const leadDate = new Date(lead.createdAt);
-          if (fromDate) {
-            const fromD = new Date(fromDate + "T00:00:00");
+          if (adjustedFromDate) {
+            const fromD = new Date(adjustedFromDate + "T00:00:00");
             if (leadDate < fromD) return;
           }
-          if (toDate) {
-            const toD = new Date(toDate + "T23:59:59");
+          if (adjustedToDate) {
+            const toD = new Date(adjustedToDate + "T23:59:59");
             if (leadDate > toD) return;
           }
 
@@ -1136,7 +1162,6 @@ export default function Dashboard() {
           }
         });
       } else {
-        const targetYear = filter;
         const months = [
           "Jan",
           "Feb",
@@ -1159,13 +1184,13 @@ export default function Dashboard() {
 
         leads.forEach((lead: any) => {
           const leadDate = new Date(lead.createdAt);
-          if (datePreset !== "custom") {
-            if (fromDate) {
-              const fromD = new Date(fromDate + "T00:00:00");
+          if (targetYear === now.getFullYear() && datePreset !== "custom") {
+            if (adjustedFromDate) {
+              const fromD = new Date(adjustedFromDate + "T00:00:00");
               if (leadDate < fromD) return;
             }
-            if (toDate) {
-              const toD = new Date(toDate + "T23:59:59");
+            if (adjustedToDate) {
+              const toD = new Date(adjustedToDate + "T23:59:59");
               if (leadDate > toD) return;
             }
           }
