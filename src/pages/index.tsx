@@ -600,11 +600,7 @@ export default function Dashboard() {
         },
       );
       const { data, pagination } = res.data;
-      // Exclude leads that are already marked as "Won" from the list
-      const filteredData = (data || []).filter(
-        (lead: any) => lead.leadStatus?.name?.toLowerCase() !== 'won'
-      );
-      setUpcomingFollowups(filteredData);
+      setUpcomingFollowups(data || []);
       setUpcomingTotalPages(pagination?.totalPages || 1);
       setUpcomingPage(pagination?.currentPage || 1);
     } catch (err) {
@@ -631,11 +627,7 @@ export default function Dashboard() {
         },
       );
       const { data } = res.data;
-      // Exclude leads that are already marked as "Won" from the list
-      const filteredData = (data || []).filter(
-        (lead: any) => lead.leadStatus?.name?.toLowerCase() !== 'won'
-      );
-      setDueFollowups(filteredData);
+      setDueFollowups(data || []);
     } catch (err) {
       console.error("Due followups error:", err);
       setDueFollowups([]);
@@ -683,17 +675,31 @@ export default function Dashboard() {
   useEffect(() => {
     if (!hasLoadedFromStorage || !token || !user?._id) return;
     fetchDashboard();
-    fetchUpcomingFollowups(1);
-    fetchDueFollowups();
+    // fetchUpcomingFollowups(1);
+    // fetchDueFollowups();
   }, [token, user?._id, fromDate, toDate, datePreset, hasLoadedFromStorage]);
 
-  // Revenue & KW charts (Admin & Sales only)
+  // Upcoming & Due Follow-ups
   useEffect(() => {
     if (!hasLoadedFromStorage || !token || !user?._id) return;
-    if (userScope === "calling") return; // Calling user ne revenue/kw chart nathi
+    fetchUpcomingFollowups(1);
+    fetchDueFollowups();
+}, [token, user?._id, hasLoadedFromStorage]);
+
+  // Revenue chart (Admin & Sales only)
+  useEffect(() => {
+    if (!hasLoadedFromStorage || !token || !user?._id) return;
+    if (userScope === "calling") return;
     fetchRevenueChart(revenueFilter);
+  }, [token, user?._id, userScope, revenueFilter, hasLoadedFromStorage]);
+
+  // KW Growth chart (Admin & Sales only)
+  useEffect(() => {
+    if (!hasLoadedFromStorage || !token || !user?._id) return;
+    if (userScope === "calling") return;
     fetchKwGrowthChart(kwFilter);
-  }, [token, user?._id, userScope, revenueFilter, kwFilter, hasLoadedFromStorage]);
+  }, [token, user?._id, userScope, kwFilter, hasLoadedFromStorage]);
+
 
   // Follow-up analysis chart (Sales & Calling only)
   useEffect(() => {
@@ -842,7 +848,7 @@ export default function Dashboard() {
       {
         key: "followups",
         label: "Follow-ups",
-        value:  summary.followUps,
+        value: summary.followUps,
         trend: 0,
         tone: "neutral",
         Icon: PhoneCall,
@@ -1137,7 +1143,7 @@ export default function Dashboard() {
               tickLine={false}
               width={30}
             />
-            <Bar dataKey="In Progress" stackId="a" opacity={0} />
+            <Bar dataKey="New lead" stackId="a" opacity={0} />
             <Bar dataKey="Lost" stackId="a" opacity={0} />
             <Bar dataKey="Won" stackId="a" opacity={0} />
           </BarChart>
@@ -1172,7 +1178,7 @@ export default function Dashboard() {
             <YAxis tick={false} axisLine={false} tickLine={false} width={0} />
             <Tooltip
               cursor={false}
-               wrapperStyle={{ zIndex: 100 }}
+              wrapperStyle={{ zIndex: 100 }}
               content={({ active, payload }) => {
                 if (active && payload?.length) {
                   return (
@@ -1204,7 +1210,7 @@ export default function Dashboard() {
               radius={[0, 0, 0, 0]}
             />
             <Bar
-              dataKey="In Progress"
+              dataKey="New Lead"
               stackId="a"
               fill="#fb923c"
               radius={[4, 4, 0, 0]}
@@ -1216,7 +1222,7 @@ export default function Dashboard() {
         <div className="flex items-center justify-center gap-6 text-[11px] font-semibold text-gray-600">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-[#fb923c]" />
-            <span>In Progress</span>
+            <span>New Lead</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-[#B22222]" />
