@@ -567,7 +567,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
       {/* Drawer */}
       <div
         ref={drawerRef}
-        className={`fixed right-0 top-0 z-50 flex h-full w-full max-w-4xl flex-col bg-white shadow-2xl transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        className={`fixed right-0 top-0 z-50 flex h-full w-full max-w-4xl flex-col bg-white transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0 shadow-2xl' : 'translate-x-full shadow-none'}`}
       >
         {/* Header */}
         <div className="flex items-center justify-between bg-secondary px-6 py-4">

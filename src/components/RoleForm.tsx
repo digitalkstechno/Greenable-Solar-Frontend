@@ -99,6 +99,10 @@ export default function RoleForm({
         ...base[feature],
         ...(raw?.[feature] || {}),
       };
+
+      if (data?.roleName?.toLowerCase() === 'super admin' && feature === 'lead') {
+        base[feature].readAll = true;
+      }
     });
 
     return base;
@@ -224,7 +228,7 @@ export default function RoleForm({
             error={formik.touched.roleName && formik.errors.roleName ? formik.errors.roleName : undefined}
             required
             placeholder="Enter department name (e.g., Admin, Manager, Staff)"
-            // helperText="Role name must be unique and descriptive"
+          // helperText="Role name must be unique and descriptive"
           />
         </div>
 
@@ -244,14 +248,19 @@ export default function RoleForm({
                     <div className="col-span-5 text-gray-800 font-medium">{featureLabels[feature]}</div>
                     <div className="col-span-7">
                       <div className="flex flex-wrap gap-4">
-                        {(['readAll', 'readOwn', 'create', 'update', 'delete'] as CapabilityKey[]).map((cap) => (
-                          <label key={cap} className={`inline-flex cursor-pointer items-center gap-2 text-sm text-gray-700 ${isDisabled || (cap === 'readOwn' && (caps.create || caps.update || caps.delete)) ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                        {(['readAll', 'readOwn', 'create', 'update', 'delete'] as CapabilityKey[]).map((cap) => {
+                          const isSuperAdminLeadViewGlobal = isSuperAdmin && feature === 'lead' && cap === 'readAll';
+                          const isCapDisabled = isDisabled || isSuperAdminLeadViewGlobal || (cap === 'readOwn' && (caps.create || caps.update || caps.delete));
+                          const isCapChecked = isSuperAdminLeadViewGlobal ? true : caps[cap];
+
+                          return (
+                          <label key={cap} className={`inline-flex cursor-pointer items-center gap-2 text-sm text-gray-700 ${isCapDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}>
                             <input
                               type="checkbox"
-                              checked={caps[cap]}
-                              onChange={() => { if (!isDisabled && !(cap === 'readOwn' && (caps.create || caps.update || caps.delete))) toggleCapability(feature, cap); }}
-                              disabled={isDisabled || (cap === 'readOwn' && (caps.create || caps.update || caps.delete))}
-                              className={`h-4 w-4 rounded border-gray-300 text-sky-950 focus:ring-sky-200 ${(isDisabled || (cap === 'readOwn' && (caps.create || caps.update || caps.delete))) ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                              checked={isCapChecked}
+                              onChange={() => { if (!isCapDisabled && !(cap === 'readOwn' && (caps.create || caps.update || caps.delete))) toggleCapability(feature, cap); }}
+                              disabled={isCapDisabled}
+                              className={`h-4 w-4 rounded border-gray-300 text-sky-950 focus:ring-sky-200 ${isCapDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                             />
                             <span>
                               {cap === 'readAll'
@@ -265,7 +274,8 @@ export default function RoleForm({
                                       : 'Delete'}
                             </span>
                           </label>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
