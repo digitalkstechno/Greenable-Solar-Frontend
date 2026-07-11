@@ -69,9 +69,9 @@ export default function Dialog({
       <div
         ref={dialogRef}
         className={`
-          relative h-full w-full ${sizeClasses[size]} bg-white shadow-2xl flex flex-col
+          relative h-full w-full ${sizeClasses[size]} bg-white flex flex-col
           transform transition-transform duration-300
-          ${isOpen ? 'translate-x-0' : 'translate-x-full'}
+          ${isOpen ? 'translate-x-0 shadow-2xl' : 'translate-x-full shadow-none'}
         `}
         onClick={(e) => e.stopPropagation()}
       >

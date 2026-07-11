@@ -30,9 +30,9 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'md
       {/* Sliding Modal */}
       <div
         className={`
-          relative h-full ${widthClasses[maxWidth]} bg-white rounded-l-xl shadow-xl flex flex-col
+          relative h-full ${widthClasses[maxWidth]} bg-white rounded-l-xl  flex flex-col
           transform transition-transform duration-300
-          ${isOpen ? 'translate-x-0' : 'translate-x-full'}
+          ${isOpen ? 'translate-x-0 shadow-xl' : 'translate-x-full shadow-none'}
         `}
         onClick={(e) => e.stopPropagation()}
       >

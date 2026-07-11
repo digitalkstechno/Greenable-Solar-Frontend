@@ -66,6 +66,10 @@ export const baseUrl = {
   getBaseUrl: API,
   projectDetail: `${API}project-detail`,
   leadPayments: `${API}lead`,
+  dashboard: `${API}dashboard`,
+  dashboardRevenue: `${API}dashboard/revenue`,
+  dashboardKwGrowth: `${API}dashboard/kw-growth`,
+  dashboardFollowupAnalysis: `${API}dashboard/followup-analysis`,
 };
 
 const TOKEN_COOKIE_NAME = "crm_token";
