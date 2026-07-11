@@ -64,7 +64,7 @@ export default function DashboardLeadUpdateDialog({ isOpen, onClose, lead, onSuc
       }
     };
     fetchMeta();
-  }, [isOpen, lead]);
+  }, [isOpen, lead?._id]);
 
   const handleSubmit = async () => {
     if (!lead) return;

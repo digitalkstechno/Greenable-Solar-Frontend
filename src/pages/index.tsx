@@ -49,6 +49,7 @@ import {
   PieChartIcon,
   RefreshCw,
 } from "lucide-react";
+import { FiEye } from 'react-icons/fi';
 import axios from "axios";
 import { baseUrl, getAuthToken } from "@/config";
 import moment from "moment";
@@ -183,12 +184,10 @@ export default function Dashboard() {
   const [dueFollowups, setDueFollowups] = useState<any[]>([]);
   const [dueLoading, setDueLoading] = useState(false);
 
-  // Today's Tasks
-  const [todayTasks, setTodayTasks] = useState<any[]>([]);
-  const [tasksLoading, setTasksLoading] = useState(false);
-
   const [isUpdateLeadDialogOpen, setIsUpdateLeadDialogOpen] = useState(false);
   const [selectedLeadForUpdate, setSelectedLeadForUpdate] = useState<any>(null);
+
+  const [updateSource, setUpdateSource] = useState<"upcoming" | "due" | null>(null);
 
   const [permissions, setPermissions] = useState<{
     readAll: boolean;
@@ -612,7 +611,7 @@ export default function Dashboard() {
   };
 
   // 6. Due Follow-ups API — Admin, Sales & Calling only
-  const fetchDueFollowups = async (_page?: number) => {
+  const fetchDueFollowups = async (page?: number) => {
     if (!token) return;
     setDueLoading(true);
     try {
@@ -621,13 +620,15 @@ export default function Dashboard() {
         ? baseUrl.leadDueFollowupsMy
         : baseUrl.leadDueFollowups;
       const res = await axios.get(
-        `${url}?page=1&limit=1000`,
+        `${url}?page=${page}&limit=${ITEMS_PER_PAGE}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
       );
-      const { data } = res.data;
+      const { data, pagination } = res.data;
       setDueFollowups(data || []);
+      setDueTotalPages(pagination?.totalPages || 1);
+      setDuePage(pagination?.currentPage || 1);
     } catch (err) {
       console.error("Due followups error:", err);
       setDueFollowups([]);
@@ -684,7 +685,7 @@ export default function Dashboard() {
     if (!hasLoadedFromStorage || !token || !user?._id) return;
     fetchUpcomingFollowups(1);
     fetchDueFollowups();
-}, [token, user?._id, hasLoadedFromStorage]);
+  }, [token, user?._id, hasLoadedFromStorage]);
 
   // Revenue chart (Admin & Sales only)
   useEffect(() => {
@@ -1065,10 +1066,11 @@ export default function Dashboard() {
                             e.stopPropagation();
                             setSelectedLeadForUpdate(lead);
                             setIsUpdateLeadDialogOpen(true);
+                            setUpdateSource(dateHeader === "Follow up Date" ? "upcoming" : "due");
                           }}
                           className="px-2.5 py-1.5 rounded-lg bg-orange-500/10 hover:bg-orange-100 text-[#d87612] border border-orange-200/30 text-[10px] font-bold transition-colors cursor-pointer"
                         >
-                          Pending
+                          <FiEye className="h-4 w-4 group-hover:scale-110 transition-transform" />
                         </button>
                       </div>
                     </td>
@@ -2152,12 +2154,20 @@ export default function Dashboard() {
           onClose={() => {
             setIsUpdateLeadDialogOpen(false);
             setSelectedLeadForUpdate(null);
+            setUpdateSource(null);
           }}
           lead={selectedLeadForUpdate}
+          // onSuccess={() => {
+          //   fetchDashboard();
+          //   fetchUpcomingFollowups(upcomingPage);
+          //   fetchDueFollowups(duePage);
+          // }}
           onSuccess={() => {
-            fetchDashboard();
-            fetchUpcomingFollowups(upcomingPage);
-            fetchDueFollowups(duePage);
+            if (updateSource === "upcoming") {
+              fetchUpcomingFollowups(upcomingPage);
+            } else if (updateSource === "due") {
+              fetchDueFollowups(duePage);
+            }
           }}
         />
       )}
