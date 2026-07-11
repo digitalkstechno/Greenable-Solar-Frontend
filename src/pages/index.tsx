@@ -600,11 +600,7 @@ export default function Dashboard() {
         },
       );
       const { data, pagination } = res.data;
-      // Exclude leads that are already marked as "Won" from the list
-      const filteredData = (data || []).filter(
-        (lead: any) => lead.leadStatus?.name?.toLowerCase() !== 'won'
-      );
-      setUpcomingFollowups(filteredData);
+      setUpcomingFollowups(data || []);
       setUpcomingTotalPages(pagination?.totalPages || 1);
       setUpcomingPage(pagination?.currentPage || 1);
     } catch (err) {
@@ -631,11 +627,7 @@ export default function Dashboard() {
         },
       );
       const { data } = res.data;
-      // Exclude leads that are already marked as "Won" from the list
-      const filteredData = (data || []).filter(
-        (lead: any) => lead.leadStatus?.name?.toLowerCase() !== 'won'
-      );
-      setDueFollowups(filteredData);
+      setDueFollowups(data || []);
     } catch (err) {
       console.error("Due followups error:", err);
       setDueFollowups([]);
