@@ -66,6 +66,7 @@ interface LeadSummary {
   totalLeads: number;
   currentMonthLeads: number;
   totalRevenue: number;
+  followUps: number;
   statusWiseCounts: StatusCount[];
 }
 
@@ -143,11 +144,10 @@ function YearSelect({ value, onChange, options }: YearSelectProps) {
                 onChange(option);
                 setIsOpen(false);
               }}
-              className={`w-full text-left px-3.5 py-2 text-xs font-semibold transition-all ${
-                option === value
-                  ? "bg-[#d87612] text-white"
-                  : "text-gray-700 hover:bg-orange-50 hover:text-[#d87612]"
-              }`}
+              className={`w-full text-left px-3.5 py-2 text-xs font-semibold transition-all ${option === value
+                ? "bg-[#d87612] text-white"
+                : "text-gray-700 hover:bg-orange-50 hover:text-[#d87612]"
+                }`}
             >
               {option}
             </button>
@@ -206,6 +206,25 @@ export default function Dashboard() {
       user?.department ||
       ""
     ).toLowerCase() === "calling";
+  const userScope: "admin" | "sales" | "calling" = isCallingUser
+    ? "calling"
+    : isSalesUser
+      ? "sales"
+      : "admin";
+
+  // Map frontend datePreset to backend range query param
+  const datePresetToRange = (preset: typeof datePreset): string | undefined => {
+    if (!preset) return undefined;
+    const map: Record<string, string> = {
+      "today": "today",
+      "this-month": "thisMonth",
+      "prev-month": "previousMonth",
+      "this-year": "thisYear",
+      "custom": "custom",
+    };
+    return map[preset];
+  };
+
   const getInitialDates = (
     preset: "today" | "this-month" | "prev-month" | "this-year" | "custom",
   ) => {
@@ -402,232 +421,170 @@ export default function Dashboard() {
     }
   };
 
-  const fetchLeadSummary = async () => {
+  const fetchLeadSummary = async () => { };
+  const fetchLeadsBySource = async () => { };
+  const fetchStaffPerformance = async () => { };
+
+  // ============ NEW DASHBOARD API FUNCTIONS ============
+
+  const colorPalette = [
+    "#F59E0B",
+    "#EF4444",
+    "#f97316",
+    "#fb923c",
+    "#c2410c",
+    "#ea580c",
+    "#fdba74",
+    "#fed7aa",
+    "#d87612",
+    "#d87612",
+  ];
+
+  // 1. Main Dashboard API — counts + charts (called by ALL roles)
+  const fetchDashboard = async () => {
     if (!token) return;
     try {
-      const isMyOnly = !permissions.readAll && permissions.readOwn;
-      const url = isMyOnly
-        ? baseUrl.myLeadCountSummary
-        : baseUrl.leadCountSummary;
-      const res = await axios.get(url, {
+      const range = datePresetToRange(datePreset);
+      const res = await axios.get(baseUrl.dashboard, {
         headers: { Authorization: `Bearer ${token}` },
         params: {
-          from: fromDate || undefined,
-          to: toDate || undefined,
-          // limit: 2,
+          range: range || undefined,
+          from: datePreset === "custom" ? fromDate : undefined,
+          to: datePreset === "custom" ? toDate : undefined,
         },
       });
+      const { counts, charts } = res.data?.data || {};
 
-      setSummary(res.data.data);
-    } catch (err) {
-      console.error("Lead summary error:", err);
-    }
-  };
-
-  // const fetchLeadSummary = async () => {
-  //   if (!token) return;
-  //   try {
-  //     const isMyOnly = !permissions.readAll && permissions.readOwn;
-  //     const url = isMyOnly ? baseUrl.myLeadCountSummary : baseUrl.leadCountSummary;
-  //     const res = await axios.get(url, {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //       params: {
-  //         from: fromDate || undefined,
-  //         to: toDate || undefined,
-  //       }
-  //     });
-  //     const data = res.data.data;
-  //     if (data?.statusWiseCounts) {
-  //       data.statusWiseCounts = data.statusWiseCounts.slice(0, 2);
-  //     }
-  //     setSummary(data);
-  //   } catch (err) {
-  //     console.error("Lead summary error:", err);
-  //   }
-  // };
-
-  // const fetchLeadsBySource = async () => {
-  //   if (!token) return;
-  //   try {
-  //     const res = await axios.get(baseUrl.leadSources, {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     });
-
-  //     const colorPalette = [
-  //       "#3B82F6", // blue-500
-  //       "#10B981", // emerald-500
-  //       "#F59E0B", // amber-500
-  //       "#EF4444", // red-500
-  //       "#8B5CF6", // violet-500
-  //       "#EC4899", // pink-500
-  //       "#06B6D4", // cyan-500
-  //       "#84CC16", // lime-500
-  //       "#F97316", // orange-500
-  //       "#6366F1", // indigo-500
-  //     ];
-
-  //     const chartData = (res.data.data ?? []).map((item: any, idx: number) => ({
-  //       name: item.name,
-  //        value: item.count ?? item.total ?? item.leadCount ?? item.totalLeads ?? 0,
-  //       fill: colorPalette[idx % colorPalette.length],
-  //     }));
-
-  //     setLeadsBySource(chartData);
-  //   } catch (err) {
-  //     console.error("Leads by source error:", err);
-  //   }
-  // };
-
-  // const fetchLeadsBySource = async () => {
-  //   if (!token) return;
-  //   try {
-  //     const res = await axios.get(baseUrl.getAllLeads, {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //       params: { limit: 1000 }
-  //     });
-  //     const leads = res.data?.data || [];
-
-  //     const colorPalette = [
-  //       "#fb923c",
-  //       "#f97316",
-  //       "#F59E0B",
-  //       "#EF4444",
-  //       "#c2410c",
-  //       "#ea580c",
-  //       "#fdba74",
-  //       "#fed7aa",
-  //       "#d87612",
-  //       "#d87612",
-  //     ];
-
-  //     // Apply date range filter same as other charts
-  //     const filteredLeads = leads.filter((lead: any) => {
-  //       const leadDate = new Date(lead.createdAt);
-  //       if (fromDate) {
-  //         const fromD = new Date(fromDate + 'T00:00:00');
-  //         if (leadDate < fromD) return false;
-  //       }
-  //       if (toDate) {
-  //         const toD = new Date(toDate + 'T23:59:59');
-  //         if (leadDate > toD) return false;
-  //       }
-  //       return true;
-  //     });
-
-  //     // Group by leadrefrance field
-  //     const grouped: Record<string, number> = {};
-  //     filteredLeads.forEach((lead: any) => {
-  //       const source = lead.leadrefrance || "Unknown";
-  //       grouped[source] = (grouped[source] || 0) + 1;
-  //     });
-
-  //     const chartData = Object.entries(grouped).map(([name, value], idx) => ({
-  //       name,
-  //       value,
-  //       fill: colorPalette[idx % colorPalette.length],
-  //     }));
-
-  //     setLeadsBySource(chartData);
-  //   } catch (err) {
-  //     console.error("Leads by source error:", err);
-  //   }
-  // };
-
-  const fetchLeadsBySource = async () => {
-    if (!token) return;
-    try {
-      // 1. Master lead source list (Google Search, Website Signup, Client Referral, LinkedIn Ads)
-      const sourcesRes = await axios.get(baseUrl.leadSources, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const masterSources = sourcesRes.data?.data || [];
-
-      // 2. Actual leads data
-      const leadsRes = await axios.get(baseUrl.getAllLeads, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { limit: 1000 },
-      });
-      const leads = leadsRes.data?.data || [];
-
-      const colorPalette = [
-        "#F59E0B",
-        "#EF4444",
-        "#f97316",
-        "#fb923c",
-        "#c2410c",
-        "#ea580c",
-        "#fdba74",
-        "#fed7aa",
-        "#d87612",
-        "#d87612",
-      ];
-
-      // Apply date range filter
-      const filteredLeads = leads.filter((lead: any) => {
-        const leadDate = new Date(lead.createdAt);
-        if (fromDate) {
-          const fromD = new Date(fromDate + "T00:00:00");
-          if (leadDate < fromD) return false;
-        }
-        if (toDate) {
-          const toD = new Date(toDate + "T23:59:59");
-          if (leadDate > toD) return false;
-        }
-        return true;
+      // Map to existing LeadSummary format
+      setSummary({
+        totalLeads: counts?.totalLeads || 0,
+        currentMonthLeads: 0,
+        totalRevenue: counts?.totalRevenue || 0,
+        followUps: counts?.followUps || 0,
+        statusWiseCounts: (charts?.leadStatus || []).map((s: any) => ({
+          statusId: "",
+          statusName: s.status,
+          count: s.count,
+        })),
       });
 
-      // Count leads per source name
-      const countMap: Record<string, number> = {};
-      filteredLeads.forEach((lead: any) => {
-        const source = lead.leadrefrance || "Unknown";
-        countMap[source] = (countMap[source] || 0) + 1;
-      });
-
-      // Build chart data from master list first (so all sources always show)
-      const chartData = masterSources
-        .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0))
-        .map((src: any, idx: number) => ({
-          name: src.name,
-          value: countMap[src.name] || 0,
-          fill: colorPalette[idx % colorPalette.length],
+      // Admin: salesExecutive chart data
+      if (charts?.salesExecutive) {
+        const staffData = charts.salesExecutive.map((s: any) => ({
+          name: s.salesName,
+          Won: s.won || 0,
+          Lost: s.lost || 0,
+          "In Progress": 0,
+          "New Lead": s.newLead || 0,
         }));
+        setStaffWinRate(staffData);
+        setTotalStaffLeads(
+          staffData.reduce(
+            (sum: number, s: any) => sum + s.Won + s.Lost + s["New Lead"],
+            0,
+          ),
+        );
+      }
 
-      // Include any lead source not present in master list (e.g. "Unknown")
-      Object.keys(countMap).forEach((sourceName) => {
-        if (!chartData.some((c: any) => c.name === sourceName)) {
-          chartData.push({
-            name: sourceName,
-            value: countMap[sourceName],
-            fill: colorPalette[chartData.length % colorPalette.length],
-          });
-        }
-      });
+      // Calling: leadSource chart data
+      if (charts?.leadSource) {
+        setLeadsBySource(
+          charts.leadSource.map((s: any, idx: number) => ({
+            name: s.source,
+            value: s.count,
+            fill: colorPalette[idx % colorPalette.length],
+          })),
+        );
+      }
 
-      setLeadsBySource(chartData);
+      // Calling: leadAssignment chart data (same format as salesExecutive)
+      if (charts?.leadAssignment) {
+        const staffData = charts.leadAssignment.map((s: any) => ({
+          name: s.salesName,
+          Won: s.won || 0,
+          Lost: s.lost || 0,
+          "In Progress": 0,
+          "New Lead": s.newLead || 0,
+        }));
+        setStaffWinRate(staffData);
+        setTotalStaffLeads(
+          staffData.reduce(
+            (sum: number, s: any) => sum + s.Won + s.Lost + s["New Lead"],
+            0,
+          ),
+        );
+      }
     } catch (err) {
-      console.error("Leads by source error:", err);
+      console.error("Dashboard API error:", err);
     }
   };
 
-  const fetchStaffPerformance = async () => {
+  // 2. Total Revenue Chart API — Admin & Sales only
+  const fetchRevenueChart = async (yearFilter: number) => {
     if (!token) return;
     try {
-      const res = await axios.get(baseUrl.getAllUsers, {
+      const res = await axios.get(baseUrl.dashboardRevenue, {
         headers: { Authorization: `Bearer ${token}` },
-        params: { limit: 100 },
+        params: { year: yearFilter },
       });
-      const chartData = (res.data.data ?? []).map((staff: any) => ({
-        name: staff.fullName || "Unknown",
-        converted: staff.status?.toLowerCase() === "active" ? 1 : 0,
-        pending: staff.status?.toLowerCase() === "inactive" ? 1 : 0,
-        lost: 0,
+      const { chart, totalRevenue } = res.data?.data || {};
+      const chartData = (chart || []).map((d: any) => ({
+        name: d.month,
+        amt: d.revenue || 0,
       }));
-      setStaffPerformance(chartData);
+      const maxAmt = Math.max(...chartData.map((d: any) => d.amt), 0);
+      const chartDataWithLine = chartData.map((d: any) => ({
+        ...d,
+        lineAmt: d.amt > 0 ? d.amt + maxAmt * 0.1 : 0,
+      }));
+      setTotalRevenueChart(totalRevenue || 0);
+      setRevenueGrowthData(chartDataWithLine);
     } catch (err) {
-      console.error("Staff performance error:", err);
+      console.error("Revenue Chart error:", err);
     }
   };
 
+  // 3. Total KW Growth Chart API — Admin & Sales only
+  const fetchKwGrowthChart = async (yearFilter: number) => {
+    if (!token) return;
+    try {
+      const res = await axios.get(baseUrl.dashboardKwGrowth, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { year: yearFilter },
+      });
+      const { chart, totalKwGrowth } = res.data?.data || {};
+      const chartData = (chart || []).map((d: any) => ({
+        name: d.month,
+        kw: d.kw || 0,
+      }));
+      setTotalKw(totalKwGrowth || 0);
+      setKwGrowthData(chartData);
+    } catch (err) {
+      console.error("KW Growth Chart error:", err);
+    }
+  };
+
+  // 4. Follow-up Analysis Chart API — Sales & Calling only
+  const fetchFollowupAnalysis = async (yearFilter: number) => {
+    if (!token) return;
+    try {
+      const res = await axios.get(baseUrl.dashboardFollowupAnalysis, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { year: yearFilter },
+      });
+      const { chart } = res.data?.data || {};
+      const chartData = (chart || []).map((d: any) => ({
+        name: d.month,
+        upcoming: d.upcoming || 0,
+        completed: d.completed || 0,
+      }));
+      setFollowUpChartData(chartData);
+    } catch (err) {
+      console.error("Follow-up Analysis error:", err);
+    }
+  };
+
+  // 5. Upcoming Follow-ups API — Admin, Sales & Calling only
   const fetchUpcomingFollowups = async (page: number) => {
     if (!token) return;
     setUpcomingLoading(true);
@@ -643,7 +600,11 @@ export default function Dashboard() {
         },
       );
       const { data, pagination } = res.data;
-      setUpcomingFollowups(data || []);
+      // Exclude leads that are already marked as "Won" from the list
+      const filteredData = (data || []).filter(
+        (lead: any) => lead.leadStatus?.name?.toLowerCase() !== 'won'
+      );
+      setUpcomingFollowups(filteredData);
       setUpcomingTotalPages(pagination?.totalPages || 1);
       setUpcomingPage(pagination?.currentPage || 1);
     } catch (err) {
@@ -654,7 +615,8 @@ export default function Dashboard() {
     }
   };
 
-  const fetchDueFollowups = async (page: number) => {
+  // 6. Due Follow-ups API — Admin, Sales & Calling only
+  const fetchDueFollowups = async (_page?: number) => {
     if (!token) return;
     setDueLoading(true);
     try {
@@ -663,36 +625,22 @@ export default function Dashboard() {
         ? baseUrl.leadDueFollowupsMy
         : baseUrl.leadDueFollowups;
       const res = await axios.get(
-        `${url}?page=${page}&limit=${ITEMS_PER_PAGE}`,
+        `${url}?page=1&limit=1000`,
         {
           headers: { Authorization: `Bearer ${token}` },
         },
       );
-      const { data, pagination } = res.data;
-      setDueFollowups(data || []);
-      setDueTotalPages(pagination?.totalPages || 1);
-      setDuePage(pagination?.currentPage || 1);
+      const { data } = res.data;
+      // Exclude leads that are already marked as "Won" from the list
+      const filteredData = (data || []).filter(
+        (lead: any) => lead.leadStatus?.name?.toLowerCase() !== 'won'
+      );
+      setDueFollowups(filteredData);
     } catch (err) {
       console.error("Due followups error:", err);
       setDueFollowups([]);
     } finally {
       setDueLoading(false);
-    }
-  };
-
-  const fetchTodayTasks = async () => {
-    if (!token) return;
-    setTasksLoading(true);
-    try {
-      const res = await axios.get(baseUrl.todayTasks, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setTodayTasks(res.data?.data || []);
-    } catch (err) {
-      console.error("Today tasks error:", err);
-      setTodayTasks([]);
-    } finally {
-      setTasksLoading(false);
     }
   };
 
@@ -729,752 +677,30 @@ export default function Dashboard() {
     setToDate("");
   };
 
-  //Graphs
-  const fetchKwGrowth = async (filter: number) => {
-    if (!token) return;
-    try {
-      const res = await axios.get(baseUrl.getAllLeads, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { limit: 1000 },
-      });
-      const leads = res.data?.data || [];
+  // ============ ROLE-BASED useEffect HOOKS ============
 
-      const now = new Date();
-      let grouped: Record<string, number> = {};
-
-      let targetYear = filter;
-      if (datePreset === "prev-month") {
-        const prevMonthDate = new Date(filter, now.getMonth() - 1, 1);
-        targetYear = prevMonthDate.getFullYear();
-      }
-
-      const adjustYear = (dateStr: string, targetYr: number) => {
-        if (!dateStr) return "";
-        const parts = dateStr.split("-");
-        if (parts.length === 3) {
-          return `${targetYr}-${parts[1]}-${parts[2]}`;
-        }
-        return dateStr;
-      };
-
-      const adjustedFromDate = adjustYear(fromDate, targetYear);
-      const adjustedToDate = adjustYear(toDate, targetYear);
-
-      const isCurrentYear = filter === now.getFullYear();
-
-      if (isCurrentYear && datePreset === "today") {
-        const targetMonth = now.getMonth();
-        const targetDate = now.getDate();
-        const hourSlots = [
-          "12 AM - 4 AM",
-          "4 AM - 8 AM",
-          "8 AM - 12 PM",
-          "12 PM - 4 PM",
-          "4 PM - 8 PM",
-          "8 PM - 12 AM",
-        ];
-        const currentHour = now.getHours();
-        let limitIdx = 5;
-        if (currentHour < 4) limitIdx = 0;
-        else if (currentHour < 8) limitIdx = 1;
-        else if (currentHour < 12) limitIdx = 2;
-        else if (currentHour < 16) limitIdx = 3;
-        else if (currentHour < 20) limitIdx = 4;
-        else limitIdx = 5;
-
-        const activeSlots = hourSlots.slice(0, Math.max(2, limitIdx + 1));
-        activeSlots.forEach((slot) => (grouped[slot] = 0));
-
-        leads.forEach((lead: any) => {
-          const leadDate = new Date(lead.createdAt);
-          if (adjustedFromDate) {
-            const fromD = new Date(adjustedFromDate + "T00:00:00");
-            if (leadDate < fromD) return;
-          }
-          if (adjustedToDate) {
-            const toD = new Date(adjustedToDate + "T23:59:59");
-            if (leadDate > toD) return;
-          }
-
-          const statusName =
-            lead.leadStatus?.name ||
-            (typeof lead.leadStatus === "string" ? lead.leadStatus : "");
-          if (statusName.toLowerCase().replace(/\s+/g, "") !== "won") return;
-
-          if (
-            leadDate.getFullYear() === targetYear &&
-            leadDate.getMonth() === targetMonth &&
-            leadDate.getDate() === targetDate
-          ) {
-            const kw = parseFloat(lead.kwRequirement) || 0;
-            const hour = leadDate.getHours();
-            let slot = "";
-            if (hour < 4) slot = hourSlots[0];
-            else if (hour < 8) slot = hourSlots[1];
-            else if (hour < 12) slot = hourSlots[2];
-            else if (hour < 16) slot = hourSlots[3];
-            else if (hour < 20) slot = hourSlots[4];
-            else slot = hourSlots[5];
-
-            if (grouped[slot] !== undefined) {
-              grouped[slot] += kw;
-            }
-          }
-        });
-      } else if (isCurrentYear && datePreset === "this-month") {
-        const targetMonth = now.getMonth();
-        const weekLabels = [
-          "Week 1 (1-7)",
-          "Week 2 (8-14)",
-          "Week 3 (15-21)",
-          "Week 4 (22+)",
-        ];
-        let limitIdx = 3;
-        const todayDate = now.getDate();
-        if (todayDate <= 7) limitIdx = 0;
-        else if (todayDate <= 14) limitIdx = 1;
-        else if (todayDate <= 21) limitIdx = 2;
-        else limitIdx = 3;
-
-        const activeWeeks = weekLabels.slice(0, Math.max(2, limitIdx + 1));
-        activeWeeks.forEach((w) => (grouped[w] = 0));
-
-        leads.forEach((lead: any) => {
-          const leadDate = new Date(lead.createdAt);
-          if (adjustedFromDate) {
-            const fromD = new Date(adjustedFromDate + "T00:00:00");
-            if (leadDate < fromD) return;
-          }
-          if (adjustedToDate) {
-            const toD = new Date(adjustedToDate + "T23:59:59");
-            if (leadDate > toD) return;
-          }
-
-          const statusName =
-            lead.leadStatus?.name ||
-            (typeof lead.leadStatus === "string" ? lead.leadStatus : "");
-          if (statusName.toLowerCase().replace(/\s+/g, "") !== "won") return;
-
-          if (
-            leadDate.getFullYear() === targetYear &&
-            leadDate.getMonth() === targetMonth
-          ) {
-            const kw = parseFloat(lead.kwRequirement) || 0;
-            const leadDateVal = leadDate.getDate();
-            let wLabel = "";
-            if (leadDateVal <= 7) wLabel = weekLabels[0];
-            else if (leadDateVal <= 14) wLabel = weekLabels[1];
-            else if (leadDateVal <= 21) wLabel = weekLabels[2];
-            else wLabel = weekLabels[3];
-
-            if (grouped[wLabel] !== undefined) {
-              grouped[wLabel] += kw;
-            }
-          }
-        });
-      } else if (isCurrentYear && datePreset === "prev-month") {
-        const targetMonth = (new Date(filter, now.getMonth() - 1, 1)).getMonth();
-        const weekLabels = [
-          "Week 1 (1-7)",
-          "Week 2 (8-14)",
-          "Week 3 (15-21)",
-          "Week 4 (22+)",
-        ];
-        weekLabels.forEach((w) => (grouped[w] = 0));
-
-        leads.forEach((lead: any) => {
-          const leadDate = new Date(lead.createdAt);
-          if (adjustedFromDate) {
-            const fromD = new Date(adjustedFromDate + "T00:00:00");
-            if (leadDate < fromD) return;
-          }
-          if (adjustedToDate) {
-            const toD = new Date(adjustedToDate + "T23:59:59");
-            if (leadDate > toD) return;
-          }
-
-          const statusName =
-            lead.leadStatus?.name ||
-            (typeof lead.leadStatus === "string" ? lead.leadStatus : "");
-          if (statusName.toLowerCase().replace(/\s+/g, "") !== "won") return;
-
-          if (
-            leadDate.getFullYear() === targetYear &&
-            leadDate.getMonth() === targetMonth
-          ) {
-            const kw = parseFloat(lead.kwRequirement) || 0;
-            const leadDateVal = leadDate.getDate();
-            let wLabel = "";
-            if (leadDateVal <= 7) wLabel = weekLabels[0];
-            else if (leadDateVal <= 14) wLabel = weekLabels[1];
-            else if (leadDateVal <= 21) wLabel = weekLabels[2];
-            else wLabel = weekLabels[3];
-
-            if (grouped[wLabel] !== undefined) {
-              grouped[wLabel] += kw;
-            }
-          }
-        });
-      } else {
-        const months = [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec",
-        ];
-        const limitMonths = targetYear === now.getFullYear();
-        const activeMonths = limitMonths
-          ? months.slice(0, Math.max(2, now.getMonth() + 1))
-          : months;
-        activeMonths.forEach((m) => (grouped[m] = 0));
-
-        leads.forEach((lead: any) => {
-          const leadDate = new Date(lead.createdAt);
-          if (targetYear === now.getFullYear() && datePreset !== "custom") {
-            if (adjustedFromDate) {
-              const fromD = new Date(adjustedFromDate + "T00:00:00");
-              if (leadDate < fromD) return;
-            }
-            if (adjustedToDate) {
-              const toD = new Date(adjustedToDate + "T23:59:59");
-              if (leadDate > toD) return;
-            }
-          }
-
-          const statusName =
-            lead.leadStatus?.name ||
-            (typeof lead.leadStatus === "string" ? lead.leadStatus : "");
-          if (statusName.toLowerCase().replace(/\s+/g, "") !== "won") return;
-
-          if (leadDate.getFullYear() === targetYear) {
-            const kw = parseFloat(lead.kwRequirement) || 0;
-            const mLabel = months[leadDate.getMonth()];
-            if (grouped[mLabel] !== undefined) {
-              grouped[mLabel] += kw;
-            }
-          }
-        });
-      }
-
-      const chartData = Object.entries(grouped).map(([name, kw]) => ({
-        name,
-        kw,
-      }));
-      const total = chartData.reduce((sum, d) => sum + d.kw, 0);
-      setTotalKw(total);
-      setKwGrowthData(chartData);
-    } catch (err) {
-      console.error("KW Growth error:", err);
-    }
-  };
-
-  const fetchRevenueGrowth = async (filter: number) => {
-    if (!token) return;
-    try {
-      const res = await axios.get(baseUrl.getAllLeads, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { limit: 1000 },
-      });
-      const leads = res.data?.data || [];
-
-      const now = new Date();
-      let grouped: Record<string, number> = {};
-
-      let targetYear = filter;
-      if (datePreset === "prev-month") {
-        const prevMonthDate = new Date(filter, now.getMonth() - 1, 1);
-        targetYear = prevMonthDate.getFullYear();
-      }
-
-      const adjustYear = (dateStr: string, targetYr: number) => {
-        if (!dateStr) return "";
-        const parts = dateStr.split("-");
-        if (parts.length === 3) {
-          return `${targetYr}-${parts[1]}-${parts[2]}`;
-        }
-        return dateStr;
-      };
-
-      const adjustedFromDate = adjustYear(fromDate, targetYear);
-      const adjustedToDate = adjustYear(toDate, targetYear);
-
-      const isCurrentYear = filter === now.getFullYear();
-
-      if (isCurrentYear && datePreset === "today") {
-        const targetMonth = now.getMonth();
-        const targetDate = now.getDate();
-        const hourSlots = [
-          "12 AM - 4 AM",
-          "4 AM - 8 AM",
-          "8 AM - 12 PM",
-          "12 PM - 4 PM",
-          "4 PM - 8 PM",
-          "8 PM - 12 AM",
-        ];
-        const currentHour = now.getHours();
-        let limitIdx = 5;
-        if (currentHour < 4) limitIdx = 0;
-        else if (currentHour < 8) limitIdx = 1;
-        else if (currentHour < 12) limitIdx = 2;
-        else if (currentHour < 16) limitIdx = 3;
-        else if (currentHour < 20) limitIdx = 4;
-        else limitIdx = 5;
-
-        const activeSlots = hourSlots.slice(0, Math.max(2, limitIdx + 1));
-        activeSlots.forEach((slot) => (grouped[slot] = 0));
-
-        leads.forEach((lead: any) => {
-          const leadDate = new Date(lead.createdAt);
-          if (adjustedFromDate) {
-            const fromD = new Date(adjustedFromDate + "T00:00:00");
-            if (leadDate < fromD) return;
-          }
-          if (adjustedToDate) {
-            const toD = new Date(adjustedToDate + "T23:59:59");
-            if (leadDate > toD) return;
-          }
-
-          const statusName =
-            lead.leadStatus?.name ||
-            (typeof lead.leadStatus === "string" ? lead.leadStatus : "");
-          if (statusName.toLowerCase().replace(/\s+/g, "") !== "won") return;
-
-          if (
-            leadDate.getFullYear() === targetYear &&
-            leadDate.getMonth() === targetMonth &&
-            leadDate.getDate() === targetDate
-          ) {
-            const amt = parseFloat(lead.paymentAmount) || 0;
-            const hour = leadDate.getHours();
-            let slot = "";
-            if (hour < 4) slot = hourSlots[0];
-            else if (hour < 8) slot = hourSlots[1];
-            else if (hour < 12) slot = hourSlots[2];
-            else if (hour < 16) slot = hourSlots[3];
-            else if (hour < 20) slot = hourSlots[4];
-            else slot = hourSlots[5];
-
-            if (grouped[slot] !== undefined) {
-              grouped[slot] += amt;
-            }
-          }
-        });
-      } else if (isCurrentYear && datePreset === "this-month") {
-        const targetMonth = now.getMonth();
-        const weekLabels = [
-          "Week 1 (1-7)",
-          "Week 2 (8-14)",
-          "Week 3 (15-21)",
-          "Week 4 (22+)",
-        ];
-        let limitIdx = 3;
-        const todayDate = now.getDate();
-        if (todayDate <= 7) limitIdx = 0;
-        else if (todayDate <= 14) limitIdx = 1;
-        else if (todayDate <= 21) limitIdx = 2;
-        else limitIdx = 3;
-
-        const activeWeeks = weekLabels.slice(0, Math.max(2, limitIdx + 1));
-        activeWeeks.forEach((w) => (grouped[w] = 0));
-
-        leads.forEach((lead: any) => {
-          const leadDate = new Date(lead.createdAt);
-          if (adjustedFromDate) {
-            const fromD = new Date(adjustedFromDate + "T00:00:00");
-            if (leadDate < fromD) return;
-          }
-          if (adjustedToDate) {
-            const toD = new Date(adjustedToDate + "T23:59:59");
-            if (leadDate > toD) return;
-          }
-
-          const statusName =
-            lead.leadStatus?.name ||
-            (typeof lead.leadStatus === "string" ? lead.leadStatus : "");
-          if (statusName.toLowerCase().replace(/\s+/g, "") !== "won") return;
-
-          if (
-            leadDate.getFullYear() === targetYear &&
-            leadDate.getMonth() === targetMonth
-          ) {
-            const amt = parseFloat(lead.paymentAmount) || 0;
-            const leadDateVal = leadDate.getDate();
-            let wLabel = "";
-            if (leadDateVal <= 7) wLabel = weekLabels[0];
-            else if (leadDateVal <= 14) wLabel = weekLabels[1];
-            else if (leadDateVal <= 21) wLabel = weekLabels[2];
-            else wLabel = weekLabels[3];
-
-            if (grouped[wLabel] !== undefined) {
-              grouped[wLabel] += amt;
-            }
-          }
-        });
-      } else if (isCurrentYear && datePreset === "prev-month") {
-        const targetMonth = (new Date(filter, now.getMonth() - 1, 1)).getMonth();
-        const weekLabels = [
-          "Week 1 (1-7)",
-          "Week 2 (8-14)",
-          "Week 3 (15-21)",
-          "Week 4 (22+)",
-        ];
-        weekLabels.forEach((w) => (grouped[w] = 0));
-
-        leads.forEach((lead: any) => {
-          const leadDate = new Date(lead.createdAt);
-          if (adjustedFromDate) {
-            const fromD = new Date(adjustedFromDate + "T00:00:00");
-            if (leadDate < fromD) return;
-          }
-          if (adjustedToDate) {
-            const toD = new Date(adjustedToDate + "T23:59:59");
-            if (leadDate > toD) return;
-          }
-
-          const statusName =
-            lead.leadStatus?.name ||
-            (typeof lead.leadStatus === "string" ? lead.leadStatus : "");
-          if (statusName.toLowerCase().replace(/\s+/g, "") !== "won") return;
-
-          if (
-            leadDate.getFullYear() === targetYear &&
-            leadDate.getMonth() === targetMonth
-          ) {
-            const amt = parseFloat(lead.paymentAmount) || 0;
-            const leadDateVal = leadDate.getDate();
-            let wLabel = "";
-            if (leadDateVal <= 7) wLabel = weekLabels[0];
-            else if (leadDateVal <= 14) wLabel = weekLabels[1];
-            else if (leadDateVal <= 21) wLabel = weekLabels[2];
-            else wLabel = weekLabels[3];
-
-            if (grouped[wLabel] !== undefined) {
-              grouped[wLabel] += amt;
-            }
-          }
-        });
-      } else {
-        const months = [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec",
-        ];
-        const limitMonths = targetYear === now.getFullYear();
-        const activeMonths = limitMonths
-          ? months.slice(0, Math.max(2, now.getMonth() + 1))
-          : months;
-        activeMonths.forEach((m) => (grouped[m] = 0));
-
-        leads.forEach((lead: any) => {
-          const leadDate = new Date(lead.createdAt);
-          if (targetYear === now.getFullYear() && datePreset !== "custom") {
-            if (adjustedFromDate) {
-              const fromD = new Date(adjustedFromDate + "T00:00:00");
-              if (leadDate < fromD) return;
-            }
-            if (adjustedToDate) {
-              const toD = new Date(adjustedToDate + "T23:59:59");
-              if (leadDate > toD) return;
-            }
-          }
-
-          const statusName =
-            lead.leadStatus?.name ||
-            (typeof lead.leadStatus === "string" ? lead.leadStatus : "");
-          if (statusName.toLowerCase().replace(/\s+/g, "") !== "won") return;
-
-          if (leadDate.getFullYear() === targetYear) {
-            const amt = parseFloat(lead.paymentAmount) || 0;
-            const mLabel = months[leadDate.getMonth()];
-            if (grouped[mLabel] !== undefined) {
-              grouped[mLabel] += amt;
-            }
-          }
-        });
-      }
-
-      const chartData = grouped
-        ? Object.entries(grouped).map(([name, amt]) => ({ name, amt }))
-        : [];
-      const total = chartData.reduce((sum, d) => sum + d.amt, 0);
-      setTotalRevenueChart(total);
-      const maxAmt = Math.max(...chartData.map((d) => d.amt), 0);
-      const chartDataWithLine = chartData.map((d) => ({
-        ...d,
-        lineAmt: d.amt > 0 ? d.amt + maxAmt * 0.1 : 0,
-      }));
-      setRevenueGrowthData(chartDataWithLine);
-    } catch (err) {
-      console.error("Revenue Growth error:", err);
-    }
-  };
-
-  const fetchFollowUpChartData = async () => {
-    if (!token) return;
-    try {
-      const res = await axios.get(baseUrl.getAllLeads, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { limit: 1000 },
-      });
-      const leads = res.data?.data || [];
-
-      const now = new Date();
-      // Set now to start of day for comparison
-      const todayStart = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
-      );
-
-      const targetYear = followUpYearFilter;
-      const months = [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ];
-
-      let grouped: Record<string, { upcoming: number; completed: number }> = {};
-
-      // If it is the current year, limit to the current month. If it's a past year, show all 12 months.
-      const isCurrentYear = targetYear === now.getFullYear();
-      const activeMonths = isCurrentYear
-        ? months.slice(0, now.getMonth() + 1)
-        : months;
-
-      activeMonths.forEach((m) => (grouped[m] = { upcoming: 0, completed: 0 }));
-
-      // Count each lead's nextFollowupDate as upcoming (future) or completed (past)
-      const formatDateStr = (dateVal: any): string | null => {
-        if (!dateVal) return null;
-        try {
-          const d = new Date(dateVal);
-          if (isNaN(d.getTime())) return null;
-          const y = d.getFullYear();
-          const m = String(d.getMonth() + 1).padStart(2, "0");
-          const date = String(d.getDate()).padStart(2, "0");
-          return `${y}-${m}-${date}`;
-        } catch {
-          return null;
-        }
-      };
-
-      // Count each lead's nextFollowupDate as upcoming (future) or completed (past)
-      leads.forEach((lead: any) => {
-        const nextDateStr = formatDateStr(lead.nextFollowupDate);
-        let upcomingCounted = false;
-
-        // 1. Process all historical follow-ups in lead.followUps
-        if (lead.followUps && Array.isArray(lead.followUps)) {
-          lead.followUps.forEach((f: any) => {
-            const fDate = new Date(f.date || f.createdAt);
-            if (fDate.getFullYear() !== targetYear) return;
-
-            const mLabel = months[fDate.getMonth()];
-            if (!grouped[mLabel]) return;
-            const fDateStr = formatDateStr(f.date || f.createdAt);
-            if (nextDateStr && fDateStr === nextDateStr) {
-              grouped[mLabel].upcoming++;
-              upcomingCounted = true;
-            } else {
-              grouped[mLabel].completed++;
-            }
-          });
-        }
-
-        // 2. If the lead has an active nextFollowupDate that wasn't counted in followUps
-        if (nextDateStr && !upcomingCounted) {
-          const nextDateObj = new Date(lead.nextFollowupDate);
-          if (nextDateObj.getFullYear() === targetYear) {
-            const mLabel = months[nextDateObj.getMonth()];
-            if (grouped[mLabel]) {
-              grouped[mLabel].upcoming++;
-            }
-          }
-        }
-      });
-
-      const chartData = Object.entries(grouped).map(([name, val]) => ({
-        name,
-        upcoming: val.upcoming,
-        completed: val.completed,
-      }));
-
-      setFollowUpChartData(chartData);
-    } catch (err) {
-      console.error("Follow-up chart error:", err);
-    }
-  };
-
-  const fetchStaffWinRate = async (
-    filter: "all" | "week" | "month" | "year",
-  ) => {
-    if (!token) return;
-    try {
-      const [leadsRes, usersRes] = await Promise.all([
-        axios.get(baseUrl.getAllLeads, {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { limit: 1000 },
-        }),
-        axios
-          .get(baseUrl.getAllUsers, {
-            headers: { Authorization: `Bearer ${token}` },
-            params: { limit: 1000 },
-          })
-          .catch(() => ({ data: { data: [] } })),
-      ]);
-
-      const leads = leadsRes.data?.data || [];
-      const users = usersRes.data?.data || [];
-
-      // Create a map of user ID to department name
-      const userDeptMap: Record<string, string> = {};
-      users.forEach((u: any) => {
-        const deptName = u.role?.roleName || u.roleName || u.department || "";
-        userDeptMap[String(u._id)] = deptName;
-      });
-
-      // Prepopulate staffMap with users in a "Sales" department
-      const staffMap: Record<
-        string,
-        {
-          name: string;
-          Won: number;
-          Lost: number;
-          "In Progress": number;
-          "New Lead": number;
-        }
-      > = {};
-      users.forEach((u: any) => {
-        const deptName = userDeptMap[String(u._id)] || "";
-        if (deptName.toLowerCase().includes("sales")) {
-          const name = u.fullName || "Unknown";
-          staffMap[name] = {
-            name,
-            Won: 0,
-            Lost: 0,
-            "In Progress": 0,
-            "New Lead": 0,
-          };
-        }
-      });
-
-      const now = new Date();
-      const filtered = leads.filter((lead: any) => {
-        const userId = lead.assignedTo?._id || lead.assignedTo;
-        if (!userId) return false;
-
-        // Only count leads assigned to a Sales user
-        const deptName = userDeptMap[String(userId)] || "";
-        if (!deptName.toLowerCase().includes("sales")) return false;
-
-        // Date range filter
-        const leadDate = new Date(lead.createdAt);
-        if (fromDate) {
-          const fromD = new Date(fromDate + "T00:00:00");
-          if (leadDate < fromD) return false;
-        }
-        if (toDate) {
-          const toD = new Date(toDate + "T23:59:59");
-          if (leadDate > toD) return false;
-        }
-
-        if (filter === "all") return true;
-        const d = new Date(lead.createdAt);
-        const diff = now.getTime() - d.getTime();
-        if (filter === "week") return diff <= 7 * 24 * 60 * 60 * 1000;
-        if (filter === "month") return diff <= 30 * 24 * 60 * 60 * 1000;
-        if (filter === "year") return d.getFullYear() === now.getFullYear();
-        return true;
-      });
-
-      setTotalStaffLeads(filtered.length);
-
-      filtered.forEach((lead: any) => {
-        const name = lead.assignedTo?.fullName || "Unknown";
-        if (!staffMap[name]) {
-          staffMap[name] = {
-            name,
-            Won: 0,
-            Lost: 0,
-            "In Progress": 0,
-            "New Lead": 0,
-          };
-        }
-        const status = lead.leadStatus?.name?.toLowerCase() || "";
-        if (status === "won") staffMap[name].Won++;
-        else if (status === "lost") staffMap[name].Lost++;
-        else {
-          staffMap[name]["In Progress"]++;
-          staffMap[name]["New Lead"]++;
-        }
-      });
-
-      setStaffWinRate(Object.values(staffMap));
-    } catch (err) {
-      console.error("Staff Win Rate error:", err);
-    }
-  };
-
+  // Main dashboard + follow-up tables (ALL roles)
   useEffect(() => {
-    if (!hasLoadedFromStorage) return;
-    if (token) {
-      fetchKwGrowth(kwFilter);
-      fetchStaffWinRate(staffFilter);
-      fetchRevenueGrowth(revenueFilter);
-      fetchFollowUpChartData();
-    }
-  }, [
-    token,
-    kwFilter,
-    staffFilter,
-    revenueFilter,
-    fromDate,
-    toDate,
-    followUpYearFilter,
-    hasLoadedFromStorage,
-  ]);
+    if (!hasLoadedFromStorage || !token || !user?._id) return;
+    fetchDashboard();
+    fetchUpcomingFollowups(1);
+    fetchDueFollowups();
+  }, [token, user?._id, fromDate, toDate, datePreset, hasLoadedFromStorage]);
 
+  // Revenue & KW charts (Admin & Sales only)
   useEffect(() => {
-    if (!hasLoadedFromStorage) return;
-    if (token) {
-      fetchLeadSummary();
-      fetchUpcomingFollowups(1);
-      fetchDueFollowups(1);
-      fetchTodayTasks();
+    if (!hasLoadedFromStorage || !token || !user?._id) return;
+    if (userScope === "calling") return; // Calling user ne revenue/kw chart nathi
+    fetchRevenueChart(revenueFilter);
+    fetchKwGrowthChart(kwFilter);
+  }, [token, user?._id, userScope, revenueFilter, kwFilter, hasLoadedFromStorage]);
 
-      // Only fetch staff stats if they have readAll or if they are a calling user
-      if (permissions.readAll || isCallingUser) {
-        fetchLeadsBySource();
-        fetchStaffPerformance();
-      }
-    }
-  }, [token, permissions, fromDate, toDate, user, hasLoadedFromStorage]);
+  // Follow-up analysis chart (Sales & Calling only)
+  useEffect(() => {
+    if (!hasLoadedFromStorage || !token || !user?._id) return;
+    if (userScope === "admin") return; // Admin ne follow-up analysis chart nathi
+    fetchFollowupAnalysis(followUpYearFilter);
+  }, [token, user?._id, userScope, followUpYearFilter, hasLoadedFromStorage]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -1521,7 +747,7 @@ export default function Dashboard() {
           if (Array.isArray(parsed)) {
             setVisibleStatusNames(parsed.filter((x) => typeof x === "string"));
           }
-        } catch {}
+        } catch { }
       }
     }
   }, []);
@@ -1560,105 +786,91 @@ export default function Dashboard() {
 
   const summaryCards: any[] = summary
     ? [
-        {
-          key: "total",
-          label: "Total Leads",
-          value: summary.totalLeads,
-          tone: "up",
-          Icon: Users,
-          iconBg: "bg-blue-500/10",
-          iconColor: "text-blue-500",
-          type: "total",
-          fill: "#3B82F6",
-          name: "Total Leads",
-        },
-        {
-          key: "new",
-          label: "Total New Leads",
-          value: getStatusCount("New Lead"),
-          tone: "up",
-          Icon: TrendingUp,
-          iconBg: "bg-purple-500/10",
-          iconColor: "text-purple-500",
-          type: "status",
-          statusId: getStatusId("New Lead"),
-          fill: "#8B5CF6",
-          name: "New Leads",
-        },
-        {
-          key: "won",
-          label: "Total Won Leads",
-          value: getStatusCount("Won"),
-          trend: 0,
-          tone: "neutral",
-          Icon: CheckCircle2,
-          iconBg: "bg-emerald-500/10",
-          iconColor: "text-emerald-500",
-          type: "status",
-          statusId: getStatusId("Won"),
-          fill: "#10B981",
-          name: "Won Leads",
-        },
-        {
-          key: "lost",
-          label: "Total Lost Leads",
-          value: getStatusCount("Lost"),
-          trend: 0,
-          tone: "neutral",
-          Icon: XCircle,
-          iconBg: "bg-red-500/10",
-          iconColor: "text-red-500",
-          type: "status",
-          statusId: getStatusId("Lost"),
-          fill: "#EF4444",
-          name: "Lost Leads",
-        },
-        {
-          key: "followups",
-          label: "Follow-ups",
-          value: upcomingFollowups.length,
-          trend: 0,
-          tone: "neutral",
-          Icon: PhoneCall,
-          iconBg: "bg-orange-500/10",
-          iconColor: "text-orange-500",
-          type: "custom",
-          fill: "#F59E0B",
-          name: "Follow-ups",
-        },
-        ...(!isCallingUser
-          ? [
-              {
-                key: "revenue",
-                label: "Total Revenue",
-                value: `₹${(summary.totalRevenue || 0).toLocaleString()}`,
-                trend: 15.4,
-                tone: "up",
-                Icon: Activity,
-                iconBg: "bg-amber-500/10",
-                iconColor: "text-amber-500",
-                type: "revenue",
-                fill: "#F59E0B",
-                name: "Revenue",
-                description: "Total from won leads",
-              },
-            ]
-          : []),
-        //  {
-        //   key: "tasks",
-        //   label: "Tasks",
-        //   value: todayTasks.length,
-        //   trend: 0,
-        //   tone: "neutral",
-        //   Icon: CheckCircle2,
-        //   iconBg: "bg-purple-500/10",
-        //   iconColor: "text-purple-500",
-        //   type: "custom",
-        //   fill: "#8B5CF6",
-        //   name: "Tasks",
-        //   description: "Tasks for today"
-        // },
-      ]
+      {
+        key: "total",
+        label: "Total Leads",
+        value: summary.totalLeads,
+        tone: "up",
+        Icon: Users,
+        iconBg: "bg-blue-500/10",
+        iconColor: "text-blue-500",
+        type: "total",
+        fill: "#3B82F6",
+        name: "Total Leads",
+      },
+      {
+        key: "new",
+        label: "Total New Leads",
+        value: getStatusCount("New Lead"),
+        tone: "up",
+        Icon: TrendingUp,
+        iconBg: "bg-purple-500/10",
+        iconColor: "text-purple-500",
+        type: "status",
+        statusId: getStatusId("New Lead"),
+        fill: "#8B5CF6",
+        name: "New Leads",
+      },
+      {
+        key: "won",
+        label: "Total Won Leads",
+        value: getStatusCount("Won"),
+        trend: 0,
+        tone: "neutral",
+        Icon: CheckCircle2,
+        iconBg: "bg-emerald-500/10",
+        iconColor: "text-emerald-500",
+        type: "status",
+        statusId: getStatusId("Won"),
+        fill: "#10B981",
+        name: "Won Leads",
+      },
+      {
+        key: "lost",
+        label: "Total Lost Leads",
+        value: getStatusCount("Lost"),
+        trend: 0,
+        tone: "neutral",
+        Icon: XCircle,
+        iconBg: "bg-red-500/10",
+        iconColor: "text-red-500",
+        type: "status",
+        statusId: getStatusId("Lost"),
+        fill: "#EF4444",
+        name: "Lost Leads",
+      },
+      {
+        key: "followups",
+        label: "Follow-ups",
+        value:  summary.followUps,
+        trend: 0,
+        tone: "neutral",
+        Icon: PhoneCall,
+        iconBg: "bg-orange-500/10",
+        iconColor: "text-orange-500",
+        type: "custom",
+        fill: "#F59E0B",
+        name: "Follow-ups",
+      },
+      ...(!isCallingUser
+        ? [
+          {
+            key: "revenue",
+            label: "Total Revenue",
+            value: `₹${(summary.totalRevenue || 0).toLocaleString()}`,
+            trend: 15.4,
+            tone: "up",
+            Icon: Activity,
+            iconBg: "bg-amber-500/10",
+            iconColor: "text-amber-500",
+            type: "revenue",
+            fill: "#F59E0B",
+            name: "Revenue",
+            description: "Total from won leads",
+          },
+        ]
+        : []),
+    ]
     : [];
 
   const statusChartData =
@@ -1747,11 +959,10 @@ export default function Dashboard() {
             <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
           </div>
           <span
-            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${
-              dateHeader === "Follow up Date"
-                ? "bg-orange-50 text-[#d87612] border border-orange-100"
-                : "bg-red-50 text-red-700 border border-red-100"
-            }`}
+            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${dateHeader === "Follow up Date"
+              ? "bg-orange-50 text-[#d87612] border border-orange-100"
+              : "bg-red-50 text-red-700 border border-red-100"
+              }`}
           >
             {items.length} {items.length === 1 ? "Lead" : "Leads"}
           </span>
@@ -1887,86 +1098,6 @@ export default function Dashboard() {
     </div>
   );
 
-  // const renderTodayTasksTable = (
-  //   items: any[],
-  //   loading: boolean,
-  //  ) => (
-  //   <div className="rounded-md bg-white border border-gray-200 overflow-hidden h-full flex flex-col transition-all hover:shadow-xl">
-  //     <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50/50 to-white">
-  //       <div className="flex items-center justify-between">
-  //         <div className="flex items-center gap-3">
-  //           <div className="p-2 rounded-lg bg-purple-50">
-  //             <CalendarIcon className="h-5 w-5 text-purple-600" />
-  //           </div>
-  //           <h3 className="text-lg font-semibold text-gray-900">Today's Tasks</h3>
-  //         </div>
-  //         <span className="inline-flex items-center rounded-full bg-purple-100 text-purple-700 px-2.5 py-1 text-xs font-medium">
-  //           {items.length} {items.length === 1 ? 'Task' : 'Tasks'}
-  //         </span>
-  //       </div>
-  //     </div>
-
-  //     {loading ? (
-  //       <div className="p-12 text-center flex-1 flex items-center justify-center">
-  //         <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-purple-600 border-r-transparent"></div>
-  //       </div>
-  //     ) : items.length === 0 ? (
-  //       <div className="p-12 text-center flex-1 flex items-center justify-center">
-  //         <div className="flex flex-col items-center gap-2">
-  //           <div className="p-3 bg-gray-50 rounded-full">
-  //             <CheckCircle2 className="h-8 w-8 text-gray-400" />
-  //           </div>
-  //           <p className="text-sm text-gray-500">No tasks for today</p>
-  //         </div>
-  //       </div>
-  //     ) : (
-  //       <>
-  //         <div className="overflow-y-auto flex-1">
-  //           <div className="divide-y divide-gray-50">
-  //             {items.map((task, index) => (
-  //               <div
-  //                 key={task._id || index}
-  //                 className="p-4 hover:bg-purple-50/20 transition-all cursor-pointer group"
-  //                 onClick={() => router.push(`/tasks`)}
-  //               >
-  //                 <div className="flex items-start justify-between mb-2">
-  //                   <div className="flex-1">
-  //                     <h4 className="font-semibold text-gray-900 text-sm mb-1">
-  //                       {task.subject}
-  //                     </h4>
-  //                     <div className="flex items-center gap-2">
-  //                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border ${task.taskStatus?.name?.toLowerCase() === 'completed'
-  //                           ? 'bg-green-100 text-green-700 border-green-200'
-  //                           : 'bg-yellow-100 text-yellow-700 border-yellow-200'
-  //                         }`}>
-  //                         {task.taskStatus?.name || 'In Progress'}
-  //                       </span>
-  //                       <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border ${getPriorityColor(task.priority)}`}>
-  //                         {task.priority?.toUpperCase() || 'MEDIUM'}
-  //                       </span>
-  //                     </div>
-  //                   </div>
-  //                   <ChevronRight className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-  //                 </div>
-  //               </div>
-  //             ))}
-  //           </div>
-  //         </div>
-
-  //         <div className="p-3 border-t border-gray-100 bg-gray-50/50">
-  //           <Link
-  //             href="/tasks"
-  //             className="flex items-center justify-center gap-2 text-xs font-semibold text-purple-600 hover:text-purple-700 transition-colors py-1"
-  //           >
-  //             View all tasks
-  //             <ChevronRight className="h-3 w-3" />
-  //           </Link>
-  //         </div>
-  //       </>
-  //     )}
-  //   </div>
-  // );
-
   const salesExecutiveCard = (
     <div className="flex flex-col rounded-2xl border border-gray-100 p-6 min-w-0 bg-white rounded-3xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow min-h-[450px]">
       <div className="flex items-center justify-between mb-4 shrink-0">
@@ -2041,6 +1172,7 @@ export default function Dashboard() {
             <YAxis tick={false} axisLine={false} tickLine={false} width={0} />
             <Tooltip
               cursor={false}
+               wrapperStyle={{ zIndex: 100 }}
               content={({ active, payload }) => {
                 if (active && payload?.length) {
                   return (
@@ -2223,21 +1355,19 @@ export default function Dashboard() {
           <div className="flex flex-wrap items-center gap-1 bg-gray-50/50 p-1 rounded-2xl border border-gray-100">
             <button
               onClick={() => setStatusView("pie")}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                statusView === "pie"
-                  ? "bg-[#d87612] text-white shadow-sm"
-                  : "text-gray-500 hover:text-gray-900"
-              }`}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${statusView === "pie"
+                ? "bg-[#d87612] text-white shadow-sm"
+                : "text-gray-500 hover:text-gray-900"
+                }`}
             >
               Pie
             </button>
             <button
               onClick={() => setStatusView("graph")}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                statusView === "graph"
-                  ? "bg-[#d87612] text-white shadow-sm"
-                  : "text-gray-500 hover:text-gray-900"
-              }`}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${statusView === "graph"
+                ? "bg-[#d87612] text-white shadow-sm"
+                : "text-gray-500 hover:text-gray-900"
+                }`}
             >
               Graph
             </button>
@@ -2850,11 +1980,10 @@ export default function Dashboard() {
                 <button
                   key={p}
                   onClick={() => applyDatePreset(p)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    datePreset === p
-                      ? "bg-[#d87612] text-white shadow-sm shadow-[#d87612]/20"
-                      : "text-gray-500 hover:text-gray-900 hover:bg-gray-100/50"
-                  }`}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${datePreset === p
+                    ? "bg-[#d87612] text-white shadow-sm shadow-[#d87612]/20"
+                    : "text-gray-500 hover:text-gray-900 hover:bg-gray-100/50"
+                    }`}
                 >
                   {labelMap[p]}
                 </button>
@@ -2912,11 +2041,10 @@ export default function Dashboard() {
           {summaryCards.map((card) => (
             <div
               key={card.key}
-              className={`group flex items-center gap-4 bg-white p-5 rounded-3xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 min-w-0 cursor-pointer ${
-                card.type === "status" && card.statusId
-                  ? "hover:border-gray-300"
-                  : ""
-              }`}
+              className={`group flex items-center gap-4 bg-white p-5 rounded-3xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 min-w-0 cursor-pointer ${card.type === "status" && card.statusId
+                ? "hover:border-gray-300"
+                : ""
+                }`}
             >
               <div
                 className={`p-3 rounded-xl ${card.iconBg} ${card.iconColor} transition-transform duration-300 group-hover:scale-110 shrink-0`}
@@ -3021,6 +2149,7 @@ export default function Dashboard() {
           }}
           lead={selectedLeadForUpdate}
           onSuccess={() => {
+            fetchDashboard();
             fetchUpcomingFollowups(upcomingPage);
             fetchDueFollowups(duePage);
           }}
