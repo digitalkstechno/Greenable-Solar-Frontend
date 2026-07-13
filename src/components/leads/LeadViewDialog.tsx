@@ -233,7 +233,6 @@ import { Eye, Download, FileText, Image, File, FileSpreadsheet, Search, Trash2, 
 import { getFileIcon } from '@/utills/utill';
 import LeadQuotationDialog from './LeadQuotationDialog';
 import { FormSelect } from '../ui/FormSelect';
-import { generateQuotationPdf } from '@/components/leads/generateQuotationPdf';
 import Calendar from '@/components/ui/Calendar';
 import TimePicker from '@/components/ui/TimePicker';
 import Swal from 'sweetalert2';
@@ -577,15 +576,64 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
         ? attachment.path
         : `${process.env.NEXT_PUBLIC_IMAGE_URL}${attachment.path}`;
 
-      const proxyUrl = `/api/download?url=${encodeURIComponent(fileUrl)}`;
+      const response = await axios.get(baseUrl.downloadAttachment, {
+        params: { url: fileUrl, filename: attachment.originalName },
+        headers: { Authorization: `Bearer ${getAuthToken()}` },
+        responseType: 'blob',
+      });
+
+      const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
-      link.href = proxyUrl;
+      link.href = blobUrl;
       link.download = attachment.originalName || 'download';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      toast.success('Download completed');
     } catch (error) {
+      console.error('Download error:', error);
       toast.error('Failed to download file');
+    }
+  };
+
+  const handleDownloadQuotation = async (q: any, leadData: any) => {
+    try {
+
+      const minimalLead = {
+        fullName: leadData.fullName,
+        contact: leadData.contact,
+        address: leadData.address,
+        kwRequirement: leadData.kwRequirement,
+        assignedTo: leadData.assignedTo ? { fullName: leadData.assignedTo.fullName } : null,
+      };
+
+      const response = await axios.post(
+        baseUrl.generateQuotationPdf,
+        { q, lead: minimalLead  },
+        {
+          headers: { Authorization: `Bearer ${getAuthToken()}` },
+          responseType: 'blob',
+        }
+      );
+
+      const blobUrl = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = blobUrl;
+
+
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('en-GB').replace(/\//g, '-');
+      const timeStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false }).replace(':', '.');
+
+      link.download = `GS ${leadData?.fullName || 'lead'} (${dateStr} ${timeStr}).pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('PDF download error:', error);
+      toast.error('Failed to generate quotation PDF');
     }
   };
 
@@ -983,9 +1031,14 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
                           <td className="px-4 py-3 text-gray-700">{q.inverter}</td>
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-end gap-1">
-                              <button onClick={() => generateQuotationPdf(q, { ...lead, quotations: localQuotations })} className="p-1.5 hover:bg-gray-100 rounded transition-colors text-gray-500 hover:text-gray-700" title="Download">
+                              <button
+                                onClick={() => handleDownloadQuotation(q, { ...lead, quotations: localQuotations })}
+                                className="p-1.5 hover:bg-gray-100 rounded transition-colors text-gray-500 hover:text-gray-700"
+                                title="Download"
+                              >
                                 <Download className="h-4 w-4" />
                               </button>
+
                               <button
                                 onClick={() => { setEditQuotationData(q); setQuotationOpen(true); }}
                                 className="p-1.5 hover:bg-gray-100 rounded transition-colors text-gray-500 hover:text-gray-700"
