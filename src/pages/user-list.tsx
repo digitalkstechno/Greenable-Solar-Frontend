@@ -18,6 +18,7 @@ interface StaffManagement {
   password: string;
   status: string;
   department: string;
+
 }
 
 // ──────────────────────────────────────────────── Debounce hook
@@ -47,6 +48,7 @@ export function UserContent() {
   const [search, setSearch] = useState('');
   const [totalPages, setTotalPages] = useState(1);
   const [totalRecords, setTotalRecords] = useState(0);
+  const [exporting, setExporting] = useState(false);
 
   const debouncedSearch = useDebounce(search, 500);
 
@@ -62,7 +64,7 @@ export function UserContent() {
 
   useEffect(() => {
     if (!token) return;
-    
+
     // Fetch permissions
     axios
       .get(baseUrl.currentStaff, {
@@ -116,8 +118,8 @@ export function UserContent() {
       const formatted: StaffManagement[] = payload.map((item: any) => {
         const roleObj = item.role;
         const roleOrDeptId = typeof roleObj === 'object' && roleObj !== null ? roleObj._id : roleObj;
-        const deptName = typeof roleObj === 'object' && roleObj !== null 
-          ? (roleObj.roleName || roleObj.name) 
+        const deptName = typeof roleObj === 'object' && roleObj !== null
+          ? (roleObj.roleName || roleObj.name)
           : departments.find(d => d._id === roleOrDeptId)?.roleName || roleOrDeptId || '-';
 
         return {
@@ -213,9 +215,8 @@ export function UserContent() {
         const isActive = value?.toLowerCase() === 'active';
         return (
           <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${
-              isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-            }`}
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+              }`}
           >
             {isActive ? 'Active' : 'Inactive'}
           </span>
@@ -277,7 +278,7 @@ export function UserContent() {
       });
       fetchStaff();
       toast.success('User deleted successfully');
-      
+
       // Close dialog
       setShowDeleteDialog(false);
       setStaffToDelete(null);
@@ -297,10 +298,36 @@ export function UserContent() {
   const canUpdate = !!setupPermissions?.update;
   const canDelete = !!setupPermissions?.delete;
 
+  const handleExport = async () => {
+    console.log('handleExport called!');
+    setExporting(true);
+    try {
+      const response = await axios.get(baseUrl.exportUsers, {
+        headers: { Authorization: `Bearer ${getAuthToken()}` },
+        responseType: 'blob',
+        params: { search },
+      });
+
+      const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `users_export_${Date.now()}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      toast.success('Export completed');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <>
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-
         <DataTable
           data={staffManagementData}
           columns={columns}
@@ -322,17 +349,20 @@ export function UserContent() {
           onEdit={canUpdate ? handleEdit : undefined}
           onDelete={canDelete ? handleDeleteClick : undefined} // Changed to handleDeleteClick
           actions
+          onExport={handleExport} 
           addButton={
             canCreate
               ? {
-                  label: 'Add User',
-                  onClick: handleAdd,
-                }
+                label: 'Add User',
+                onClick: handleAdd,
+              }
               : undefined
           }
-          // Optional: pass isLoading if your DataTable supports loading UI
-          // isLoading={isLoading}
+
+        // Optional: pass isLoading if your DataTable supports loading UI
+        // isLoading={isLoading}
         />
+
       </div>
 
       {/* Delete Confirmation Dialog */}
@@ -366,7 +396,7 @@ export function UserContent() {
       >
         <div className="py-4">
           <p className="text-gray-700">
-            Are you sure you want to delete user "{staffToDelete?.fullName}"? 
+            Are you sure you want to delete user "{staffToDelete?.fullName}"?
             This action cannot be undone.
           </p>
         </div>
