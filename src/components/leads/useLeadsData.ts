@@ -28,6 +28,7 @@ export function useLeadsData(
   const [sources, setSources] = useState<ApiSource[]>([]);
   const [statuses, setStatuses] = useState<ApiStatus[]>([]);
   const [staffMembers, setStaffMembers] = useState<ApiUser[]>([]);
+  const [assignableStaff, setAssignableStaff] = useState<ApiUser[]>([]);
   const [leadLabels, setLeadLabels] = useState<LeadLabel[]>([]);
   const [counts, setCounts] = useState<LeadCountSummary | null>(null);
   const [totals, setTotals] = useState<any>(null);
@@ -261,14 +262,33 @@ export function useLeadsData(
 
   const fetchMeta = useCallback(async () => {
     try {
-      const [stRes, staffRes, meRes, sourcesRes] = await Promise.allSettled([
+      const [stRes, staffRes, deptRes, meRes, sourcesRes] = await Promise.allSettled([
         axios.get(baseUrl.leadStatuses, { headers: getHeaders() }),
         axios.get(baseUrl.getAllUsers, { headers: getHeaders(), params: { limit: 1000 } }),
+        axios.get(baseUrl.department, { headers: getHeaders() }),
         axios.get(baseUrl.currentStaff, { headers: getHeaders() }),
         axios.get(baseUrl.leadSources, { headers: getHeaders() })
       ]);
       if (stRes.status === 'fulfilled') setStatuses(stRes.value.data?.data ?? []);
-      if (staffRes.status === 'fulfilled') setStaffMembers(staffRes.value.data?.data ?? []);
+      // if (staffRes.status === 'fulfilled') setStaffMembers(staffRes.value.data?.data ?? []);
+      if (staffRes.status === 'fulfilled') {
+        const depts = deptRes.status === 'fulfilled' ? (deptRes.value.data?.data ?? []) : [];
+        const users = staffRes.value.data?.data ?? [];
+        setStaffMembers(users); // unfiltered - for filter dropdown
+
+        const salesExecs = users.filter((u: any) => {
+          const r = u.role;
+          const roleName = r ? (r.roleName || r.name || (typeof r === 'string' ? r : '')) : '';
+          const d = depts.find((dept: any) => dept._id === u.department);
+          const deptName = d ? (d.roleName || d.name || '') : '';
+          return roleName.toLowerCase().includes('sales') || deptName.toLowerCase().includes('sales');
+        });
+        const usersWithDepts = salesExecs.map((u: any) => {
+          const d = depts.find((dept: any) => dept._id === u.department);
+          return { ...u, departmentName: d ? (d.roleName || d.name) : '' };
+        });
+        setAssignableStaff(usersWithDepts); // filtered - for Add Lead dialog
+      }
       if (sourcesRes.status === 'fulfilled') setSources(sourcesRes.value.data?.data ?? []);
       if (meRes.status === 'fulfilled') {
         const role = meRes.value.data?.data?.role || {};
@@ -290,7 +310,7 @@ export function useLeadsData(
   // ─────────────────────────────────────────────────────────────────────────
   const refetchAll = useCallback(async () => {
     const { activeTab: tab, filters: f, viewMode: vm, kanbanSubView: ksv,
-            listPage: lp, lostPage: lsp, wonPage: wp, limit: lim } = stateRef.current;
+      listPage: lp, lostPage: lsp, wonPage: wp, limit: lim } = stateRef.current;
 
     if (vm === 'list') {
       await Promise.all([fetchLeadsList(tab, f, lp, lim), fetchCounts(tab, f)]);
@@ -319,7 +339,7 @@ export function useLeadsData(
       setLoading(true);
       if (viewMode === 'list') {
         await Promise.all([
-          fetchLeadsList(activeTab, filters, 1, limit), 
+          fetchLeadsList(activeTab, filters, 1, limit),
           fetchCounts(activeTab, filters)
         ]);
       } else {
@@ -407,7 +427,7 @@ export function useLeadsData(
     leads, setLeads,
     leadsList, setLeadsList,
     lostLeads, wonLeads,
-    sources, statuses, staffMembers, leadLabels,
+    sources, statuses, staffMembers, assignableStaff, leadLabels,
     counts, loading, permissions,
     totals, currentUser,
     refetchAll,

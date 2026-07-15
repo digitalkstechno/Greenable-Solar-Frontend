@@ -188,6 +188,7 @@ export default function RoleForm({
 
     formik.setFieldValue('permissions', newPermissions);
   };
+  const isLockedName = initialData?.roleName?.toLowerCase().includes('sales');
 
   return (
     <Dialog
@@ -217,11 +218,14 @@ export default function RoleForm({
     >
       <form id="role-form" onSubmit={formik.handleSubmit} className="space-y-6">
         <div>
+
           <FormInput
+
             inputRef={roleNameRef}
             label="Department Name"
             name="roleName"
             type="text"
+            disabled={isLockedName}
             value={formik.values.roleName}
             onChange={formik.handleChange}
             onBlur={formik.handleBlur}
@@ -254,26 +258,26 @@ export default function RoleForm({
                           const isCapChecked = isSuperAdminLeadViewGlobal ? true : caps[cap];
 
                           return (
-                          <label key={cap} className={`inline-flex cursor-pointer items-center gap-2 text-sm text-gray-700 ${isCapDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}>
-                            <input
-                              type="checkbox"
-                              checked={isCapChecked}
-                              onChange={() => { if (!isCapDisabled && !(cap === 'readOwn' && (caps.create || caps.update || caps.delete))) toggleCapability(feature, cap); }}
-                              disabled={isCapDisabled}
-                              className={`h-4 w-4 rounded border-gray-300 text-sky-950 focus:ring-sky-200 ${isCapDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                            />
-                            <span>
-                              {cap === 'readAll'
-                                ? 'View (Global)'
-                                : cap === 'readOwn'
-                                  ? 'View (Own)'
-                                  : cap === 'create'
-                                    ? 'Create'
-                                    : cap === 'update'
-                                      ? 'Update'
-                                      : 'Delete'}
-                            </span>
-                          </label>
+                            <label key={cap} className={`inline-flex cursor-pointer items-center gap-2 text-sm text-gray-700 ${isCapDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                              <input
+                                type="checkbox"
+                                checked={isCapChecked}
+                                onChange={() => { if (!isCapDisabled && !(cap === 'readOwn' && (caps.create || caps.update || caps.delete))) toggleCapability(feature, cap); }}
+                                disabled={isCapDisabled}
+                                className={`h-4 w-4 rounded border-gray-300 text-sky-950 focus:ring-sky-200 ${isCapDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                              />
+                              <span>
+                                {cap === 'readAll'
+                                  ? 'View (Global)'
+                                  : cap === 'readOwn'
+                                    ? 'View (Own)'
+                                    : cap === 'create'
+                                      ? 'Create'
+                                      : cap === 'update'
+                                        ? 'Update'
+                                        : 'Delete'}
+                              </span>
+                            </label>
                           );
                         })}
                       </div>

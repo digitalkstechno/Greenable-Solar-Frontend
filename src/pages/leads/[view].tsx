@@ -151,6 +151,7 @@ export default function LeadsPage({ isSidebarOpen }: { isSidebarOpen: boolean })
     sources,
     statuses,
     staffMembers,
+    assignableStaff,
     counts,
     loading,
     totals,
@@ -663,6 +664,9 @@ export default function LeadsPage({ isSidebarOpen }: { isSidebarOpen: boolean })
         mode={editingLead ? 'edit' : 'add'}
         initialData={editingLead}
         currentUser={currentUser}
+        statuses={statuses}
+        staff={assignableStaff}
+        leadSources={sources}
         onLeadCreated={() => {
           refetchAll();
           setBoardRefreshKey((k) => k + 1);

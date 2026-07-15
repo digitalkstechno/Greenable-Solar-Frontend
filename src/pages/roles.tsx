@@ -364,7 +364,8 @@ export function RolesContent() {
           }}
           onEdit={canUpdate ? handleEdit : undefined}
           onDelete={canDelete ? handleDeleteClick : undefined}
-          canEdit={(row) => !row.roleName.toLowerCase().includes('sales')}
+          // canEdit={(row) => !row.roleName.toLowerCase().includes('sales')}
+          canEdit={() => true}
           canDelete={(row) => !row.roleName.toLowerCase().includes('sales')}
           actions={true}
           addButton={
