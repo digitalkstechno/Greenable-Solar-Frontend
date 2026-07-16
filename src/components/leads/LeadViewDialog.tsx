@@ -687,9 +687,10 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
               <InfoCard label="Phone" value={lead.contact} />
               <InfoCard label="Email" value={lead.email} />
               <InfoCard label="Discom Name" value={lead.discomName} />
-              <InfoCard label="Lead Reference" value={lead.leadrefrance} />
+              {/* <InfoCard label="Lead Reference" value={lead.leadrefrance} /> */}
+              <InfoCard label="Lead Reference" value={typeof lead.leadrefrance === 'string' ? lead.leadrefrance : lead.leadrefrance?.name} />
               <InfoCard label="Project Type" value={lead.projecttype} />
-            </div>
+            </div>  
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {lead.address && <InfoCard label="Address" value={lead.address} />}

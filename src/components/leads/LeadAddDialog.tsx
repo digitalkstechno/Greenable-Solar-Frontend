@@ -273,7 +273,8 @@ export default function LeadAddDialog({
               email: dataToUse.email || '',
               kwRequirement: dataToUse.kwRequirement || '',
               discomName: dataToUse.discomName || '',
-              leadrefrance: dataToUse.leadrefrance || '',
+              // leadrefrance: dataToUse.leadrefrance || '',
+              leadrefrance: typeof dataToUse.leadrefrance === 'string' ? dataToUse.leadrefrance : (dataToUse.leadrefrance?._id || ''),
               projecttype: dataToUse.projecttype || '',
               address: dataToUse.address || '',
               locationLink: dataToUse.locationLink || '',
@@ -460,7 +461,7 @@ export default function LeadAddDialog({
                 value={formik.values.leadrefrance || ''}
                 onChange={(val) => { formik.setFieldValue('leadrefrance', val); }}
                 onBlur={() => formik.setFieldTouched('leadrefrance')}
-                options={leadSources.map(s => ({ value: s.name || '', label: s.name || '' }))}
+                options={leadSources.map(s => ({ value: s._id || '', label: s.name || '' }))}
                 error={getFieldError('leadrefrance')}
                 placeholder="Select Lead Source"
               />
