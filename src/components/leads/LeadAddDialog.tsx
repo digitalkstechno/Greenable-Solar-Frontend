@@ -161,6 +161,10 @@ export default function LeadAddDialog({
         const formData = new FormData();
         Object.keys(payload).forEach((key) => {
           const val = payload[key];
+          if (key === 'email') {
+            formData.append(key, val ?? '');
+            return;
+          }
           if (val !== null && val !== undefined && val !== '') {
             formData.append(key, String(val));
           }

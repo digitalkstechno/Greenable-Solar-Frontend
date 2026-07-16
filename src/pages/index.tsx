@@ -159,6 +159,32 @@ function YearSelect({ value, onChange, options }: YearSelectProps) {
   );
 }
 
+const TruncatedNameTick = (props: any) => {
+  const { x, y, payload } = props;
+  const fullName = String(payload?.value ?? '');
+  const firstName = fullName.split(' ')[0] || fullName;
+  const displayText = fullName.length > firstName.length ? `${firstName}...` : firstName;
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text
+        x={0}
+        y={0}
+        dy={16}
+        textAnchor="middle"
+        fill="#4b5563"
+        fontSize={12}
+        fontWeight="600"
+        style={{ cursor: 'default' }}
+      >
+        {displayText}
+        <title>{fullName}</title>
+      </text>
+    </g>
+  );
+};
+
+
 export default function Dashboard() {
   const router = useRouter();
 
@@ -1135,7 +1161,7 @@ export default function Dashboard() {
           >
             <XAxis
               dataKey="name"
-              tick={false}
+              tick={{ fontSize: 11, fill: "#4b5563" }}
               axisLine={false}
               tickLine={false}
             />
@@ -1173,7 +1199,7 @@ export default function Dashboard() {
             />
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 12, fill: "#4b5563", fontWeight: "600" }}
+              tick={<TruncatedNameTick />}
               axisLine={false}
               tickLine={false}
             />
@@ -1772,6 +1798,10 @@ export default function Dashboard() {
       <div className="flex-1 mt-4" style={{ minHeight: 280 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
+            width={Math.max(
+              staffChartWidth,
+              leadsBySource.length * (staffChartWidth / 8),
+            )}
             data={leadsBySource}
             margin={{ top: 10, right: 10, left: -20, bottom: 5 }}
           >
@@ -1837,7 +1867,7 @@ export default function Dashboard() {
           <BarChart
             width={Math.max(
               staffChartWidth,
-              staffWinRate.length * (staffChartWidth / 8),
+              staffWinRate.length * (staffChartWidth / 6),
             )}
             height={320}
             data={staffWinRate}
@@ -1852,7 +1882,7 @@ export default function Dashboard() {
             />
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 11, fill: "#6b7280", fontWeight: 600, dy: 8 }}
+              tick={<TruncatedNameTick />}
               axisLine={false}
               tickLine={false}
             />
