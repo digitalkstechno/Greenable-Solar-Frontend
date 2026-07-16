@@ -657,6 +657,7 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
         onClose={onClose}
         title="Lead Details"
         size="lg"
+        autoFocus={false}
         footer={
           <>
             <button
@@ -736,7 +737,7 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
             )}
 
             <div className="rounded-lg border border-gray-200 bg-white p-4">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-2">
                 <div className="text-sm font-bold text-gray-800">Created By</div>
                 <div className="text-sm font-bold text-gray-800 w-56 text-left">Reassign</div>
               </div>

@@ -355,7 +355,7 @@ export default function LeadsPage({ isSidebarOpen }: { isSidebarOpen: boolean })
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full xl:w-auto">
             {viewMode === 'kanban' && (
               <div className="flex items-center gap-2">
-                {(['board', 'lost', 'won'] as KanbanSubView[]).map((v) => {
+                {(['board', 'won', 'lost'] as KanbanSubView[]).map((v) => {
                   const lostCount = lostPagination?.totalItems ?? lostLeads.length;
                   const wonCount = wonPagination?.totalItems ?? wonLeads.length;
                   const label = v === 'board' ? 'New Lead' : v === 'lost' ? 'Lost' : 'Won';

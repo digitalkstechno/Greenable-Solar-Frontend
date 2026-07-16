@@ -28,16 +28,16 @@ const stripCommas = (str: string) => {
   return str.replace(/,/g, '');
 };
 
-const HighlightableInput = ({ 
-  value, 
-  onChange, 
-  placeholder, 
+const HighlightableInput = ({
+  value,
+  onChange,
+  placeholder,
   className,
   requiredType = 'any'
-}: { 
-  value: string; 
-  onChange: (val: string) => void; 
-  placeholder?: string; 
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
   className?: string;
   requiredType?: 'digit' | 'alphabet' | 'any';
 }) => {
@@ -108,11 +108,11 @@ const HighlightableInput = ({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (requiredType === 'any') return;
-    
+
     // Allow control keys (backspace, delete, arrows, tab, ctrl/cmd + A/C/V/X, shift)
     if (
-      e.key === 'Backspace' || e.key === 'Delete' || e.key === 'ArrowLeft' || 
-      e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown' || 
+      e.key === 'Backspace' || e.key === 'Delete' || e.key === 'ArrowLeft' ||
+      e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown' ||
       e.key === 'Tab' || e.metaKey || e.ctrlKey || e.altKey || e.key === 'Shift' || e.key === 'Enter'
     ) {
       return;
@@ -133,7 +133,7 @@ const HighlightableInput = ({
 
   const handlePaste = (e: React.ClipboardEvent) => {
     if (requiredType === 'any') return;
-    
+
     e.preventDefault();
     let text = e.clipboardData.getData('text/plain');
     if (requiredType === 'digit') {
@@ -141,7 +141,7 @@ const HighlightableInput = ({
     } else if (requiredType === 'alphabet') {
       text = text.replace(/[^a-zA-Z\s]/g, '');
     }
-    
+
     document.execCommand('insertText', false, text);
     if (ref.current) onChange(ref.current.innerHTML);
   };
@@ -446,7 +446,7 @@ export default function LeadQuotationDialog({ isOpen, onClose, lead, onRefresh, 
         const cleanStr = htmlStr.replace(/<[^>]*>?/gm, '').replace(/[^\d]/g, '');
         return parseInt(cleanStr, 10) || 0;
       };
-      
+
       const baseCost = parseAmount(newRows[baseCostIdx].values[colIndex]);
       const subsidy = parseAmount(newRows[subsidyIdx].values[colIndex]);
 
@@ -530,7 +530,7 @@ export default function LeadQuotationDialog({ isOpen, onClose, lead, onRefresh, 
       }
     >
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
           <FormInput
             label="Date"
             required
@@ -572,7 +572,7 @@ export default function LeadQuotationDialog({ isOpen, onClose, lead, onRefresh, 
 
         <div>
           <div className="flex items-center gap-4 mb-2">
-            <span className="text-sm font-medium text-gray-700">Options (Columns)</span>
+            <span className="text-[15px] font-medium font-semibold text-gray-700">Options (Columns)</span>
           </div>
 
           <div className="overflow-x-auto border border-gray-300 rounded">
@@ -665,7 +665,7 @@ export default function LeadQuotationDialog({ isOpen, onClose, lead, onRefresh, 
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-bold text-gray-800">BILL OF MATERIALS</span>
+            <span className="text-[15px] font-medium font-semibold text-gray-700">BILL OF MATERIALS</span>
             <button
               onClick={handleAddBomItem}
               className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 border border-blue-200 rounded px-2 py-1 bg-blue-50"
