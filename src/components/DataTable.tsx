@@ -216,7 +216,7 @@ export default function DataTable<T extends Record<string, any>>({
       {(onRefresh || onExport || searchable || addButton) && (
         <div className="w-full">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-end gap-4">
-            
+
 
             <div className="flex flex-wrap items-center gap-3">
               {onRefresh && (
@@ -226,16 +226,6 @@ export default function DataTable<T extends Record<string, any>>({
                 >
                   <FiRefreshCw className="h-4 w-4 transition-transform group-hover:rotate-180 duration-500" />
                   <span className="hidden sm:inline">Refresh</span>
-                </button>
-              )}
-
-              {onExport && (
-                <button
-                  onClick={onExport}
-                  className="group relative inline-flex items-center gap-2 rounded-md border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-all duration-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                >
-                  <FiDownload className="h-4 w-4" />
-                  <span className="hidden sm:inline">Export</span>
                 </button>
               )}
 
@@ -269,6 +259,16 @@ export default function DataTable<T extends Record<string, any>>({
                 <span className="hidden sm:inline">Filters</span>
               </button> */}
 
+              {onExport && (
+                <button
+                  onClick={onExport}
+                  className="group relative inline-flex items-center gap-2 px-4 py-3 rounded-md text-xs md:text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-all cursor-pointer disabled:opacity-60"
+                >
+                  <FiDownload className="h-4 w-4" />
+                  <span className="hidden sm:inline">Export</span>
+                </button>
+              )}
+
               {addButton && (
                 <button
                   onClick={addButton.onClick}
@@ -285,168 +285,166 @@ export default function DataTable<T extends Record<string, any>>({
 
       {/* Table - Modern Design */}
       <div className={`rounded-md bg-white border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-2xl flex flex-col ${maxHeight ? 'flex-1' : ''}`}>
-        <div 
+        <div
           className={`border-t border-gray-100 overflow-auto relative flex-1`}
           style={{ maxHeight: maxHeight || 'calc(100vh - 340px)' }}
         >
-        <table className={`w-full divide-y divide-gray-100 ${tableFooterRow ? 'h-full' : ''}`}>
-          <thead className="sticky top-0 z-10 bg-gray-100 shadow-[0_1px_0_0_rgba(0,0,0,0.1)]">
-            <tr>
-              {columns.map((column) => (
-                <th
-                  key={String(column.key)}
-                  className={`sticky top-0 z-10 bg-gray-100 px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 whitespace-nowrap ${column.className || ''}`}
-                >
-                  {column.label}
-                </th>
-              ))}
-              {actions && (onView || onEdit || onDelete || extraActions) && (
-                <th className="sticky top-0 z-10 bg-gray-100 px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 whitespace-nowrap">
-                  Actions
-                </th>
-              )}
-            </tr>
-          </thead>
+          <table className={`w-full divide-y divide-gray-100 ${tableFooterRow ? 'h-full' : ''}`}>
+            <thead className="sticky top-0 z-10 bg-gray-100 shadow-[0_1px_0_0_rgba(0,0,0,0.1)]">
+              <tr>
+                {columns.map((column) => (
+                  <th
+                    key={String(column.key)}
+                    className={`sticky top-0 z-10 bg-gray-100 px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 whitespace-nowrap ${column.className || ''}`}
+                  >
+                    {column.label}
+                  </th>
+                ))}
+                {actions && (onView || onEdit || onDelete || extraActions) && (
+                  <th className="sticky top-0 z-10 bg-gray-100 px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-600 whitespace-nowrap">
+                    Actions
+                  </th>
+                )}
+              </tr>
+            </thead>
 
-          <tbody className={`divide-y divide-gray-50 bg-white ${tableFooterRow ? 'align-top' : ''}`}>
-            {loading ? (
-              <tr>
-                <td colSpan={columns.length + (actions ? 1 : 0)} className="px-6 py-16 text-center">
-                  <div className="flex flex-col items-center justify-center gap-4">
-                    <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-200 border-r-blue-600"></div>
-                    <p className="text-sm font-medium text-gray-600">Loading your data...</p>
-                  </div>
-                </td>
-              </tr>
-            ) : data.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length + (actions ? 1 : 0)} className="px-3 py-16 text-center">
-                  <div className="flex flex-col items-center justify-center gap-3">
-                    <div className="rounded-full bg-gray-50 p-4">
-                      <FiSearch className="h-8 w-8 text-gray-400" />
+            <tbody className={`divide-y divide-gray-50 bg-white ${tableFooterRow ? 'align-top' : ''}`}>
+              {loading ? (
+                <tr>
+                  <td colSpan={columns.length + (actions ? 1 : 0)} className="px-6 py-16 text-center">
+                    <div className="flex flex-col items-center justify-center gap-4">
+                      <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-blue-200 border-r-blue-600"></div>
+                      <p className="text-sm font-medium text-gray-600">Loading your data...</p>
                     </div>
-                    <p className="text-sm font-medium text-gray-600">No records found</p>
-                    <p className="text-xs text-gray-400">Try adjusting your search or filters</p>
-                    {addButton && (
-                      <button
-                        onClick={addButton.onClick}
-                        className="mt-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
-                      >
-                        + Add your first record
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              data.map((row, index) => (
-                <tr
-                  key={index}
-                  onMouseEnter={() => setHoveredRow(index)}
-                  onMouseLeave={() => setHoveredRow(null)}
-                  className={`
+                  </td>
+                </tr>
+              ) : data.length === 0 ? (
+                <tr>
+                  <td colSpan={columns.length + (actions ? 1 : 0)} className="px-3 py-16 text-center">
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <div className="rounded-full bg-gray-50 p-4">
+                        <FiSearch className="h-8 w-8 text-gray-400" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-600">No records found</p>
+                      <p className="text-xs text-gray-400">Try adjusting your search or filters</p>
+                      {addButton && (
+                        <button
+                          onClick={addButton.onClick}
+                          className="mt-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                        >
+                          + Add your first record
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                data.map((row, index) => (
+                  <tr
+                    key={index}
+                    onMouseEnter={() => setHoveredRow(index)}
+                    onMouseLeave={() => setHoveredRow(null)}
+                    className={`
                     transition-all duration-200
                     ${striped && index % 2 === 1 ? 'bg-gray-50/50' : 'bg-white'}
                     ${hoveredRow === index ? 'bg-blue-50/30' : ''}
                     border-b border-gray-50 last:border-0
                   `}
-                >
-                  {columns.map((column) => (
-                    <td
-                      key={String(column.key)}
-                      className={`px-6 py-4 text-sm text-gray-700 whitespace-nowrap ${column.className || ''}`}
-                    >
-                      {renderCell(column, row)}
-                    </td>
-                  ))}
+                  >
+                    {columns.map((column) => (
+                      <td
+                        key={String(column.key)}
+                        className={`px-6 py-4 text-sm text-gray-700 whitespace-nowrap ${column.className || ''}`}
+                      >
+                        {renderCell(column, row)}
+                      </td>
+                    ))}
 
-                  {actions && (onView || onEdit || onDelete || extraActions) && (
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
+                    {actions && (onView || onEdit || onDelete || extraActions) && (
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
 
-                        {/* VIEW */}
-                        {onView && (
-                          <button
-                            onClick={() => onView(row)}
-                            className="group h-9 w-9 flex items-center justify-center rounded-lg bg-gray-100 text-gray-600 transition-all duration-200 hover:bg-[#0a2352] hover:text-white hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 active:scale-95"
-                          >
-                            <FiEye className="h-4 w-4 group-hover:scale-110 transition-transform" />
-                          </button>
-                        )}
+                          {/* VIEW */}
+                          {onView && (
+                            <button
+                              onClick={() => onView(row)}
+                              className="group h-9 w-9 flex items-center justify-center rounded-lg bg-gray-100 text-gray-600 transition-all duration-200 hover:bg-[#0a2352] hover:text-white hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 active:scale-95"
+                            >
+                              <FiEye className="h-4 w-4 group-hover:scale-110 transition-transform" />
+                            </button>
+                          )}
 
-                        {/* EDIT */}
-                        {onEdit && (
-                          <button
-                            onClick={() => (!canEdit || canEdit(row)) && onEdit(row)}
-                            disabled={canEdit ? !canEdit(row) : false}
-                            className={`group h-9 w-9 flex items-center justify-center rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95 ${
-                              (canEdit && !canEdit(row))
+                          {/* EDIT */}
+                          {onEdit && (
+                            <button
+                              onClick={() => (!canEdit || canEdit(row)) && onEdit(row)}
+                              disabled={canEdit ? !canEdit(row) : false}
+                              className={`group h-9 w-9 flex items-center justify-center rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95 ${(canEdit && !canEdit(row))
                                 ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
                                 : 'bg-gray-100 text-green-600 hover:bg-green-600 hover:text-white hover:shadow-md focus:ring-green-500'
-                            }`}
-                          >
-                            <FiEdit className={`h-4 w-4 ${(!canEdit || canEdit(row)) ? 'group-hover:scale-110' : ''} transition-transform`} />
-                          </button>
-                        )}
+                                }`}
+                            >
+                              <FiEdit className={`h-4 w-4 ${(!canEdit || canEdit(row)) ? 'group-hover:scale-110' : ''} transition-transform`} />
+                            </button>
+                          )}
 
-                        {/* DELETE */}
-                        {onDelete && (
-                          <button
-                            onClick={() => (!canDelete || canDelete(row)) && onDelete(row)}
-                            disabled={canDelete ? !canDelete(row) : false}
-                            className={`group h-9 w-9 flex items-center justify-center rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95 ${
-                              (canDelete && !canDelete(row))
+                          {/* DELETE */}
+                          {onDelete && (
+                            <button
+                              onClick={() => (!canDelete || canDelete(row)) && onDelete(row)}
+                              disabled={canDelete ? !canDelete(row) : false}
+                              className={`group h-9 w-9 flex items-center justify-center rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95 ${(canDelete && !canDelete(row))
                                 ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
                                 : 'bg-gray-100 text-red-600 hover:bg-red-500 hover:text-white hover:shadow-md focus:ring-red-500'
-                            }`}
-                          >
-                            <FiTrash2 className={`h-4 w-4 ${(!canDelete || canDelete(row)) ? 'group-hover:scale-110' : ''} transition-transform`} />
-                          </button>
-                        )}
-
-                        {/* EXTRA ACTIONS */}
-                        {extraActions?.map((act, idx) => {
-                          if (act.show && !act.show(row)) return null;
-                          const colors: Record<string, { base: string; hover: string; ring: string }> = {
-                            blue:    { base: 'text-blue-600',   hover: 'hover:bg-blue-600',   ring: 'focus:ring-blue-500' },
-                            green:   { base: 'text-green-600',  hover: 'hover:bg-green-600',  ring: 'focus:ring-green-500' },
-                            red:     { base: 'text-red-600',    hover: 'hover:bg-red-500',    ring: 'focus:ring-red-500' },
-                            orange:  { base: 'text-orange-600', hover: 'hover:bg-orange-500', ring: 'focus:ring-orange-500' },
-                            purple:  { base: 'text-purple-600', hover: 'hover:bg-purple-600', ring: 'focus:ring-purple-500' },
-                            emerald: { base: 'text-emerald-600', hover: 'hover:bg-emerald-500', ring: 'focus:ring-emerald-500' },
-                          };
-                          const c = colors[act.color || 'blue'] || colors.blue;
-                          return (
-                            <button
-                              key={idx}
-                              onClick={() => act.onClick(row)}
-                              className={`group h-9 min-w-[36px] flex items-center justify-center gap-1.5 rounded-lg bg-gray-100 border border-transparent ${c.base} ${c.hover} ${c.ring} hover:text-white hover:border-transparent px-3 transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95`}
-                              title={act.label}
+                                }`}
                             >
-                              {act.icon && <span className="transition-colors">{act.icon}</span>}
-                              {act.label && <span className="text-xs font-semibold">{act.label}</span>}
+                              <FiTrash2 className={`h-4 w-4 ${(!canDelete || canDelete(row)) ? 'group-hover:scale-110' : ''} transition-transform`} />
                             </button>
-                          );
-                        })}
+                          )}
 
-                      </div>
-                    </td>
-                  )}
+                          {/* EXTRA ACTIONS */}
+                          {extraActions?.map((act, idx) => {
+                            if (act.show && !act.show(row)) return null;
+                            const colors: Record<string, { base: string; hover: string; ring: string }> = {
+                              blue: { base: 'text-blue-600', hover: 'hover:bg-blue-600', ring: 'focus:ring-blue-500' },
+                              green: { base: 'text-green-600', hover: 'hover:bg-green-600', ring: 'focus:ring-green-500' },
+                              red: { base: 'text-red-600', hover: 'hover:bg-red-500', ring: 'focus:ring-red-500' },
+                              orange: { base: 'text-orange-600', hover: 'hover:bg-orange-500', ring: 'focus:ring-orange-500' },
+                              purple: { base: 'text-purple-600', hover: 'hover:bg-purple-600', ring: 'focus:ring-purple-500' },
+                              emerald: { base: 'text-emerald-600', hover: 'hover:bg-emerald-500', ring: 'focus:ring-emerald-500' },
+                            };
+                            const c = colors[act.color || 'blue'] || colors.blue;
+                            return (
+                              <button
+                                key={idx}
+                                onClick={() => act.onClick(row)}
+                                className={`group h-9 min-w-[36px] flex items-center justify-center gap-1.5 rounded-lg bg-gray-100 border border-transparent ${c.base} ${c.hover} ${c.ring} hover:text-white hover:border-transparent px-3 transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95`}
+                                title={act.label}
+                              >
+                                {act.icon && <span className="transition-colors">{act.icon}</span>}
+                                {act.label && <span className="text-xs font-semibold">{act.label}</span>}
+                              </button>
+                            );
+                          })}
+
+                        </div>
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
+              {tableFooterRow && data.length > 0 && !loading && (
+                <tr className="h-full border-0 p-0">
+                  <td colSpan={columns.length + (actions ? 1 : 0)} className="border-0 p-0"></td>
                 </tr>
-              ))
+              )}
+            </tbody>
+            {tableFooterRow && (
+              <tfoot className="bg-gray-50 sticky bottom-0 z-10">
+                {tableFooterRow}
+              </tfoot>
             )}
-            {tableFooterRow && data.length > 0 && !loading && (
-              <tr className="h-full border-0 p-0">
-                <td colSpan={columns.length + (actions ? 1 : 0)} className="border-0 p-0"></td>
-              </tr>
-            )}
-          </tbody>
-        {tableFooterRow && (
-          <tfoot className="bg-gray-50 sticky bottom-0 z-10">
-            {tableFooterRow}
-          </tfoot>
-        )}
-        </table>
+          </table>
         </div>
         {footer && (
           <div className="bg-[#F3F4F6] border-t border-gray-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.08)] mt-auto z-20">
@@ -492,11 +490,10 @@ export default function DataTable<T extends Record<string, any>>({
                             onPageSizeChange(s);
                             setIsPageSizeOpen(false);
                           }}
-                          className={`block w-full px-3 py-2 text-left text-sm font-medium transition-colors ${
-                            s === pageSize
-                              ? 'bg-[#D87613] text-white'
-                              : 'text-gray-700 hover:bg-gray-50'
-                          }`}
+                          className={`block w-full px-3 py-2 text-left text-sm font-medium transition-colors ${s === pageSize
+                            ? 'bg-[#D87613] text-white'
+                            : 'text-gray-700 hover:bg-gray-50'
+                            }`}
                         >
                           {s}
                         </button>

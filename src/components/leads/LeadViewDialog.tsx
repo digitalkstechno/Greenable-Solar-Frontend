@@ -229,7 +229,7 @@ import { toast } from 'react-toastify';
 import Dialog, { CenterDialog } from '@/components/Dialog';
 import { baseUrl, getAuthToken } from '@/config';
 import { ApiLead, ApiStatus } from './types';
-import { Eye, Download, FileText, Image, File, FileSpreadsheet, Search, Trash2, Pencil, X } from 'lucide-react';
+import { Eye, Download, FileText, Trash2, Pencil, X, Copy, Share2, Check } from 'lucide-react';
 import { getFileIcon } from '@/utills/utill';
 import LeadQuotationDialog from './LeadQuotationDialog';
 import { FormSelect } from '../ui/FormSelect';
@@ -277,6 +277,7 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
   const [saving, setSaving] = useState(false);
   const [addingFollowup, setAddingFollowup] = useState(false);
   const [previewAttachment, setPreviewAttachment] = useState<{ url: string; name: string; type: string } | null>(null);
+  const [locationCopied, setLocationCopied] = useState(false);
   const [localFollowUps, setLocalFollowUps] = useState<FollowUp[]>([]);
   const [localAttachments, setLocalAttachments] = useState<any[]>([]);
   const [localActivities, setLocalActivities] = useState<any[]>([]);
@@ -484,9 +485,21 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
     }
   };
 
+  const handleCopyLocation = (link: string) => {
+    navigator.clipboard.writeText(link);
+    setLocationCopied(true);
+    setTimeout(() => setLocationCopied(false), 1500);
+  };
+
+  const handleShareLocation = (link: string) => {
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(link)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   const handleView = (attachment: any) => {
     const fileUrl = attachment.path?.startsWith('http') ? attachment.path : `${process.env.NEXT_PUBLIC_IMAGE_URL}${attachment.path}`;
     const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(attachment.filename || attachment.path);
+
 
     if (isImage) {
       setPreviewAttachment({
@@ -610,7 +623,7 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
 
       const response = await axios.post(
         baseUrl.generateQuotationPdf,
-        { q, lead: minimalLead  },
+        { q, lead: minimalLead },
         {
           headers: { Authorization: `Bearer ${getAuthToken()}` },
           responseType: 'blob',
@@ -644,6 +657,7 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
         onClose={onClose}
         title="Lead Details"
         size="lg"
+        autoFocus={false}
         footer={
           <>
             <button
@@ -691,8 +705,39 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
               )}
             </div>
 
+            {lead.coordinates && (
+              <div className="grid grid-cols-1 gap-3">
+                <InfoCard
+                  label="Current Location"
+                  value={
+                    <div className="flex items-center gap-2">
+                      <a href={lead.coordinates} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline break-all flex-1">
+                        {lead.coordinates}
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyLocation(lead.coordinates!)}
+                        className={`p-1.5 hover:bg-gray-100 rounded transition-colors flex-shrink-0 ${locationCopied ? 'text-[#d87612]' : 'text-gray-500 hover:text-gray-700'}`}
+                        title={locationCopied ? 'Copied!' : 'Copy Link'}
+                      >
+                        {locationCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleShareLocation(lead.coordinates!)}
+                        className="p-1.5 hover:bg-gray-100 rounded transition-colors text-gray-500 hover:text-gray-700 flex-shrink-0"
+                        title="Share on WhatsApp"
+                      >
+                        <Share2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  }
+                />
+              </div>
+            )}
+
             <div className="rounded-lg border border-gray-200 bg-white p-4">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-2">
                 <div className="text-sm font-bold text-gray-800">Created By</div>
                 <div className="text-sm font-bold text-gray-800 w-56 text-left">Reassign</div>
               </div>

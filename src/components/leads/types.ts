@@ -44,6 +44,7 @@ export type ApiLead = {
   projecttype?: string;
   address?: string;
   locationLink?: string;
+  coordinates?: string;
   leadStatus?: ApiStatus;
   note?: string;
   leadLabel?: any[];
@@ -84,7 +85,7 @@ export type ApiLead = {
       title: string;
       values: string[];
     }[];
-    
+
   };
   projectAmount?: number;
   projectDetail?: {

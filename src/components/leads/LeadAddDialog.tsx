@@ -31,6 +31,9 @@ interface Props {
   currentUser?: any;
   onLeadCreated?: (lead: any) => void;
   onLeadUpdated?: (lead: any) => void;
+  statuses: DropdownItem[];
+  staff: DropdownItem[];
+  leadSources: DropdownItem[];
 }
 
 // Static schema removed - moved inside component for dynamic required fields
@@ -39,10 +42,8 @@ export default function LeadAddDialog({
   isOpen, onClose, mode, initialData,
   currentUser,
   onLeadCreated, onLeadUpdated,
+  statuses = [], staff = [], leadSources = [],
 }: Props) {
-  const [statuses, setStatuses] = useState<DropdownItem[]>([]);
-  const [staff, setStaff] = useState<DropdownItem[]>([]);
-  const [leadSources, setLeadSources] = useState<DropdownItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [quotationOpen, setQuotationOpen] = useState(false);
@@ -85,7 +86,7 @@ export default function LeadAddDialog({
         .matches(
           /^[^\s@]+@[^\s@]+\.(com|in|ac\.in|org|net|edu|co\.in)$/i,
           'Invalid email format'
-        ),
+        ).notRequired(),
       kwRequirement: Yup.string(),
       discomName: Yup.string(),
       leadrefrance: Yup.string(),
@@ -99,7 +100,6 @@ export default function LeadAddDialog({
 
     shape.fullName = shape.fullName.required('Full Name is required');
     shape.contact = shape.contact.required('Mobile Number is required');
-    shape.email = shape.email.required('Email is required');
     shape.kwRequirement = shape.kwRequirement.required('KW Requirement is required');
     shape.leadStatus = Yup.string().required('Please select a stage');
     shape.leadrefrance = Yup.string().required('Lead Source is required');
@@ -208,54 +208,59 @@ export default function LeadAddDialog({
         const headers = { Authorization: `Bearer ${token()}` };
 
         let leadData = null;
+        // if (mode === 'edit' && initialData?._id) {
+        //   const [stRes, staffRes, deptRes, sourceRes, leadRes] = await Promise.all([
+        //     axios.get(baseUrl.leadStatuses, { headers }),
+        //     axios.get(baseUrl.getAllUsers, { headers, params: { limit: 1000 } }),
+        //     axios.get(baseUrl.department, { headers }),
+        //     axios.get(baseUrl.leadSources, { headers }),
+        //     axios.get(`${baseUrl.findLeadById}/${initialData._id}`, { headers })
+        //   ]);
+        //   setStatuses(stRes.data?.data || []);
+        //   setLeadSources(sourceRes.data?.data || []);
+        //   const depts = deptRes.data?.data || [];
+        //   const users = staffRes.data?.data || [];
+        //   const salesExecs = users.filter((u: any) => {
+        //     const r = u.role;
+        //     const roleName = r ? (r.roleName || r.name || (typeof r === 'string' ? r : '')) : '';
+        //     const d = depts.find((dept: any) => dept._id === u.department);
+        //     const deptName = d ? (d.roleName || d.name || '') : '';
+        //     return roleName.toLowerCase().includes('sales') || deptName.toLowerCase().includes('sales');
+        //   });
+        //   const usersWithDepts = salesExecs.map((u: any) => {
+        //     const d = depts.find((dept: any) => dept._id === u.department);
+        //     return { ...u, departmentName: d ? (d.roleName || d.name) : '' };
+        //   });
+        //   setStaff(usersWithDepts);
+        //   leadData = leadRes.data?.data;
+        // } else {
+        //   const [stRes, staffRes, deptRes, sourceRes] = await Promise.all([
+        //     axios.get(baseUrl.leadStatuses, { headers }),
+        //     axios.get(baseUrl.getAllUsers, { headers, params: { limit: 1000 } }),
+        //     axios.get(baseUrl.department, { headers }),
+        //     axios.get(baseUrl.leadSources, { headers })
+        //   ]);
+        //   setStatuses(stRes.data?.data || []);
+        //   setLeadSources(sourceRes.data?.data || []);
+        //   const depts = deptRes.data?.data || [];
+        //   const users = staffRes.data?.data || [];
+        //   const salesExecs = users.filter((u: any) => {
+        //     const r = u.role;
+        //     const roleName = r ? (r.roleName || r.name || (typeof r === 'string' ? r : '')) : '';
+        //     const d = depts.find((dept: any) => dept._id === u.department);
+        //     const deptName = d ? (d.roleName || d.name || '') : '';
+        //     return roleName.toLowerCase().includes('sales') || deptName.toLowerCase().includes('sales');
+        //   });
+        //   const usersWithDepts = salesExecs.map((u: any) => {
+        //     const d = depts.find((dept: any) => dept._id === u.department);
+        //     return { ...u, departmentName: d ? (d.roleName || d.name) : '' };
+        //   });
+        //   setStaff(usersWithDepts);
+        // }
+
         if (mode === 'edit' && initialData?._id) {
-          const [stRes, staffRes, deptRes, sourceRes, leadRes] = await Promise.all([
-            axios.get(baseUrl.leadStatuses, { headers }),
-            axios.get(baseUrl.getAllUsers, { headers, params: { limit: 1000 } }),
-            axios.get(baseUrl.department, { headers }),
-            axios.get(baseUrl.leadSources, { headers }),
-            axios.get(`${baseUrl.findLeadById}/${initialData._id}`, { headers })
-          ]);
-          setStatuses(stRes.data?.data || []);
-          setLeadSources(sourceRes.data?.data || []);
-          const depts = deptRes.data?.data || [];
-          const users = staffRes.data?.data || [];
-          const salesExecs = users.filter((u: any) => {
-            const r = u.role;
-            const roleName = r ? (r.roleName || r.name || (typeof r === 'string' ? r : '')) : '';
-            const d = depts.find((dept: any) => dept._id === u.department);
-            const deptName = d ? (d.roleName || d.name || '') : '';
-            return roleName.toLowerCase().includes('sales') || deptName.toLowerCase().includes('sales');
-          });
-          const usersWithDepts = salesExecs.map((u: any) => {
-            const d = depts.find((dept: any) => dept._id === u.department);
-            return { ...u, departmentName: d ? (d.roleName || d.name) : '' };
-          });
-          setStaff(usersWithDepts);
+          const leadRes = await axios.get(`${baseUrl.findLeadById}/${initialData._id}`, { headers });
           leadData = leadRes.data?.data;
-        } else {
-          const [stRes, staffRes, deptRes, sourceRes] = await Promise.all([
-            axios.get(baseUrl.leadStatuses, { headers }),
-            axios.get(baseUrl.getAllUsers, { headers, params: { limit: 1000 } }),
-            axios.get(baseUrl.department, { headers }),
-            axios.get(baseUrl.leadSources, { headers })
-          ]);
-          setStatuses(stRes.data?.data || []);
-          setLeadSources(sourceRes.data?.data || []);
-          const depts = deptRes.data?.data || [];
-          const users = staffRes.data?.data || [];
-          const salesExecs = users.filter((u: any) => {
-            const r = u.role;
-            const roleName = r ? (r.roleName || r.name || (typeof r === 'string' ? r : '')) : '';
-            const d = depts.find((dept: any) => dept._id === u.department);
-            const deptName = d ? (d.roleName || d.name || '') : '';
-            return roleName.toLowerCase().includes('sales') || deptName.toLowerCase().includes('sales');
-          });
-          const usersWithDepts = salesExecs.map((u: any) => {
-            const d = depts.find((dept: any) => dept._id === u.department);
-            return { ...u, departmentName: d ? (d.roleName || d.name) : '' };
-          });
-          setStaff(usersWithDepts);
         }
 
         if (mode === 'edit') {
@@ -415,7 +420,7 @@ export default function LeadAddDialog({
                 onChange={formik.handleChange}
                 onBlur={formik.handleBlur}
                 error={getFieldError('email')}
-                required={true}
+                required={false}
               />
               <FormInput
                 label="KW Requirement"

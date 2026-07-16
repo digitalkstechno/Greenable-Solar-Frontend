@@ -10,6 +10,7 @@ interface DialogProps {
   children: React.ReactNode;
   footer?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  autoFocus?: boolean;
 }
 
 export default function Dialog({
@@ -19,6 +20,7 @@ export default function Dialog({
   children,
   footer,
   size = 'lg',
+  autoFocus = true,
 }: DialogProps) {
   const sizeClasses = {
     sm: 'md:w-1/4 md:max-w-[25vw]',
@@ -26,16 +28,16 @@ export default function Dialog({
     lg: 'md:w-1/2 md:max-w-[50vw]',
     xl: 'md:w-2/3 md:max-w-[75vw]',
   };
-  
+
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isOpen && dialogRef.current) {
+    if (isOpen && autoFocus && dialogRef.current) {
       const timer = setTimeout(() => {
         const inputs = Array.from(dialogRef.current?.querySelectorAll(
           'input:not([disabled]):not([type="hidden"]):not([readonly]), textarea:not([disabled]):not([readonly]), select:not([disabled])'
         ) || []) as HTMLElement[];
-        
+
         const firstVisibleInput = inputs.find(
           el => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0
         );
@@ -49,19 +51,17 @@ export default function Dialog({
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [isOpen]);
+  }, [isOpen, autoFocus]);
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex justify-end ${
-        isOpen ? 'pointer-events-auto' : 'pointer-events-none'
-      }`}
+      className={`fixed inset-0 z-50 flex justify-end ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'
+        }`}
     >
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
-          isOpen ? 'opacity-100' : 'opacity-0'
-        }`}
+        className={`fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'
+          }`}
         onClick={onClose}
       />
 
@@ -123,7 +123,7 @@ export function CenterDialog({
         const inputs = Array.from(dialogRef.current?.querySelectorAll(
           'input:not([disabled]):not([type="hidden"]):not([readonly]), textarea:not([disabled]):not([readonly]), select:not([disabled])'
         ) || []) as HTMLElement[];
-        
+
         const firstVisibleInput = inputs.find(
           el => el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0
         );
@@ -141,15 +141,13 @@ export function CenterDialog({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center ${
-        isOpen ? 'pointer-events-auto' : 'pointer-events-none'
-      }`}
+      className={`fixed inset-0 z-50 flex items-center justify-center ${isOpen ? 'pointer-events-auto' : 'pointer-events-none'
+        }`}
     >
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${
-          isOpen ? 'opacity-100' : 'opacity-0'
-        }`}
+        className={`fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'
+          }`}
         onClick={onClose}
       />
 

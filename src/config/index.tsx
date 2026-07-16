@@ -8,6 +8,7 @@ export const baseUrl = {
   getAllUsers: `${API}users`,
   findUserById: `${API}users`,
   userUpdate: `${API}users`,
+  exportUsers: `${API}users/export`,
   deleteUser: `${API}users`,
   currentStaff: `${API}users/me`,
   addRole: `${API}role`,
@@ -72,6 +73,7 @@ export const baseUrl = {
   dashboardRevenue: `${API}dashboard/revenue`,
   dashboardKwGrowth: `${API}dashboard/kw-growth`,
   dashboardFollowupAnalysis: `${API}dashboard/followup-analysis`,
+  
 };
 
 const TOKEN_COOKIE_NAME = "crm_token";

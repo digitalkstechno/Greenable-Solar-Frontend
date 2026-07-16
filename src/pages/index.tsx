@@ -1158,7 +1158,7 @@ export default function Dashboard() {
           <BarChart
             width={Math.max(
               staffChartWidth,
-              staffWinRate.length * (staffChartWidth / 8),
+              staffWinRate.length * (staffChartWidth / 6),
             )}
             height={320}
             data={staffWinRate}
@@ -1364,7 +1364,7 @@ export default function Dashboard() {
             <button
               onClick={() => setStatusView("pie")}
               className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${statusView === "pie"
-                ? "bg-[#d87612] text-white shadow-sm"
+                ? "bg-[#d87612] text-white"
                 : "text-gray-500 hover:text-gray-900"
                 }`}
             >
@@ -1373,7 +1373,7 @@ export default function Dashboard() {
             <button
               onClick={() => setStatusView("graph")}
               className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${statusView === "graph"
-                ? "bg-[#d87612] text-white shadow-sm"
+                ? "bg-[#d87612] text-white"
                 : "text-gray-500 hover:text-gray-900"
                 }`}
             >
