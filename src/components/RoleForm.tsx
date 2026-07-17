@@ -40,10 +40,11 @@ export default function RoleForm({
   }, [isOpen]);
 
   // FIXED: Use lowercase for feature keys to match backend expectations
-  type Feature = 'lead' | 'task' | 'taskStatus' | 'staff' | 'role' | 'leadStatus' | 'leadSource' | 'category' | 'product' | 'stock';
-  const features: Feature[] = ['lead', 'task', 'taskStatus', 'staff', 'role', 'leadStatus', 'leadSource', 'category', 'product', 'stock'];
+  type Feature = 'dashboard' | 'lead' | 'task' | 'taskStatus' | 'staff' | 'role' | 'leadStatus' | 'leadSource' | 'category' | 'product' | 'stock';
+  const features: Feature[] = ['dashboard', 'lead', 'task', 'taskStatus', 'staff', 'role', 'leadStatus', 'leadSource', 'category', 'product', 'stock'];
 
   const featureLabels: Record<Feature, string> = {
+    dashboard: "Dashboard",
     lead: 'Leads',
     task: 'Tasks',
     taskStatus: 'Task Statuses',
@@ -252,7 +253,11 @@ export default function RoleForm({
                     <div className="col-span-5 text-gray-800 font-medium">{featureLabels[feature]}</div>
                     <div className="col-span-7">
                       <div className="flex flex-wrap gap-4">
-                        {(['readAll', 'readOwn', 'create', 'update', 'delete'] as CapabilityKey[]).map((cap) => {
+                        {/* {(['readAll', 'readOwn', 'create', 'update', 'delete'] as CapabilityKey[]).map((cap) => { */}
+                        {(feature === 'dashboard'
+                          ? (['readAll'] as CapabilityKey[])
+                          : (['readAll', 'readOwn', 'create', 'update', 'delete'] as CapabilityKey[])
+                        ).map((cap) => {
                           const isSuperAdminLeadViewGlobal = isSuperAdmin && feature === 'lead' && cap === 'readAll';
                           const isCapDisabled = isDisabled || isSuperAdminLeadViewGlobal || (cap === 'readOwn' && (caps.create || caps.update || caps.delete));
                           const isCapChecked = isSuperAdminLeadViewGlobal ? true : caps[cap];
@@ -267,15 +272,17 @@ export default function RoleForm({
                                 className={`h-4 w-4 rounded border-gray-300 text-sky-950 focus:ring-sky-200 ${isCapDisabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                               />
                               <span>
-                                {cap === 'readAll'
-                                  ? 'View (Global)'
-                                  : cap === 'readOwn'
-                                    ? 'View (Own)'
-                                    : cap === 'create'
-                                      ? 'Create'
-                                      : cap === 'update'
-                                        ? 'Update'
-                                        : 'Delete'}
+                                {feature === 'dashboard' && cap === 'readAll'
+                                  ? 'View'
+                                  : cap === 'readAll'
+                                    ? 'View (Global)'
+                                    : cap === 'readOwn'
+                                      ? 'View (Own)'
+                                      : cap === 'create'
+                                        ? 'Create'
+                                        : cap === 'update'
+                                          ? 'Update'
+                                          : 'Delete'}
                               </span>
                             </label>
                           );

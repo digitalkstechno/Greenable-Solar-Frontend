@@ -51,7 +51,7 @@ const normalizeCaps = (caps?: CapabilityPartial) => ({
 
 // FIXED: Added all 9 features here
 const normalizeRole = (r: BackendRole): Role => {
-  const features = ['lead', 'task', 'taskStatus', 'staff', 'role', 'leadStatus', 'leadSource', 'leadLabel', 'teams', 'organizations', 'category', 'product', 'stock'];
+  const features = ['dashboard', 'lead', 'task', 'taskStatus', 'staff', 'role', 'leadStatus', 'leadSource', 'leadLabel', 'teams', 'organizations', 'category', 'product', 'stock'];
   const rawPerms = r?.permissions;
   const srcPerms = Array.isArray(rawPerms) ? rawPerms[0] : rawPerms || {};
 
@@ -83,6 +83,10 @@ const serializeCaps = (caps?: {
 
 // FIXED: Added all features here
 const toBackendRole = (r: Role): BackendRole => {
+  const dashboardCaps = r.permissions?.dashboard;
+  const dashboard = {
+    readAll: !!dashboardCaps?.readAll,
+  };
   const lead = serializeCaps(r.permissions?.lead);
   const task = serializeCaps(r.permissions?.task);
   const taskStatus = serializeCaps(r.permissions?.taskStatus);
@@ -100,6 +104,7 @@ const toBackendRole = (r: Role): BackendRole => {
   return {
     roleName: r.roleName,
     permissions: [{
+      dashboard,
       lead,
       task,
       taskStatus,
