@@ -195,7 +195,7 @@ export default function RoleForm({
     <Dialog
       isOpen={isOpen}
       onClose={onClose}
-      title={initialData ? `Edit Department: ${initialData.roleName}` : "Add New Department"}
+      title={initialData ? `Edit Department : ${initialData.roleName}` : "Add New Department"}
       size="lg"
       footer={
         <>
