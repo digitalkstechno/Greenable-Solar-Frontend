@@ -1101,7 +1101,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                       <FormInput
                         label="Loan Portal"
                         name="loanPortal"
-                        placeholder="e.g. SBI Yono, HDFC Netbanking"
+                        placeholder="Jansamarth / Private finance"
                         value={form.loanPortal}
                         onChange={(e) => handleFormChange('loanPortal', e.target.value)}
                         error={errors.loanPortal}
