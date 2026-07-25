@@ -596,8 +596,10 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
     if (lead && hasData) {
       axios.post(`${baseUrl.projectDetail}/${lead._id}`, fd, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
-      }).then(() => {
-        fetchData();
+      }).then((res) => {
+        if (res.data?.data?.totalKw !== undefined) {
+          setForm(prev => ({ ...prev, totalKw: res.data.data.totalKw.toString() }));
+        }
       }).catch(() => {});
     }
   };
@@ -675,7 +677,6 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                       placeholder="Lead ref..."
                       value={form.creatorName}
                       onChange={(e) => handleFormChange('creatorName', e.target.value)}
-                      onBlur={handleAutosave}
                       error={errors.creatorName}
                       required
                     />
@@ -686,10 +687,11 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                       value={form.customerFullName}
                       maxLength={50}
                       onChange={(e) => {
-                        const val = e.target.value.slice(0, 50);
-                        handleFormChange('customerFullName', val);
+                        const val = e.target.value;
+                        if (val.length <= 50) {
+                          handleFormChange('customerFullName', val);
+                        }
                       }}
-                      onBlur={handleAutosave}
                       error={errors.customerFullName}
                       required
                     />
@@ -700,10 +702,11 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                       value={form.registerMobileNumber}
                       maxLength={10}
                       onChange={(e) => {
-                        const numericOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
-                        handleFormChange('registerMobileNumber', numericOnly);
+                        const val = e.target.value.replace(/\D/g, '');
+                        if (val.length <= 10) {
+                          handleFormChange('registerMobileNumber', val);
+                        }
                       }}
-                      onBlur={handleAutosave}
                       error={errors.registerMobileNumber}
                       required
                     />
