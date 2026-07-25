@@ -159,6 +159,32 @@ function YearSelect({ value, onChange, options }: YearSelectProps) {
   );
 }
 
+const TruncatedNameTick = (props: any) => {
+  const { x, y, payload } = props;
+  const fullName = String(payload?.value ?? '');
+  const firstName = fullName.split(' ')[0] || fullName;
+  const displayText = fullName.length > firstName.length ? `${firstName}...` : firstName;
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text
+        x={0}
+        y={0}
+        dy={16}
+        textAnchor="middle"
+        fill="#4b5563"
+        fontSize={12}
+        fontWeight="600"
+        style={{ cursor: 'default' }}
+      >
+        {displayText}
+        <title>{fullName}</title>
+      </text>
+    </g>
+  );
+};
+
+
 export default function Dashboard() {
   const router = useRouter();
 
@@ -193,6 +219,7 @@ export default function Dashboard() {
     readAll: boolean;
     readOwn: boolean;
   }>({ readAll: false, readOwn: false });
+  const [dashboardPermission, setDashboardPermission] = useState<boolean | null>(null); // null = loading
   const [user, setUser] = useState<any>(null);
   const [greeting, setGreeting] = useState("");
   const roleStr =
@@ -325,6 +352,8 @@ export default function Dashboard() {
           readAll: !!lp.readAll,
           readOwn: !!lp.readOwn,
         });
+        const dp = rawPerms.dashboard || {};
+        setDashboardPermission(!!dp.readAll);
         if (typeof window !== "undefined") {
           window.localStorage.setItem(
             "crm_user",
@@ -332,8 +361,11 @@ export default function Dashboard() {
           );
         }
       })
-      .catch(console.error);
+      .catch(() => {
+        setDashboardPermission(false);
+      });
   }, [token]);
+
 
   // Restore cached user and permissions on mount
   useEffect(() => {
@@ -355,6 +387,8 @@ export default function Dashboard() {
               readAll: !!lp.readAll,
               readOwn: !!lp.readOwn,
             });
+            const dp = rawPerms.dashboard || {};
+            setDashboardPermission(!!dp.readAll);
           }
         } catch (err) {
           console.error("Failed to restore cached user info:", err);
@@ -375,6 +409,13 @@ export default function Dashboard() {
   useEffect(() => {
     if (!token) router.replace("/login");
   }, [router, token]);
+
+  // Redirect if no dashboard permission
+  useEffect(() => {
+    if (dashboardPermission === false) {
+      router.replace("/leads");
+    }
+  }, [dashboardPermission, router]);
 
   const statusChartContainerRef = useRef<HTMLDivElement>(null);
   const [statusChartWidth, setStatusChartWidth] = useState(800);
@@ -674,7 +715,7 @@ export default function Dashboard() {
 
   // Main dashboard + follow-up tables (ALL roles)
   useEffect(() => {
-    if (!hasLoadedFromStorage || !token || !user?._id) return;
+    if (!hasLoadedFromStorage || !token || !user?._id || dashboardPermission !== true) return;
     fetchDashboard();
     // fetchUpcomingFollowups(1);
     // fetchDueFollowups();
@@ -682,21 +723,21 @@ export default function Dashboard() {
 
   // Upcoming & Due Follow-ups
   useEffect(() => {
-    if (!hasLoadedFromStorage || !token || !user?._id) return;
+    if (!hasLoadedFromStorage || !token || !user?._id || dashboardPermission !== true) return;
     fetchUpcomingFollowups(1);
     fetchDueFollowups();
   }, [token, user?._id, hasLoadedFromStorage]);
 
   // Revenue chart (Admin & Sales only)
   useEffect(() => {
-    if (!hasLoadedFromStorage || !token || !user?._id) return;
+    if (!hasLoadedFromStorage || !token || !user?._id || dashboardPermission !== true) return;
     if (userScope === "calling") return;
     fetchRevenueChart(revenueFilter);
   }, [token, user?._id, userScope, revenueFilter, hasLoadedFromStorage]);
 
   // KW Growth chart (Admin & Sales only)
   useEffect(() => {
-    if (!hasLoadedFromStorage || !token || !user?._id) return;
+    if (!hasLoadedFromStorage || !token || !user?._id || dashboardPermission !== true) return;
     if (userScope === "calling") return;
     fetchKwGrowthChart(kwFilter);
   }, [token, user?._id, userScope, kwFilter, hasLoadedFromStorage]);
@@ -704,7 +745,7 @@ export default function Dashboard() {
 
   // Follow-up analysis chart (Sales & Calling only)
   useEffect(() => {
-    if (!hasLoadedFromStorage || !token || !user?._id) return;
+    if (!hasLoadedFromStorage || !token || !user?._id || dashboardPermission !== true) return;
     if (userScope === "admin") return; // Admin ne follow-up analysis chart nathi
     fetchFollowupAnalysis(followUpYearFilter);
   }, [token, user?._id, userScope, followUpYearFilter, hasLoadedFromStorage]);
@@ -1135,7 +1176,7 @@ export default function Dashboard() {
           >
             <XAxis
               dataKey="name"
-              tick={false}
+              tick={{ fontSize: 11, fill: "#4b5563" }}
               axisLine={false}
               tickLine={false}
             />
@@ -1173,7 +1214,7 @@ export default function Dashboard() {
             />
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 12, fill: "#4b5563", fontWeight: "600" }}
+              tick={<TruncatedNameTick />}
               axisLine={false}
               tickLine={false}
             />
@@ -1772,6 +1813,10 @@ export default function Dashboard() {
       <div className="flex-1 mt-4" style={{ minHeight: 280 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
+            width={Math.max(
+              staffChartWidth,
+              leadsBySource.length * (staffChartWidth / 8),
+            )}
             data={leadsBySource}
             margin={{ top: 10, right: 10, left: -20, bottom: 5 }}
           >
@@ -1837,7 +1882,7 @@ export default function Dashboard() {
           <BarChart
             width={Math.max(
               staffChartWidth,
-              staffWinRate.length * (staffChartWidth / 8),
+              staffWinRate.length * (staffChartWidth / 6),
             )}
             height={320}
             data={staffWinRate}
@@ -1852,7 +1897,7 @@ export default function Dashboard() {
             />
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 11, fill: "#6b7280", fontWeight: 600, dy: 8 }}
+              tick={<TruncatedNameTick />}
               axisLine={false}
               tickLine={false}
             />
@@ -1928,6 +1973,18 @@ export default function Dashboard() {
       </div>
     </div>
   );
+
+  if (dashboardPermission === null) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#d87612] border-r-transparent"></div>
+      </div>
+    );
+  }
+
+  if (dashboardPermission === false) {
+    return null; // redirecting via useEffect above
+  }
 
   return (
     <div className="flex flex-col min-h-screen dashboard-page">

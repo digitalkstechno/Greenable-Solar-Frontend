@@ -48,6 +48,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
   const router = useRouter();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [canViewLead, setCanViewLead] = useState(false);
+  const [canViewDashboard, setCanViewDashboard] = useState(false);
   const [canViewTask, setCanViewTask] = useState(false);
   const [canViewStaff, setCanViewStaff] = useState(false);
   const [canViewRole, setCanViewRole] = useState(false);
@@ -71,6 +72,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
         const rawPerms = Array.isArray(role.permissions)
           ? role.permissions[0]
           : role.permissions || {};
+        const dashboardPerms = rawPerms.dashboard || {};
         const leadPerms = rawPerms.lead || {};
         const taskPerms = rawPerms.task || {};
         const staffPerms = rawPerms.staff || {};
@@ -83,6 +85,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
         const productPerms = rawPerms.product || {};
         const stockPerms = rawPerms.stock || {};
 
+        setCanViewDashboard(!!(dashboardPerms.readAll));
         setCanViewLead(!!(leadPerms.readOwn || leadPerms.readAll));
         setCanViewTask(!!(taskPerms.readOwn || taskPerms.readAll));
         setCanViewStaff(!!(staffPerms.readAll || setupPerms.readAll));
@@ -96,6 +99,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
         setCurrentUser(res.data?.data);
       })
       .catch(() => {
+        setCanViewDashboard(false);
         setCanViewLead(false);
         setCanViewTask(false);
         setCanViewStaff(false);
@@ -109,9 +113,11 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
       });
   }, []);
 
-  const menuItems: MenuItem[] = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  ];
+  const menuItems: MenuItem[] = [];
+
+  if (canViewDashboard) {
+    menuItems.push({ icon: LayoutDashboard, label: "Dashboard", path: "/" });
+  }
 
   if (canViewLead) {
     menuItems.push({ icon: UserPlus, label: "Leads", path: "/leads" });

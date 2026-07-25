@@ -23,6 +23,10 @@ type FileOrNull = File | null;
 
 interface FormState {
   creatorName: string;
+  customerFullName: string;
+  registerMobileNumber: string;
+  registrationPortal: string;
+  panelType: string;
   panelMake: string;
   panelWp: string;
   noOfPanel: string;
@@ -48,16 +52,18 @@ interface FormState {
   paymentMode: string;
   projectAmount: string;
   subsidyLessProject: string;
+  loanPortal: string;
+  totalKw: string;
 }
 
 const EMPTY_FORM: FormState = {
-  creatorName: '', panelMake: '', panelWp: '', noOfPanel: '',
+  creatorName: '', customerFullName: '', registerMobileNumber: '', registrationPortal: '', panelType: '', panelMake: '', panelWp: '', noOfPanel: '',
   inverterMake: '', inverterKw: '', inverterPhase: '', installationRoof: '',
   discom: '', consumerConnectionType: '', elcbInstalled: '', elcbProvideBy: '',
   wiringType: '', homeFloor: '', walkway: '', walkwayLengthFeet: '',
   ladder: '', ladderLengthFeet: '', hdgiPipeMake: '',
   hdgiPipe80x40: '0', hdgiPipe60x40: '0', hdgiPipe40x40: '0', hdgiPipe20x40PatiPipe: '0',
-  paymentMode: '', projectAmount: '', subsidyLessProject: '',
+  paymentMode: '', projectAmount: '', subsidyLessProject: '', loanPortal: '', totalKw: '',
 };
 
 const PHOTO_FIELDS = [
@@ -100,6 +106,8 @@ const YES_NO_OPTS = [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' 
 const ELCB_BY_OPTS = [{ value: 'greeneable', label: 'Greeneable' }, { value: 'customer', label: 'Customer' }];
 const WIRING_OPTS = [{ value: 'open', label: 'Open' }, { value: 'consild', label: 'Consild' }];
 const PAYMENT_OPTS = [{ value: 'cash', label: 'Cash' }, { value: 'cheque', label: 'Cheque' }];
+const REG_PORTAL_OPTS = [{ value: 'NP', label: 'NP' }, { value: 'GEDA', label: 'GEDA' }];
+const PANEL_TYPE_OPTS = [{ value: 'DCR', label: 'DCR' }, { value: 'NDCR', label: 'NDCR' }];
 
 // ─── File Input Component ─────────────────────────────────────────────────────
 interface FileInputProps {
@@ -189,17 +197,10 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
   const [showLoanDocs, setShowLoanDocs] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch existing data when drawer opens
-  useEffect(() => {
+  // Fetch data function
+  const fetchData = async () => {
     if (!isOpen || !lead) return;
-    setForm(EMPTY_FORM);
-    setFiles({});
-    setExistingFiles({});
-    setActiveSection('project');
-    setErrors({});
-
-    const fetchData = async () => {
-      setLoading(true);
+    setLoading(true);
       try {
         const token = getAuthToken();
         const res = await axios.get(`${baseUrl.projectDetail}/${lead._id}`, {
@@ -209,9 +210,14 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
         if (d) {
           setForm({
             creatorName: d.creatorName || d.leadRefrance || lead.createdBy?.fullName || lead.createdBy?.name || '',
+            customerFullName: d.customerFullName || '',
+            registerMobileNumber: d.registerMobileNumber || '',
+            registrationPortal: d.registrationPortal || '',
+            panelType: d.panelType || '',
             panelMake: d.panelMake || '',
             panelWp: d.panelWp?.toString() || '',
             noOfPanel: d.noOfPanel?.toString() || '',
+            totalKw: d.totalKw?.toString() || '',
             inverterMake: d.inverterMake || '',
             inverterKw: d.inverterKw?.toString() || '',
             inverterPhase: d.inverterPhase || '',
@@ -234,6 +240,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
             paymentMode: d.paymentMode || '',
             projectAmount: d.projectAmount?.toString() || '',
             subsidyLessProject: d.subsidyLessProject || '',
+            loanPortal: d.loanPortal || '',
           });
           const ef: Record<string, any> = {};
           [...PHOTO_FIELDS, ...REG_DOC_FIELDS, ...LOAN_DOC_FIELDS].forEach(({ key }) => {
@@ -292,9 +299,22 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
       } finally {
         setLoading(false);
       }
-    };
+  };
+
+  useEffect(() => {
+    if (!isOpen || !lead) return;
+    setForm(EMPTY_FORM);
+    setFiles({});
+    setExistingFiles({});
+    setActiveSection('project');
+    setErrors({});
     fetchData();
   }, [isOpen, lead]);
+
+  const handleCloseRef = useRef(handleClose);
+  useEffect(() => {
+    handleCloseRef.current = handleClose;
+  });
 
   // Close on outside click (but not if click is inside a portal dropdown)
   useEffect(() => {
@@ -305,12 +325,12 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
         if (p.contains(e.target as Node)) return;
       }
       if (drawerRef.current && !drawerRef.current.contains(e.target as Node)) {
-        onClose();
+        handleCloseRef.current();
       }
     };
     if (isOpen) document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   const handleFormChange = (key: keyof FormState, val: string) => {
     setForm((p) => ({ ...p, [key]: val }));
@@ -408,8 +428,10 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
     } else if (section === 'loanDocs') {
       LOAN_DOC_FIELDS.forEach(f => delete newErrors[f.key]);
       LOAN_DOC_FIELDS.forEach(f => {
-        if (!existingFiles[f.key] && !files[f.key]) {
-          newErrors[f.key] = `${f.label} is required`;
+        if (f.key !== 'loanDocBankStatement' && f.key !== 'loanDocITRReturn') {
+          if (!existingFiles[f.key] && !files[f.key]) {
+            newErrors[f.key] = `${f.label} is required`;
+          }
         }
       });
     }
@@ -553,6 +575,40 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
     { key: 'payment', label: 'Payment', icon: <CreditCard className="h-4 w-4" /> },
   ];
 
+  const handleAutosave = () => {
+    // Attempt a silent save if some fields are filled
+    const token = getAuthToken();
+    const fd = new FormData();
+    let hasData = false;
+    Object.entries(form).forEach(([k, v]) => { 
+      if (v !== '' && v !== '0') {
+        fd.append(k, v); 
+        if (k === 'creatorName') {
+          fd.append('leadRefrance', v);
+        }
+        hasData = true;
+      }
+    });
+    // Append files
+    Object.entries(files).forEach(([k, f]) => { if (f) fd.append(k, f); });
+    fd.append('applyForLoan', showLoanDocs ? 'true' : 'false');
+
+    if (lead && hasData) {
+      axios.post(`${baseUrl.projectDetail}/${lead._id}`, fd, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
+      }).then(() => {
+        fetchData();
+      }).catch(() => {});
+    }
+  };
+
+  // Autosave wrapper for close
+  function handleClose() {
+    handleAutosave();
+    if (onSaved) onSaved();
+    onClose();
+  }
+
   if (showLoanDocs) {
     sections.push({ key: 'loanDocs', label: 'Loan Docs', icon: <FileText className="h-4 w-4" /> });
   }
@@ -576,7 +632,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
             <h2 className="text-lg font-bold text-white">Project Details</h2>
             <p className="text-xs text-white/80 truncate">{lead?.fullName}</p>
           </div>
-          <button onClick={onClose} className="rounded-lg p-2 text-white/80 hover:bg-white/20 hover:text-white transition">
+          <button onClick={handleClose} className="rounded-lg p-2 text-white/80 hover:bg-white/20 hover:text-white transition">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -619,9 +675,62 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                       placeholder="Lead ref..."
                       value={form.creatorName}
                       onChange={(e) => handleFormChange('creatorName', e.target.value)}
+                      onBlur={handleAutosave}
                       error={errors.creatorName}
                       required
                     />
+                    <FormInput
+                      label="Customer Full Name"
+                      name="customerFullName"
+                      placeholder="e.g. John Doe"
+                      value={form.customerFullName}
+                      maxLength={50}
+                      onChange={(e) => {
+                        const val = e.target.value.slice(0, 50);
+                        handleFormChange('customerFullName', val);
+                      }}
+                      onBlur={handleAutosave}
+                      error={errors.customerFullName}
+                      required
+                    />
+                    <FormInput
+                      label="Register Mobile Number"
+                      name="registerMobileNumber"
+                      placeholder="e.g. 9876543210"
+                      value={form.registerMobileNumber}
+                      maxLength={10}
+                      onChange={(e) => {
+                        const numericOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        handleFormChange('registerMobileNumber', numericOnly);
+                      }}
+                      onBlur={handleAutosave}
+                      error={errors.registerMobileNumber}
+                      required
+                    />
+                    <div>
+                      <FormSelect
+                        label="Registration Portal"
+                        name="registrationPortal"
+                        value={form.registrationPortal}
+                        onChange={(val) => handleFormChange('registrationPortal', val)}
+                        options={REG_PORTAL_OPTS}
+                        placeholder="Select..."
+                        error={errors.registrationPortal}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <FormSelect
+                        label="Panel Type"
+                        name="panelType"
+                        value={form.panelType}
+                        onChange={(val) => handleFormChange('panelType', val)}
+                        options={PANEL_TYPE_OPTS}
+                        placeholder="Select..."
+                        error={errors.panelType}
+                        required
+                      />
+                    </div>
                     <FormInput
                       label="Panel Make"
                       name="panelMake"
@@ -650,6 +759,15 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                       onChange={(e) => handleFormChange('noOfPanel', e.target.value)}
                       error={errors.noOfPanel}
                       required
+                    />
+                    <FormInput
+                      label="Total KW"
+                      name="totalKw"
+                      type="number"
+                      value={form.totalKw || ((Number(form.panelWp || 0) * Number(form.noOfPanel || 0)) / 1000).toString()}
+                      disabled
+                      readOnly
+                      className="bg-gray-100 font-bold"
                     />
                     <FormInput
                       label="Inverter Make"
@@ -973,6 +1091,21 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                       <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
                     </label>
                   </div>
+                  
+                  {/* Loan Portal slides down if toggle is on */}
+                  {showLoanDocs && (
+                    <div className="mt-4 p-4 border border-orange-200 rounded-xl bg-white animate-in slide-in-from-top-4 fade-in duration-300">
+                      <FormInput
+                        label="Loan Portal"
+                        name="loanPortal"
+                        placeholder="e.g. SBI Yono, HDFC Netbanking"
+                        value={form.loanPortal}
+                        onChange={(e) => handleFormChange('loanPortal', e.target.value)}
+                        error={errors.loanPortal}
+                        required
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -991,6 +1124,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                       files={files}
                       onFileChange={handleFileChange}
                       error={errors[f.key]}
+                      required={f.key !== 'loanDocBankStatement' && f.key !== 'loanDocITRReturn'}
                     />
                   ))}
                 </div>
@@ -1014,7 +1148,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
 
           <div className="flex items-center gap-3">
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
             >
               Cancel
