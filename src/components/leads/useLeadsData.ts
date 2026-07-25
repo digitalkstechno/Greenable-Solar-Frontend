@@ -281,7 +281,7 @@ export function useLeadsData(
           const roleName = r ? (r.roleName || r.name || (typeof r === 'string' ? r : '')) : '';
           const d = depts.find((dept: any) => dept._id === u.department);
           const deptName = d ? (d.roleName || d.name || '') : '';
-          return roleName.toLowerCase().includes('sales') || deptName.toLowerCase().includes('sales');
+          return !!(roleName.match(/\bsales\b/i) || deptName.match(/\bsales\b/i));
         });
         const usersWithDepts = salesExecs.map((u: any) => {
           const d = depts.find((dept: any) => dept._id === u.department);

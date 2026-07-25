@@ -51,7 +51,7 @@ export default function LeadAddDialog({
   const [requiredFields, setRequiredFields] = useState<string[]>([]);
 
   const roleStr = `${currentUser?.role?.roleName || ''} ${currentUser?.role?.name || ''} ${currentUser?.roleName || ''} ${typeof currentUser?.department === 'string' ? currentUser.department : ''} ${currentUser?.department?.roleName || ''} ${currentUser?.department?.name || ''} ${currentUser?.departmentName || ''}`.toLowerCase();
-  const isSalesExecutive = roleStr.includes('sales');
+  const isSalesExecutive = !!roleStr.match(/\bsales\b/i);
 
   useEffect(() => {
     const loadRequiredFields = () => {
@@ -389,13 +389,6 @@ export default function LeadAddDialog({
                       // Strip any non-digit characters
                       const numericOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
                       formik.setFieldValue('contact', numericOnly);
-                    }}
-                    onKeyDown={(e) => {
-                      // Allow: backspace, delete, tab, escape, enter, arrows, home, end
-                      const allowed = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
-                      if (allowed.includes(e.key)) return;
-                      // Block anything that's not a digit
-                      if (!/^\d$/.test(e.key)) e.preventDefault();
                     }}
                     onBlur={formik.handleBlur}
                     placeholder="9876543210"
