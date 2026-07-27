@@ -1,94 +1,25 @@
 import { useState, useEffect } from "react";
-import {
-  FiSearch,
-  FiPhone,
-  FiMail,
-  FiEye,
-  FiEdit,
-} from "react-icons/fi";
+import { FiSearch } from "react-icons/fi";
 import axios from "axios";
 import toast from "react-hot-toast";
 import { useRouter } from "next/router";
 import { baseUrl, getAuthToken } from "@/config";
-import Dialog from "@/components/Dialog";
 import { ListCollapse, Plus } from "lucide-react";
-import Select from "react-select";
-import TimePicker from "@/components/ui/TimePicker";
 
-type ApiUser = {
-  _id: string;
-  fullName: string;
-  email: string;
-  avatar?: string;
-};
-
-type ApiSource = {
-  _id: string;
-  name: string;
-};
-
-type ApiStatus = {
-  _id: string;
-  name: string;
-};
-
-type LeadLabel = {
-  _id: string;
-  name: string;
-  color?: string;
-};
-
-type ApiLead = {
-  _id: string;
-  fullName: string;
-  companyName?: string;
-  address?: string;
-  contact: string;
-  email: string;
-  leadSource?: ApiSource;
-  leadLabel?: LeadLabel[];
-  leadStatus?: ApiStatus;
-  assignedTo?: ApiUser;
-  priority?: "High" | "Medium" | "Low";
-  lastFollowUp?: string;
-  nextFollowupDate?: string;
-  nextFollowupTime?: string;
-  note?: string;
-  isActive?: boolean;
-  attachments?: { name: string; url?: string }[];
-  isLost?: boolean;
-  isWon?: boolean;
-  amount?: number;
-  lostReason?: string;
-  lostDate?: string;
-  wonDate?: string;
-  labels?: string[] | LeadLabel[];
-};
-
-type StatusGroup = {
-  id: string;
-  title: string;
-  leads: ApiLead[];
-};
-
-type AddLeadForm = {
-  name: string;
-  companyName?: string;
-  address?: string;
-  phone: string;
-  email: string;
-  source: string;
-  label: string[]; // Added label field
-  status: string;
-  staff: string;
-  priority: "High" | "Medium" | "Low";
-  lastFollowUp: string;
-  nextFollowupDate?: string;
-  nextFollowupTime?: string;
-  note?: string;
-  isActive?: boolean;
-  attachments?: File[];
-};
+import KanbanBoardView from "@/components/kanban/KanbanBoardView";
+import KanbanLostLeads from "@/components/kanban/KanbanLostLeads";
+import KanbanWonLeads from "@/components/kanban/KanbanWonLeads";
+import KanbanLeadAddDialog from "@/components/kanban/KanbanLeadAddDialog";
+import KanbanLeadViewDialog from "@/components/kanban/KanbanLeadViewDialog";
+import {
+  ApiUser,
+  ApiSource,
+  ApiStatus,
+  LeadLabel,
+  ApiLead,
+  StatusGroup,
+  AddLeadForm,
+} from "@/components/kanban/types";
 
 export default function LeadsPage() {
   const router = useRouter();
@@ -114,8 +45,6 @@ export default function LeadsPage() {
   const [loadingMoreMap, setLoadingMoreMap] = useState<Record<string, boolean>>({});
   const [lostLeadsList, setLostLeadsList] = useState<ApiLead[]>([]);
   const [wonLeadsList, setWonLeadsList] = useState<ApiLead[]>([]);
-  const [loadingLost, setLoadingLost] = useState(false);
-  const [loadingWon, setLoadingWon] = useState(false);
 
   const [addForm, setAddForm] = useState<AddLeadForm>({
     name: "",
@@ -135,8 +64,6 @@ export default function LeadsPage() {
     isActive: true,
     attachments: [],
   });
-
-  // View dialog edit states
   const [editingStatus, setEditingStatus] = useState("");
   const [editingNextFollowupDate, setEditingNextFollowupDate] = useState("");
   const [editingNextFollowupTime, setEditingNextFollowupTime] = useState("");
@@ -148,7 +75,7 @@ export default function LeadsPage() {
       if (saved) {
         try {
           setRequiredFields(JSON.parse(saved));
-        } catch (e) {
+        } catch {
           setRequiredFields(['fullName', 'contact', 'email', 'leadSource', 'leadStatus', 'assignedTo']);
         }
       } else {
@@ -179,7 +106,6 @@ export default function LeadsPage() {
   const fetchLeads = async () => {
     try {
       const token = getAuthToken();
-      // Use kanban endpoint for initial organized data
       const kanbanUrl = baseUrl.getAllLeads.replace(/\/?$/, '') + '/kanban';
       const kanbanRes = await axios.get(kanbanUrl, {
         headers: { Authorization: `Bearer ${token}` },
@@ -233,7 +159,6 @@ export default function LeadsPage() {
   };
 
   const fetchLostLeads = async () => {
-    setLoadingLost(true);
     try {
       const token = getAuthToken();
       const res = await axios.get(baseUrl.getLostLeads, {
@@ -243,13 +168,10 @@ export default function LeadsPage() {
     } catch (error) {
       console.error("Failed to fetch lost leads", error);
       setLostLeadsList([]);
-    } finally {
-      setLoadingLost(false);
     }
   };
 
   const fetchWonLeads = async () => {
-    setLoadingWon(true);
     try {
       const token = getAuthToken();
       const res = await axios.get(baseUrl.getWonLeads, {
@@ -259,8 +181,6 @@ export default function LeadsPage() {
     } catch (error) {
       console.error("Failed to fetch won leads", error);
       setWonLeadsList([]);
-    } finally {
-      setLoadingWon(false);
     }
   };
 
@@ -343,13 +263,9 @@ export default function LeadsPage() {
   const handleSaveLead = async () => {
     const roleStr = `${currentUser?.role?.roleName || ''} ${currentUser?.role?.name || ''} ${currentUser?.roleName || ''} ${typeof currentUser?.department === 'string' ? currentUser.department : ''} ${currentUser?.department?.roleName || ''} ${currentUser?.department?.name || ''} ${currentUser?.departmentName || ''}`.toLowerCase();
     const isSalesExecutive = roleStr.includes('sales');
-
-    // Ensure default assignment is set for sales-created leads
     if (!addForm.staff && currentUser?._id && isSalesExecutive) {
       setAddForm((prev) => ({ ...prev, staff: String(currentUser._id) }));
     }
-
-    // Dynamic validation based on settings
     const missingFields: string[] = [];
     if (requiredFields.includes('fullName') && !addForm.name) missingFields.push('Full Name');
     if (requiredFields.includes('companyName') && !addForm.companyName) missingFields.push('Company Name');
@@ -385,18 +301,17 @@ export default function LeadsPage() {
         nextFollowupTime: addForm.nextFollowupTime || null,
         note: addForm.note?.trim() || "",
         isActive: addForm.isActive ?? true,
-        leadLabel: addForm.label || [], // Include labels in payload
+        leadLabel: addForm.label || [], 
       };
 
       if (editingLead) {
-        // Edit mode - don't include status and next follow-up date
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { leadStatus, nextFollowupDate, ...editPayload } = payload;
         await axios.put(`${baseUrl.updateLead}/${editingLead._id}`, editPayload, {
           headers: { Authorization: `Bearer ${token}` },
         });
         toast.success("Lead updated successfully");
       } else {
-        // Add mode
         await axios.post(baseUrl.addLead, payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -406,8 +321,6 @@ export default function LeadsPage() {
       setShowAddDialog(false);
       setEditingLead(null);
       resetForm();
-
-      // Refresh all lead lists
       fetchLeads();
       fetchLostLeads();
       fetchWonLeads();
@@ -441,14 +354,11 @@ export default function LeadsPage() {
   };
 
   const handleEdit = (id: string) => {
-    // Check in all lead lists
     const lead = leads.find((l) => l._id === id) ||
       lostLeadsList.find((l) => l._id === id) ||
       wonLeadsList.find((l) => l._id === id);
 
     if (!lead) return;
-
-    // Extract label IDs if labels exist
     let labelIds: string[] = [];
     if (lead.leadLabel) {
       labelIds = lead.leadLabel.map((label: any) =>
@@ -479,7 +389,6 @@ export default function LeadsPage() {
   };
 
   const handleView = (id: string) => {
-    // Check in all lead lists
     const lead = leads.find((l) => l._id === id) ||
       lostLeadsList.find((l) => l._id === id) ||
       wonLeadsList.find((l) => l._id === id);
@@ -487,7 +396,6 @@ export default function LeadsPage() {
     if (!lead) return;
 
     setViewLead(lead);
-    // Initialize edit states with current values
     setEditingStatus(lead.leadStatus?._id || "");
     setEditingNextFollowupDate(lead.nextFollowupDate || "");
     setEditingNextFollowupTime(lead.nextFollowupTime || "");
@@ -509,8 +417,6 @@ export default function LeadsPage() {
       });
 
       toast.success("Lead updated successfully");
-
-      // Refresh all lead lists
       fetchLeads();
       fetchLostLeads();
       fetchWonLeads();
@@ -518,38 +424,6 @@ export default function LeadsPage() {
     } catch (error: any) {
       console.error(error);
       toast.error(error.response?.data?.message || "Failed to update lead");
-    }
-  };
-
-  const markLost = async (id: string) => {
-    try {
-      const token = getAuthToken();
-      await axios.put(
-        `${baseUrl.updateLead}/${id}`,
-        { isLost: true, lostDate: new Date().toISOString() },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      toast.success("Lead marked as lost");
-      fetchLeads();
-      fetchLostLeads();
-    } catch (error) {
-      toast.error("Failed to update lead");
-    }
-  };
-
-  const markWon = async (id: string) => {
-    try {
-      const token = getAuthToken();
-      await axios.put(
-        `${baseUrl.updateLead}/${id}`,
-        { isWon: true, wonDate: new Date().toISOString() },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      toast.success("Lead marked as won");
-      fetchLeads();
-      fetchWonLeads();
-    } catch (error) {
-      toast.error("Failed to update lead");
     }
   };
 
@@ -571,7 +445,7 @@ export default function LeadsPage() {
       fetchLeads();
       fetchLostLeads();
       fetchWonLeads();
-    } catch (error) {
+    } catch {
       toast.error("Failed to reactivate lead");
     }
   };
@@ -603,7 +477,7 @@ export default function LeadsPage() {
         );
         toast.success(`Lead moved to ${status.name}`);
         fetchLeads();
-      } catch (error) {
+      } catch {
         toast.error("Failed to update lead status");
       }
     };
@@ -657,8 +531,6 @@ export default function LeadsPage() {
   return (
     <>
       <div className="flex h-full flex-col">
-        {/* Header */}
-
         <div className="flex flex-wrap items-center gap-3 p-4 mb-2 rounded-3xl border border-gray-200 bg-white shadow-sm">
 
           <div>
@@ -687,7 +559,7 @@ export default function LeadsPage() {
           </button>
         </div>
 
-        {/* View Toggle and Filters */}
+       
         <div className="flex items-center justify-between px-6 pb-4">
           <div className="flex items-center gap-2">
             <button
@@ -732,919 +604,82 @@ export default function LeadsPage() {
           </div>
         </div>
 
-        {/* Content Area */}
+   
         <div className="flex-1 overflow-auto px-4 pb-2">
 
-          {/* Board View */}
           {view === "board" && (
-            <div className=" overflow-x-auto">
-              <div className="flex gap-4 h-[calc(100vh-288px)] w-100">
-                {statusGroups.filter(
-                  (status) =>
-                    !visibleStatusNames ||
-                    visibleStatusNames.includes(status.title),
-                ).map((status: any) => (
-                  <div
-                    key={status.id}
-                    className="w-80 flex-shrink-0"
-                  >
-                    {/* Column Header */}
-                    <div className="bg-secondary rounded-t-xl px-6 py-4">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold text-white capitalize">
-                          {status.title}
-                        </h3>
-                        <span className="rounded-full bg-[#ffffff] px-3 py-1 text-sm font-medium text-[#0a2352]">
-                          {status.leads.length}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Column Content */}
-                    <div
-                      className={`flex-1 h-[calc(100vh-385px)] overflow-y-auto rounded-b-lg bg-[#f4f7fb] p-4 ${draggingId ? "" : ""
-                        }`}
-                      onDragOver={handleDragOver}
-                      onDrop={() => handleDrop(status.id)}
-                      onScroll={(e) => {
-                        const target = e.target as HTMLDivElement;
-                        // Trigger when within 20px from the bottom
-                        if (target.scrollHeight - target.scrollTop <= target.clientHeight + 20) {
-                          loadMoreLeads(status.id);
-                        }
-                      }}
-                    >
-                      {status.leads.length === 0 ? (
-                        <div className="flex h-full items-center justify-center text-sm text-gray-500">
-                          No leads
-                        </div>
-                      ) : (
-                        <div className="space-y-3">
-                          {status.leads.map((lead: any) => (
-                            <div
-                              key={lead._id}
-                              className="cursor-move rounded-lg bg-[#ffffff] p-3 transition-shadow hover:shadow-md"
-                              draggable
-                              onDragStart={() => handleDragStart(lead._id)}
-                            >
-                              {/* Lead Card Header */}
-                              <div className="flex items-start justify-between">
-                                <div>
-                                  <div className="font-semibold text-gray-900">
-                                    {lead.fullName}
-                                  </div>
-                                  <div className="mt-1 text-sm text-gray-600">
-                                    {lead.companyName || "-"}
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={() => handleView(lead._id)}
-                                    className="h-8 w-8 rounded-full bg-[#007bff] text-[#ffffff] flex items-center justify-center
-             hover:-translate-y-1 hover:shadow-md 
-             transition-transform transition-shadow duration-200 ease-out"
-                                    title="View"
-                                  >
-                                    <FiEye className="h-4 w-4" />
-                                  </button>
-
-                                  <button
-                                    onClick={() => handleEdit(lead._id)}
-                                    className="h-8 w-8 rounded-full bg-[#008001] text-[#ffffff] flex items-center justify-center
-             hover:-translate-y-1 hover:shadow-md 
-             transition-transform transition-shadow duration-200 ease-out"
-                                    title="Edit"
-                                  >
-                                    <FiEdit className="h-4 w-4" />
-                                  </button>
-                                </div>
-                              </div>
-
-                              {/* Lead Details */}
-                              <div className="mt-2 text-sm text-gray-700">
-
-                                <div className="flex items-start gap-2">
-
-                                  {/* Left Content */}
-                                  <div className="flex-1 min-w-0 space-y-2">
-
-                                    <div className="flex items-center gap-2">
-                                      <FiPhone className="h-4 w-4 text-dark flex-shrink-0" />
-                                      <span className="truncate">{lead.contact}</span>
-                                    </div>
-
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <FiMail className="h-4 w-4 text-dark flex-shrink-0" />
-                                      <span className="truncate">
-                                        {lead.email}
-                                      </span>
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                      {lead.assignedTo?.avatar ? (
-                                        <img
-                                          src={lead.assignedTo.avatar}
-                                          alt={lead.assignedTo.fullName}
-                                          className="h-6 w-6 rounded-full object-cover"
-                                        />
-                                      ) : (
-                                        <div className="h-6 w-6 rounded-full bg-gradient-to-r from-[#9160ff] to-[#c387ff] flex items-center justify-center text-xs font-semibold text-white">
-                                          {lead.assignedTo?.fullName?.charAt(0).toUpperCase()}
-                                        </div>
-                                      )}
-                                      <span className="truncate">{lead.assignedTo?.fullName || "Unassigned"}</span>
-                                    </div>
-                                  </div>
-
-                                  {/* Priority Right */}
-                                  {lead.priority && (
-                                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-600 capitalize whitespace-nowrap">
-                                      {lead.priority}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Labels */}
-                              <div className="mt-3 flex gap-2 overflow-x-auto whitespace-nowrap">
-                                {lead.leadLabel?.map((label: any) => (
-                                  <span
-                                    key={label._id}
-                                    style={{ backgroundColor: label.color }}
-                                    className="px-2 py-1 text-xs font-medium text-white rounded-md flex-shrink-0"
-                                  >
-                                    {label.name}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {loadingMoreMap[status.id] && (
-                        <div className="flex justify-center mt-3 p-2">
-                          <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <KanbanBoardView
+              statusGroups={statusGroups}
+              visibleStatusNames={visibleStatusNames}
+              draggingId={draggingId}
+              loadingMoreMap={loadingMoreMap}
+              handleDragStart={handleDragStart}
+              handleDragOver={handleDragOver}
+              handleDrop={handleDrop}
+              handleView={handleView}
+              handleEdit={handleEdit}
+              loadMoreLeads={loadMoreLeads}
+            />
           )}
 
-          {/* Lost Leads Section */}
+    
           {view === "lost" && (
-            <div className="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm w-full">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-6 w-6 rounded-full bg-red-200 text-red-700 flex items-center justify-center">
-                    ×
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold text-red-800">
-                      Lost Leads
-                    </h2>
-                    <p className="text-sm text-red-700">
-                      Leads that were not converted
-                    </p>
-                  </div>
-                </div>
-                <span className="rounded-full bg-red-200 px-3 py-1 text-sm font-semibold text-red-800">
-                  {lostLeads.length} Total
-                </span>
-              </div>
-              <div className="mt-4 rounded-xl bg-white border border-red-100 p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-700">
-                    Show
-                    <select className="border rounded px-2 py-1">
-                      <option>100</option>
-                    </select>
-                    entries
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-700">Search:</span>
-                    <input
-                      value={lostSearch}
-                      onChange={(e) => setLostSearch(e.target.value)}
-                      className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                    />
-                  </div>
-                </div>
-                <div className="table-responsive overflow-x-auto">
-                  <table className="min-w-[1000px] w-full whitespace-nowrap">
-                    <thead>
-                      <tr className="bg-[#dee2e6] text-black text-xs font-bold">
-                        <th className="px-4 py-3 text-left">Lead Name</th>
-                        <th className="px-4 py-3 text-left">Company</th>
-                        <th className="px-4 py-3 text-left">Location</th>
-                        <th className="px-4 py-3 text-left">Contact</th>
-                        <th className="px-4 py-3 text-left">Lost Date</th>
-                        <th className="px-4 py-3 text-left">Assigned To</th>
-                        <th className="px-4 py-3 text-left">Reason</th>
-                        <th className="sticky right-0 z-10 bg-[#dee2e6] px-4 py-3 text-left shadow-[-4px_0_10px_-3px_rgba(0,0,0,0.1)]">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white">
-                      {lostLeads.length === 0 ? (
-                        <tr>
-                          <td
-                            colSpan={8}
-                            className="px-6 py-12 text-center text-gray-600"
-                          >
-                            No data available in table
-                          </td>
-                        </tr>
-                      ) : (
-                        lostLeads.map((l) => (
-                          <tr key={l._id} className="border-b">
-                            <td className="px-4 py-3">
-                              <div className="flex flex-col">
-                                <span className="font-semibold text-gray-900">
-                                  {l.fullName}
-                                </span>
-                                <span className="text-xs text-red-600">• Lost</span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="block max-w-[180px] truncate text-sm text-gray-700" title={l.companyName || ''}>
-                                {l.companyName || '-'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="block max-w-[220px] truncate text-sm text-gray-700" title={l.address || ''}>
-                                {l.address || '-'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex flex-col gap-1 text-sm text-gray-700">
-                                <div className="flex items-center gap-2">
-                                  <FiPhone className="h-4 w-4 text-gray-500" />
-                                  <span title={l.contact || ''} className="truncate max-w-[140px] block">
-                                    {l.contact}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <FiMail className="h-4 w-4 text-gray-500" />
-                                  <span title={l.email || ''} className="truncate max-w-[140px] block">
-                                    {l.email}
-                                  </span>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              {l.lostDate ? new Date(l.lostDate).toLocaleDateString() : 'N/A'}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="block max-w-[160px] truncate text-sm text-gray-700" title={l.assignedTo?.fullName || ''}>
-                                {l.assignedTo?.fullName || '-'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="block max-w-[160px] truncate text-sm text-gray-700" title={l.lostReason || ''}>
-                                {l.lostReason || 'Not specified'}
-                              </span>
-                            </td>
-                            <td className="sticky right-0 z-10 bg-white px-4 py-3 shadow-[-4px_0_10px_-3px_rgba(0,0,0,0.1)]">
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => handleView(l._id)}
-                                  className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
-                                >
-                                  View
-                                </button>
-                                <button
-                                  onClick={() => handleEdit(l._id)}
-                                  className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => reactivateLead(l._id)}
-                                  className="rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-700"
-                                >
-                                  Reactivate
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+            <KanbanLostLeads
+              lostLeads={lostLeads}
+              lostSearch={lostSearch}
+              setLostSearch={setLostSearch}
+              handleView={handleView}
+              handleEdit={handleEdit}
+              reactivateLead={reactivateLead}
+            />
           )}
 
-          {/* Won Leads Section */}
+       
           {view === "won" && (
-            <div className="rounded-2xl border border-green-200 bg-green-50 p-4 shadow-sm w-full">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-6 w-6 rounded-full bg-green-200 text-green-700 flex items-center justify-center">
-                    ✓
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold text-green-800">
-                      Won Leads
-                    </h2>
-                    <p className="text-sm text-green-700">
-                      Leads that were converted
-                    </p>
-                  </div>
-                </div>
-                <span className="rounded-full bg-green-200 px-3 py-1 text-sm font-semibold text-green-800">
-                  {wonLeads.length} Total
-                </span>
-              </div>
-              <div className="mt-4 rounded-xl bg-white border border-green-100 p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-700">
-                    Show
-                    <select className="border rounded px-2 py-1">
-                      <option>100</option>
-                    </select>
-                    entries
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-700">Search:</span>
-                    <input
-                      value={wonSearch}
-                      onChange={(e) => setWonSearch(e.target.value)}
-                      className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                    />
-                  </div>
-                </div>
-                <div className="table-responsive overflow-x-auto">
-                  <table className="min-w-[1000px] w-full whitespace-nowrap">
-                    <thead>
-                      <tr className="bg-[#dee2e6] text-black text-xs font-bold">
-                        <th className="px-4 py-3 text-left">Lead Name</th>
-                        <th className="px-4 py-3 text-left">Company</th>
-                        <th className="px-4 py-3 text-left">Location</th>
-                        <th className="px-4 py-3 text-left">Contact</th>
-                        <th className="px-4 py-3 text-left">Won Date</th>
-                        <th className="px-4 py-3 text-left">Assigned To</th>
-                        <th className="px-4 py-3 text-left">Amount</th>
-                        <th className="sticky right-0 z-10 bg-[#dee2e6] px-4 py-3 text-left shadow-[-4px_0_10px_-3px_rgba(0,0,0,0.1)]">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white">
-                      {wonLeads.length === 0 ? (
-                        <tr>
-                          <td
-                            colSpan={8}
-                            className="px-6 py-12 text-center text-gray-600"
-                          >
-                            No data available in table
-                          </td>
-                        </tr>
-                      ) : (
-                        wonLeads.map((l) => (
-                          <tr key={l._id} className="border-b">
-                            <td className="px-4 py-3">
-                              <span
-                                className="block max-w-[140px] truncate text-sm font-semibold text-gray-900"
-                                title={l.fullName}
-                              >
-                                {l.fullName}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span
-                                className="block max-w-[180px] truncate text-sm text-gray-700"
-                                title={l.companyName || ''}
-                              >
-                                {l.companyName || '-'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span
-                                className="block max-w-[100px] truncate overflow-hidden overflow-hidden text-sm text-red-700"
-                                title={l.address || ''}
-                              >
-                                {l.address || '-'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex flex-col gap-1 text-sm text-gray-700">
-                                <div className="flex items-center gap-2">
-                                  <FiPhone className="h-4 w-4 text-gray-500" />
-                                  <span title={l.contact || ''} className="truncate max-w-[140px] block">
-                                    {l.contact}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <FiMail className="h-4 w-4 text-gray-500" />
-                                  <span title={l.email || ''} className="truncate max-w-[140px] block">
-                                    {l.email}
-                                  </span>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              {l.wonDate ? new Date(l.wonDate).toLocaleDateString() : 'N/A'}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span
-                                className="block max-w-[160px] truncate text-sm text-gray-700"
-                                title={l.assignedTo?.fullName || ''}
-                              >
-                                {l.assignedTo?.fullName || '-'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              <span
-                                className="block max-w-[120px] truncate overflow-hidden text-sm text-gray-700"
-                                title={l.amount ? `₹${l.amount.toLocaleString()}` : ''}
-                              >
-                                {l.amount ? `₹${l.amount.toLocaleString()}` : "-"}
-                              </span>
-                            </td>
-                            <td className="sticky right-0 z-10 bg-white px-4 py-3 shadow-[-4px_0_10px_-3px_rgba(0,0,0,0.1)]">
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => handleView(l._id)}
-                                  className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
-                                >
-                                  View
-                                </button>
-                                <button
-                                  onClick={() => handleEdit(l._id)}
-                                  className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700"
-                                >
-                                  Edit
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                    {wonLeads.length > 0 && (
-                      <tfoot>
-                        <tr className="bg-gray-50 text-sm font-semibold text-gray-900">
-                          <td colSpan={6} className="px-4 py-3 text-right">Total</td>
-                          <td className="px-4 py-3">₹{wonTotalAmount.toLocaleString()}</td>
-                          <td className="px-4 py-3">&nbsp;</td>
-                        </tr>
-                      </tfoot>
-                    )}
-                  </table>
-                </div>
-              </div>
-            </div>
+            <KanbanWonLeads
+              wonLeads={wonLeads}
+              wonSearch={wonSearch}
+              setWonSearch={setWonSearch}
+              handleView={handleView}
+              handleEdit={handleEdit}
+              wonTotalAmount={wonTotalAmount}
+            />
           )}
         </div>
 
-        {/* Add/Edit Lead Dialog */}
-        <Dialog
+    
+        <KanbanLeadAddDialog
           isOpen={showAddDialog}
           onClose={() => {
             setShowAddDialog(false);
             setEditingLead(null);
             resetForm();
           }}
-          title={editingLead ? "Edit Lead" : "Add Lead"}
-          footer={
-            <>
-              <button
-                onClick={() => {
-                  setShowAddDialog(false);
-                  setEditingLead(null);
-                  resetForm();
-                }}
-                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveLead}
-                className="rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={addingLead}
-              >
-                {addingLead ? "Saving..." : editingLead ? "Update Lead" : "Save Lead"}
-              </button>
-            </>
-          }
-        >
-          <form className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700">
-                Full Name {requiredFields.includes('fullName') && <span className="text-red-500">*</span>}
-              </label>
-              <input
-                type="text"
-                value={addForm.name}
-                onChange={(e) =>
-                  setAddForm((p) => ({ ...p, name: e.target.value }))
-                }
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700">
-                Company Name {requiredFields.includes('companyName') && <span className="text-red-500">*</span>}
-              </label>
-              <input
-                type="text"
-                value={addForm.companyName ?? ""}
-                onChange={(e) =>
-                  setAddForm((p) => ({ ...p, companyName: e.target.value }))
-                }
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700">
-                Address {requiredFields.includes('address') && <span className="text-red-500">*</span>}
-              </label>
-              <textarea
-                rows={3}
-                value={addForm.address ?? ""}
-                onChange={(e) =>
-                  setAddForm((p) => ({ ...p, address: e.target.value }))
-                }
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700">
-                Phone {requiredFields.includes('contact') && <span className="text-red-500">*</span>}
-              </label>
-              <input
-                type="text"
-                value={addForm.phone}
-                onChange={(e) =>
-                  setAddForm((p) => ({ ...p, phone: e.target.value }))
-                }
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700">
-                Email {requiredFields.includes('email') && <span className="text-red-500">*</span>}
-              </label>
-              <input
-                type="email"
-                value={addForm.email}
-                onChange={(e) =>
-                  setAddForm((p) => ({ ...p, email: e.target.value }))
-                }
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Source {requiredFields.includes('leadSource') && <span className="text-red-500">*</span>}
-                </label>
-                <select
-                  value={addForm.source}
-                  onChange={(e) =>
-                    setAddForm((p) => ({ ...p, source: e.target.value }))
-                  }
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select Source</option>
-                  {sources.map((s) => (
-                    <option key={s._id} value={s._id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {/* Status field only shown in add mode */}
-              {!editingLead && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Status {requiredFields.includes('leadStatus') && <span className="text-red-500">*</span>}
-                  </label>
-                  <select
-                    value={addForm.status}
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-                    onChange={(e) =>
-                      setAddForm((p) => ({ ...p, status: e.target.value }))
-                    }
-                  >
-                    <option value="">Select Status</option>
-                    {statuses.map((s) => (
-                      <option key={s._id} value={s._id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Assigned Staff {requiredFields.includes('assignedTo') && <span className="text-red-500">*</span>}
-                </label>
-                <select
-                  value={addForm.staff}
-                  onChange={(e) =>
-                    setAddForm((p) => ({ ...p, staff: e.target.value }))
-                  }
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select Staff</option>
-                  {staffMembers.map((s) => (
-                    <option key={s._id} value={s._id}>
-                      {s.fullName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Priority {requiredFields.includes('priority') && <span className="text-red-500">*</span>}
-                </label>
-                <select
-                  value={addForm.priority}
-                  onChange={(e) =>
-                    setAddForm((p) => ({
-                      ...p,
-                      priority: e.target.value as AddLeadForm["priority"],
-                    }))
-                  }
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-                >
-                  <option>High</option>
-                  <option>Medium</option>
-                  <option>Low</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700">
-                Lead Labels {requiredFields.includes('labels') && <span className="text-red-500">*</span>}
-              </label>
+          editingLead={editingLead}
+          addForm={addForm}
+          setAddForm={setAddForm}
+          handleSaveLead={handleSaveLead}
+          addingLead={addingLead}
+          requiredFields={requiredFields}
+          sources={sources}
+          statuses={statuses}
+          staffMembers={staffMembers}
+          leadLabels={leadLabels}
+        />
 
-              <Select
-                isMulti
-                options={leadLabels.map((label) => ({
-                  value: label._id,
-                  label: label.name,
-                }))}
-                value={leadLabels
-                  .filter((label) => addForm.label.includes(label._id))
-                  .map((label) => ({
-                    value: label._id,
-                    label: label.name,
-                  }))}
-                onChange={(selected) => {
-                  const values = selected ? selected.map((item) => item.value) : [];
-                  setAddForm((p) => ({ ...p, label: values }));
-                }}
-                className="mt-1"
-                classNamePrefix="react-select"
-                placeholder="Select labels..."
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700">
-                Last Follow-Up
-              </label>
-              <input
-                type="date"
-                value={addForm.lastFollowUp}
-                onChange={(e) =>
-                  setAddForm((p) => ({ ...p, lastFollowUp: e.target.value }))
-                }
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            {/* Next Follow-up fields only shown in add mode */}
-            {!editingLead && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Next Follow-Up Date
-                  </label>
-                  <input
-                    type="date"
-                    value={addForm.nextFollowupDate ?? ""}
-                    onChange={(e) =>
-                      setAddForm((p) => ({
-                        ...p,
-                        nextFollowupDate: e.target.value,
-                      }))
-                    }
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Next Follow-Up Time
-                  </label>
-                  <TimePicker
-                    value={addForm.nextFollowupTime ?? ""}
-                    onChange={(time) =>
-                      setAddForm((p) => ({
-                        ...p,
-                        nextFollowupTime: time,
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-slate-700">
-                Note
-              </label>
-              <textarea
-                rows={3}
-                value={addForm.note ?? ""}
-                onChange={(e) =>
-                  setAddForm((p) => ({ ...p, note: e.target.value }))
-                }
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700">
-                Attachments
-              </label>
-              <input
-                type="file"
-                multiple
-                onChange={(e) => {
-                  const files = e.target.files
-                    ? Array.from(e.target.files)
-                    : [];
-                  setAddForm((p) => ({ ...p, attachments: files }));
-                }}
-                className="mt-1 block w-full text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-              />
-              {addForm?.attachments && addForm.attachments.length > 0 && (
-                <ul className="mt-2 space-y-1 text-sm text-slate-600">
-                  {addForm.attachments.map((file, index) => (
-                    <li key={index}>📎 {file.name}</li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                id="isActive"
-                type="checkbox"
-                checked={addForm.isActive ?? true}
-                onChange={(e) =>
-                  setAddForm((p) => ({ ...p, isActive: e.target.checked }))
-                }
-                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-              />
-              <label
-                htmlFor="isActive"
-                className="text-sm font-medium text-slate-700"
-              >
-                Active
-              </label>
-            </div>
-          </form>
-        </Dialog>
-
-        {/* View Lead Dialog with Edit Capabilities */}
-        <Dialog
-          isOpen={!!viewLead}
-          onClose={() => setViewLead(null)}
-          title="Lead Details"
-          footer={
-            <>
-              <button
-                onClick={() => setViewLead(null)}
-                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Close
-              </button>
-              <button
-                onClick={handleSaveViewChanges}
-                className="rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-secondary"
-              >
-                Save Changes
-              </button>
-            </>
-          }
-        >
-          {viewLead && (
-            <div className="space-y-4">
-              <div className="font-semibold text-xl">{viewLead.fullName}</div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-sm text-gray-600">Company</div>
-                  <div>{viewLead.companyName || "-"}</div>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-sm text-gray-600">Phone</div>
-                  <div>{viewLead.contact || "-"}</div>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-sm text-gray-600">Email</div>
-                  <div>{viewLead.email || "-"}</div>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-sm text-gray-600">Source</div>
-                  <div>{viewLead.leadSource?.name || "-"}</div>
-                </div>
-                {/* Status Selection Boxes */}
-                <div className="bg-gray-50 p-4 rounded-lg md:col-span-2">
-                  <div className="text-sm text-gray-600 mb-3">Status</div>
-                  <div className="flex flex-wrap gap-2">
-                    {statuses.map((s) => (
-                      <button
-                        key={s._id}
-                        onClick={() => setEditingStatus(s._id)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${editingStatus === s._id
-                          ? 'bg-secondary text-white'
-                          : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                          }`}
-                      >
-                        {s.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-sm text-gray-600">Assigned Staff</div>
-                  <div>{viewLead.assignedTo?.fullName || "-"}</div>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-sm text-gray-600">Priority</div>
-                  <div>{viewLead.priority || "-"}</div>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-sm text-gray-600">Last Follow-Up</div>
-                  <div>{viewLead.lastFollowUp || "-"}</div>
-                </div>
-              </div>
-              {/* Editable Next Follow-up */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-sm text-gray-600 mb-2">Next Follow-Up Date</div>
-                  <input
-                    type="date"
-                    value={editingNextFollowupDate}
-                    onChange={(e) => setEditingNextFollowupDate(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-sm text-gray-600 mb-2">Next Follow-Up Time</div>
-                  <TimePicker
-                    value={editingNextFollowupTime}
-                    onChange={(time) => setEditingNextFollowupTime(time)}
-                  />
-                </div>
-              </div>
-              {viewLead.note && (
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-sm text-gray-600">Note</div>
-                  <div>{viewLead.note}</div>
-                </div>
-              )}
-              {viewLead.attachments && viewLead.attachments.length > 0 && (
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-sm text-gray-600">Attachments</div>
-                  <div className="space-y-2 mt-2">
-                    {viewLead.attachments.map((attachment, index) => (
-                      <a
-                        key={index}
-                        href={attachment.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline block"
-                      >
-                        {attachment.name}
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {viewLead.isLost && (
-                <div className="bg-red-50 p-4 rounded-lg">
-                  <div className="text-sm text-red-600 font-medium">Lost Information</div>
-                  <div className="mt-2 text-sm">
-                    <div>Lost Date: {viewLead.lostDate ? new Date(viewLead.lostDate).toLocaleDateString() : 'N/A'}</div>
-                    <div>Reason: {viewLead.lostReason || 'Not specified'}</div>
-                  </div>
-                </div>
-              )}
-              {viewLead.isWon && (
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <div className="text-sm text-green-600 font-medium">Won Information</div>
-                  <div className="mt-2 text-sm">
-                    <div>Won Date: {viewLead.wonDate ? new Date(viewLead.wonDate).toLocaleDateString() : 'N/A'}</div>
-                    <div>Amount: {viewLead.amount ? `₹${viewLead.amount.toLocaleString()}` : 'Not specified'}</div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </Dialog>
+        
+        <KanbanLeadViewDialog
+          viewLead={viewLead}
+          setViewLead={setViewLead}
+          handleSaveViewChanges={handleSaveViewChanges}
+          editingStatus={editingStatus}
+          setEditingStatus={setEditingStatus}
+          editingNextFollowupDate={editingNextFollowupDate}
+          setEditingNextFollowupDate={setEditingNextFollowupDate}
+          editingNextFollowupTime={editingNextFollowupTime}
+          setEditingNextFollowupTime={setEditingNextFollowupTime}
+          statuses={statuses}
+        />
       </div>
     </>
   );
