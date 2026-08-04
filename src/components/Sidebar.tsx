@@ -21,6 +21,7 @@ import {
   PackagePlus,
   PackageMinus,
   Building2,
+  Briefcase,
   X,
   Globe,
 } from 'lucide-react';
@@ -48,6 +49,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
   const router = useRouter();
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [canViewLead, setCanViewLead] = useState(false);
+  const [canViewBackOffice, setCanViewBackOffice] = useState(false);
   const [canViewDashboard, setCanViewDashboard] = useState(false);
   const [canViewTask, setCanViewTask] = useState(false);
   const [canViewStaff, setCanViewStaff] = useState(false);
@@ -74,6 +76,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
           : role.permissions || {};
         const dashboardPerms = rawPerms.dashboard || {};
         const leadPerms = rawPerms.lead || {};
+        const backOfficePerms = rawPerms.backOffice || {};
         const taskPerms = rawPerms.task || {};
         const staffPerms = rawPerms.staff || {};
         const rolePerms = rawPerms.role || {};
@@ -87,6 +90,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
 
         setCanViewDashboard(!!(dashboardPerms.readAll));
         setCanViewLead(!!(leadPerms.readOwn || leadPerms.readAll));
+        setCanViewBackOffice(!!(backOfficePerms.readOwn || backOfficePerms.readAll || leadPerms.readOwn || leadPerms.readAll));
         setCanViewTask(!!(taskPerms.readOwn || taskPerms.readAll));
         setCanViewStaff(!!(staffPerms.readAll || setupPerms.readAll));
         setCanViewRole(!!(rolePerms.readAll || setupPerms.readAll));
@@ -101,6 +105,7 @@ export default function Sidebar({ isOpen, toggleSidebar }: SidebarProps) {
       .catch(() => {
         setCanViewDashboard(false);
         setCanViewLead(false);
+        setCanViewBackOffice(false);
         setCanViewTask(false);
         setCanViewStaff(false);
         setCanViewRole(false);
