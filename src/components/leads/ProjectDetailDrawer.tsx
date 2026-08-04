@@ -375,7 +375,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
             inverterMake: 'Inverter Make',
             inverterKw: 'Inverter KW',
             inverterPhase: 'Inverter Phase',
-            installationRoof: 'Installation Roof',
+            installationRoof: 'Installation Rood',
             discom: 'DISCOM',
             consumerConnectionType: 'Consumer Connection Type',
             elcbInstalled: 'ELCB / RCCB Installed',
@@ -805,7 +805,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                     </div>
                     <div>
                       <FormSelect
-                        label="Installation Roof"
+                        label="Installation Rood"
                         name="installationRoof"
                         value={form.installationRoof}
                         onChange={(val) => handleFormChange('installationRoof', val)}

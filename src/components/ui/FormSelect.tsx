@@ -22,15 +22,18 @@ function getBorderClasses(hasError: boolean, isFocused: boolean, disabled: boole
 
 // ─── Portal Dropdown Hook ──────────────────────────────────────────────────────
 function useDropdownPosition(ref: React.RefObject<HTMLElement | null>, isOpen: boolean) {
-  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0, isUp: false });
 
   const updatePosition = () => {
     if (ref.current) {
       const rect = ref.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const isUp = spaceBelow < 250 && rect.top > spaceBelow;
       setCoords({
-        top: rect.bottom,
+        top: isUp ? rect.top - 4 : rect.bottom + 4,
         left: rect.left,
         width: rect.width,
+        isUp,
       });
     }
   };
@@ -180,11 +183,12 @@ export const FormSelect: React.FC<FormSelectProps> = ({
         {isOpen && typeof document !== 'undefined' && createPortal(
           <div
             id={`portal-${selectName}`}
-            className="fixed z-9999"
+            className="fixed z-[9999]"
             style={{
-              top: `${coords.top + 4}px`,
+              top: `${coords.top}px`,
               left: `${coords.left}px`,
-              width: `${coords.width}px`
+              width: `${coords.width}px`,
+              transform: coords.isUp ? 'translateY(-100%)' : 'none'
             }}
           >
             <div className="bg-white border border-gray-100 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] overflow-hidden">
@@ -401,11 +405,12 @@ export const FormMultiSelect: React.FC<FormMultiSelectProps> = ({
         {isOpen && typeof document !== 'undefined' && createPortal(
           <div
             id={`portal-${selectName}`}
-            className="fixed z-9999"
+            className="fixed z-[9999]"
             style={{
-              top: `${coords.top + 4}px`,
+              top: `${coords.top}px`,
               left: `${coords.left}px`,
-              width: `${coords.width}px`
+              width: `${coords.width}px`,
+              transform: coords.isUp ? 'translateY(-100%)' : 'none'
             }}
           >
             <div className="bg-white border border-gray-100 rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] overflow-hidden">
