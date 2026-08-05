@@ -11,6 +11,7 @@ import { baseUrl, getAuthToken } from '@/config';
 import { ApiLead } from './types';
 import FormSelect from '@/components/ui/FormSelect';
 import FormInput from '@/components/ui/Input';
+import Calendar from '@/components/ui/Calendar';
 
 interface Props {
   isOpen: boolean;
@@ -72,6 +73,14 @@ interface FormState {
   downPaymentAmount: string;
   loanFirstPaymentAmount: string;
   loanSecondPaymentAmount: string;
+  meterChargeAmount: string;
+  meterChargePayableBy: string;
+  registrationDate: string;
+  registrationNo: string;
+  registrationName: string;
+  documentFeasibilityDate: string;
+  registrationDone: string;
+  meterPaymentDone: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -86,6 +95,7 @@ const EMPTY_FORM: FormState = {
   hdgiPipe80x40: '0', hdgiPipe60x40: '0', hdgiPipe40x40: '0', hdgiPipe20x40PatiPipe: '0',
   paymentMode: '', projectAmount: '', subsidyLessProject: '', loanPortal: '', totalKw: '',
   downPaymentAmount: '', loanFirstPaymentAmount: '', loanSecondPaymentAmount: '',
+  meterChargeAmount: '', meterChargePayableBy: '', registrationDate: '', registrationNo: '', registrationName: '', documentFeasibilityDate: '', registrationDone: '', meterPaymentDone: '',
 };
 
 const PHOTO_FIELDS = [
@@ -113,7 +123,7 @@ const LOAN_DOC_FIELDS = [
   { key: 'loanDocAadhaarCard', label: 'Aadhaar card (Loan)' },
 ];
 
-type SectionKey = 'project' | 'photos' | 'regDocs' | 'payment' | 'loanDocs';
+type SectionKey = 'project' | 'photos' | 'regDocs' | 'regProcess' | 'payment' | 'loanDocs';
 
 // ─── Option lists ───────────────────────────────────────────────────────────────
 const PHASE_OPTS = [{ value: 'single', label: 'Single' }, { value: 'three', label: 'Three' }];
@@ -226,9 +236,15 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
     if (!token) return;
     axios.get(baseUrl.currentStaff, { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => {
-        const role = res.data?.data?.role || {};
+        const staff = res.data?.data || {};
+        const role = staff.role || {};
         const roleName = (role.roleName || role.name || '').toLowerCase().replace(/\s+/g, '');
         setIsBackOffice(roleName.includes('backoffice'));
+        
+        const staffName = staff.fullName || staff.name || '';
+        if (staffName) {
+          setForm(prev => prev.registrationName ? prev : { ...prev, registrationName: staffName });
+        }
       })
       .catch(() => setIsBackOffice(false));
   }, [isOpen]);
@@ -295,6 +311,14 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
             downPaymentAmount: d.downPaymentAmount?.toString() || '',
             loanFirstPaymentAmount: d.loanFirstPaymentAmount?.toString() || '',
             loanSecondPaymentAmount: d.loanSecondPaymentAmount?.toString() || '',
+            meterChargeAmount: d.meterChargeAmount?.toString() || '',
+            meterChargePayableBy: d.meterChargePayableBy || '',
+            registrationDate: d.registrationDate || '',
+            registrationNo: d.registrationNo || '',
+            registrationName: d.registrationName || '',
+            documentFeasibilityDate: d.documentFeasibilityDate || '',
+            registrationDone: d.registrationDone || '',
+            meterPaymentDone: d.meterPaymentDone || '',
           });
           const ef: Record<string, any> = {};
           [...PHOTO_FIELDS, ...REG_DOC_FIELDS, ...LOAN_DOC_FIELDS, 
@@ -507,6 +531,8 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
       return !PHOTO_FIELDS.some(f => !!newErrors[f.key]);
     } else if (section === 'regDocs') {
       return !REG_DOC_FIELDS.some(f => !!newErrors[f.key]);
+    } else if (section === 'regProcess') {
+      return true;
     } else if (section === 'payment') {
       const paymentFields = ['paymentMode', 'projectAmount', 'subsidyLessProject'];
       return !paymentFields.some(f => !!newErrors[f]);
@@ -553,9 +579,13 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
       }
     } else if (activeSection === 'regDocs') {
       if (validateSection('regDocs')) {
-        setActiveSection('payment');
+        setActiveSection(isBackOffice ? 'regProcess' : 'payment');
       } else {
         toast.error('Please upload all required Registration Documents first');
+      }
+    } else if (activeSection === 'regProcess') {
+      if (validateSection('regProcess')) {
+        setActiveSection('payment');
       }
     } else if (activeSection === 'payment') {
       if (validateSection('payment')) {
@@ -628,8 +658,11 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
     { key: 'project', label: 'Project Info', icon: <Settings className="h-4 w-4" /> },
     { key: 'photos', label: 'Site Photos', icon: <Image className="h-4 w-4" /> },
     { key: 'regDocs', label: 'Reg. Docs', icon: <FileCheck className="h-4 w-4" /> },
-    { key: 'payment', label: 'Payment', icon: <CreditCard className="h-4 w-4" /> },
   ];
+  if (isBackOffice) {
+    sections.push({ key: 'regProcess', label: 'Reg. Process', icon: <Zap className="h-4 w-4" /> });
+  }
+  sections.push({ key: 'payment', label: 'Payment', icon: <CreditCard className="h-4 w-4" /> });
 
   const handleAutosave = () => {
     // Attempt a silent save if some fields are filled
@@ -1155,10 +1188,69 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                 </div>
               )}
 
+              {/* ─── Registration Process ────────────────────────────────────────── */}
+              {activeSection === 'regProcess' && isBackOffice && (
+                <div>
+                  <SectionTitle>Registration, Feasibility & Meter Payment</SectionTitle>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <FormInput label="Meter Charge (Discom)" name="_discom_display" value={form.discom} disabled readOnly className="bg-gray-100 font-bold" />
+                    <FormInput label="Meter Charge Amount" name="meterChargeAmount" type="number" value={form.meterChargeAmount} onChange={(e) => handleFormChange('meterChargeAmount', e.target.value)} />
+                    <div>
+                      <FormSelect label="Meter Charge Payable By" name="meterChargePayableBy" value={form.meterChargePayableBy} onChange={(val) => handleFormChange('meterChargePayableBy', val)} options={[{value:'Customer', label:'Customer'}, {value:'Greeneable', label:'Greeneable'}]} placeholder="Select..." />
+                    </div>
+                    
+                    <div className="w-full mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-semibold text-gray-700">Registration Date</label>
+                      </div>
+                      <Calendar 
+                        value={form.registrationDate ? new Date(form.registrationDate) : null} 
+                        onChange={(date) => handleFormChange('registrationDate', date ? date.toLocaleDateString('en-CA') : '')} 
+                        placeholder="dd-mm-yyyy"
+                        className="rounded-xl border-2 py-[9px] bg-white/90"
+                      />
+                    </div>
+
+                    <FormInput label="Registration No" name="registrationNo" value={form.registrationNo} onChange={(e) => handleFormChange('registrationNo', e.target.value)} />
+                    <FormInput label="Registration Name" name="registrationName" value={form.registrationName} onChange={(e) => handleFormChange('registrationName', e.target.value)} />
+                    
+                    <div className="w-full mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-semibold text-gray-700">Document Feasibility Date</label>
+                      </div>
+                      <Calendar 
+                        value={form.documentFeasibilityDate ? new Date(form.documentFeasibilityDate) : null} 
+                        onChange={(date) => handleFormChange('documentFeasibilityDate', date ? date.toLocaleDateString('en-CA') : '')} 
+                        placeholder="dd-mm-yyyy"
+                        className="rounded-xl border-2 py-[9px] bg-white/90"
+                      />
+                    </div>
+                    <div>
+                      <FormSelect label="Registration Done" name="registrationDone" value={form.registrationDone} onChange={(val) => handleFormChange('registrationDone', val)} options={YES_NO_OPTS} placeholder="Select..." />
+                    </div>
+                    <div>
+                      <FormSelect label="Meter Payment Done" name="meterPaymentDone" value={form.meterPaymentDone} onChange={(val) => handleFormChange('meterPaymentDone', val)} options={YES_NO_OPTS} placeholder="Select..." />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* ─── Payment ─────────────────────────────────────────────────────── */}
               {activeSection === 'payment' && (
                 <div>
                   <SectionTitle>Payment Details</SectionTitle>
+                  
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 mb-6">
+                    <p className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">Bank Details</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <FormInput label="Bank Account Holder Name" name="accountHolderName" value={form.accountHolderName} onChange={(e) => handleFormChange('accountHolderName', e.target.value.toUpperCase())} />
+                      <FormInput label="Bank Account No" name="accountNo" value={form.accountNo} maxLength={18} onChange={(e) => handleFormChange('accountNo', e.target.value.toUpperCase())} />
+                      <FormInput label="IFSC Code" name="ifscCode" value={form.ifscCode} maxLength={11} onChange={(e) => handleFormChange('ifscCode', e.target.value.toUpperCase())} />
+                      <FormInput label="Bank Branch" name="branchName" value={form.branchName} onChange={(e) => handleFormChange('branchName', e.target.value.toUpperCase())} />
+                      <FormInput label="Bank Name" name="bankName" value={form.bankName} onChange={(e) => handleFormChange('bankName', e.target.value.toUpperCase())} />
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div>
                       <FormSelect
