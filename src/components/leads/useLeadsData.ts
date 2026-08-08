@@ -325,14 +325,10 @@ export function useLeadsData(
     }
   }, [fetchLeadsList, fetchKanbanLeads, fetchLostLeads, fetchWonLeads, fetchCounts]);
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // EFFECTS
-  // ─────────────────────────────────────────────────────────────────────────
 
-  // 1. Meta — once
-  useEffect(() => { fetchMeta(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchMeta(); }, []); 
 
-  // 2. Initial data load
+ 
   useEffect(() => {
     let cancelled = false;
     const init = async () => {

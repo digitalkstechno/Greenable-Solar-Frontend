@@ -44,6 +44,7 @@ export const baseUrl = {
   leadDueFollowupsMy: `${API}lead/followups/due/my`,
   leadLabels: `${API}leadlabel`,
   getWonLeads: `${API}lead/won`,
+  backOfficeLeads: `${API}lead/back-office`,
   getLostLeads: `${API}lead/lost`,
   exportLeads: `${API}lead/export`,
   importLeadsTemplate: `${API}lead/import-template`,

@@ -473,7 +473,7 @@ export default function LeadsPage({ isSidebarOpen }: { isSidebarOpen: boolean })
           </div>
         </div>
 
-        {/* ── Filter Section (Inline Expandable) ────────────────────────────── */}
+     
         <div
           className={`grid transition-all duration-300 ease-in-out ${showFilterDrawer
             ? 'grid-rows-[1fr] opacity-100 mt-4 pt-4 border-t border-gray-100'

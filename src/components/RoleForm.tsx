@@ -40,12 +40,13 @@ export default function RoleForm({
   }, [isOpen]);
 
   // FIXED: Use lowercase for feature keys to match backend expectations
-  type Feature = 'dashboard' | 'lead' | 'task' | 'taskStatus' | 'staff' | 'role' | 'leadStatus' | 'leadSource' | 'category' | 'product' | 'stock';
-  const features: Feature[] = ['dashboard', 'lead', 'task', 'taskStatus', 'staff', 'role', 'leadStatus', 'leadSource', 'category', 'product', 'stock'];
+  type Feature = 'dashboard' | 'lead' | 'backOffice' | 'task' | 'taskStatus' | 'staff' | 'role' | 'leadStatus' | 'leadSource' | 'category' | 'product' | 'stock';
+  const features: Feature[] = ['dashboard', 'lead', 'backOffice', 'task', 'taskStatus', 'staff', 'role', 'leadStatus', 'leadSource', 'category', 'product', 'stock'];
 
   const featureLabels: Record<Feature, string> = {
     dashboard: "Dashboard",
     lead: 'Leads',
+    backOffice: 'Back Office',
     task: 'Tasks',
     taskStatus: 'Task Statuses',
     staff: 'User',

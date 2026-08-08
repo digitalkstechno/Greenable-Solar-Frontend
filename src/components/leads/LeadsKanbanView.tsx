@@ -285,17 +285,14 @@ export default function LeadsKanbanView({
             });
 
             onRefresh();
-
         } catch {
             toast.error('Failed to update lead status');
-            // Re-fetch with loader to show the revert
             fetchStatusLeads(sourceStatusId, 1);
             fetchStatusLeads(newStatusId, 1);
         } finally {
             setUpdatingId(null);
         }
     };
-
     const statusGroups = statuses
         .map((s) => ({
             id: s._id,
@@ -310,7 +307,6 @@ export default function LeadsKanbanView({
             if (kanbanVisibleStatusNames === null) return true;
             return kanbanVisibleStatusNames.includes(group.title);
         });
-
     const removeLeadFromBoard = (id: string) => {
         setBoardLeads(prev => {
             const next = { ...prev };
@@ -320,84 +316,11 @@ export default function LeadsKanbanView({
             return next;
         });
     };
-
-    // const markLost = async (id: string) => {
-    //     const { value: formValues } = await Swal.fire({
-    //         title: 'Mark Lead as Lost?',
-    //         html: `
-    //             <div style="text-align: left; margin-bottom: 10px;">
-    //                 <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 5px;">
-    //                     <span style="color: #F28522; margin-right: 5px;">✖</span> Remove Reason
-    //                 </label>
-    //                 <input id="swal-input1" class="swal2-input" placeholder="Enter reason for marking lead as lost" style="width: 100%; box-sizing: border-box; height: 40px; margin: 0; font-size: 14px;">
-    //             </div>
-    //             <div style="text-align: left;">
-    //                 <label style="font-weight: bold; font-size: 14px; display: block; margin-bottom: 5px;">
-    //                     <span style="color: #F28522; margin-right: 5px;">📅</span> Lost Date
-    //                 </label>
-    //                 <input id="swal-input2" type="date" class="swal2-input" style="width: 100%; box-sizing: border-box; height: 40px; margin: 0; font-size: 14px;">
-    //             </div>
-    //         `,
-    //         focusConfirm: false,
-    //         showCancelButton: true,
-    //         confirmButtonText: 'Yes, Confirm',
-    //         cancelButtonText: 'Cancel',
-    //         confirmButtonColor: '#F28522',
-    //         cancelButtonColor: '#6D7A86',
-    //         preConfirm: () => {
-    //             const reason = (document.getElementById('swal-input1') as HTMLInputElement).value;
-    //             const date = (document.getElementById('swal-input2') as HTMLInputElement).value;
-    //             if (!reason || !date) {
-    //                 Swal.showValidationMessage('Both reason and date are required');
-    //                 return false;
-    //             }
-    //             return { reason, date };
-    //         }
-    //     });
-
-    //     if (formValues) {
-    //         try {
-    //             const lostStatusId = statuses.find(s => s.name.match(/^lost$/i))?._id;
-    //             await axios.put(`${baseUrl.updateLead}/${id}`,
-    //                 { leadStatus: lostStatusId, lostReason: formValues.reason, lostDate: formValues.date },
-    //                 { headers: { Authorization: `Bearer ${token()}` } }
-    //             );
-    //             toast.success('Lead marked as lost');
-    //             removeLeadFromBoard(id);
-    //             onRefresh();
-    //         } catch { toast.error('Failed to update lead'); }
-    //     }
-    // };
-
     const markLost = (id: string) => {
         setLostModalLeadId(id);
         setLostReason('');
         setLostDate('');
     };
-
-    // const handleConfirmMarkLost = async () => {
-    //     if (!lostModalLeadId) return;
-    //     if (!lostReason.trim() || !lostDate) {
-    //         toast.error('Both reason and date are required');
-    //         return;
-    //     }
-    //     setMarkingLost(true);
-    //     try {
-    //         const lostStatusId = statuses.find(s => s.name.match(/^lost$/i))?._id;
-    //         await axios.put(`${baseUrl.updateLead}/${lostModalLeadId}`,
-    //             { leadStatus: lostStatusId, lostReason, lostDate },
-    //             { headers: { Authorization: `Bearer ${token()}` } }
-    //         );
-    //         toast.success('Lead marked as lost');
-    //         removeLeadFromBoard(lostModalLeadId);
-    //         onRefresh();
-    //         setLostModalLeadId(null);
-    //     } catch {
-    //         toast.error('Failed to update lead');
-    //     } finally {
-    //         setMarkingLost(false);
-    //     }
-    // };
 
     const handleConfirmMarkLost = async () => {
         if (!lostModalLeadId) return;
@@ -407,8 +330,6 @@ export default function LeadsKanbanView({
         }
 
         const lostStatusId = statuses.find(s => s.name.match(/^lost$/i))?._id;
-
-        // Find source status of the lead on the board
         let sourceStatusId = '';
         const entries = Object.entries(boardLeads);
         for (let i = 0; i < entries.length; i++) {
@@ -421,7 +342,6 @@ export default function LeadsKanbanView({
 
         setMarkingLost(true);
         try {
-            // Optimistic UI update on the board
             setBoardLeads(prev => {
                 const next = { ...prev };
                 if (sourceStatusId) {
@@ -546,36 +466,10 @@ export default function LeadsKanbanView({
             confirmButtonColor: '#F28522',
             cancelButtonColor: '#6D7A86',
         });
-
-        // if (result.isConfirmed) {
-        //     try {
-        //         const newLeadStatusId = statuses.find(s => s.name.match(/^new lead$/i))?._id;
-
-        //         // Optimistically remove from won/lost board
-        //         removeLeadFromBoard(id);
-
-        //         await axios.put(`${baseUrl.updateLead}/${id}`, { leadStatus: newLeadStatusId }, { headers: { Authorization: `Bearer ${token()}` } });
-        //         toast.success('Lead reactivated');
-
-        //         // Board refresh
-        //         if (newLeadStatusId) {
-        //             fetchStatusLeads(newLeadStatusId, 1, false, true);
-        //         }
-        //         onRefresh();
-        //     } catch {
-        //         toast.error('Failed to reactivate lead');
-        //         onRefresh();
-        //     }
-        // }
-
         if (result.isConfirmed) {
             try {
                 const newLeadStatusId = statuses.find(s => s.name.match(/^new lead$/i))?._id;
-
-                // Optimistically remove from won/lost board
                 removeLeadFromBoard(id);
-
-                // Optimistically update column counts
                 const wonStatusId = statuses.find(s => s.name.match(/^won$/i))?._id;
                 const lostStatusId = statuses.find(s => s.name.match(/^lost$/i))?._id;
                 setColumnCounts(prev => {
@@ -598,21 +492,21 @@ export default function LeadsKanbanView({
                 onRefresh();
             }
         }
-
-
     };
 
     const lostLeadsColumns: Column<ApiLead>[] = [
         { key: 'fullName', label: 'LEAD NAME', render: (v) => (<div><div className="font-semibold text-gray-900">{v}</div><span className="text-xs text-red-500">• Lost</span></div>) },
         { key: 'kwRequirement', label: 'KW REQ', render: (v) => <span className="text-sm">{v || '-'}</span> },
-        { key: 'address', label: 'LOCATION', render: (v) => (
-            <span
-                className="block max-w-[140px] truncate overflow-hidden text-sm text-gray-700"
-                title={v || ''}
-            >
-                {v || '-'}
-            </span>
-        ) },
+        {
+            key: 'address', label: 'LOCATION', render: (v) => (
+                <span
+                    className="block max-w-[140px] truncate overflow-hidden text-sm text-gray-700"
+                    title={v || ''}
+                >
+                    {v || '-'}
+                </span>
+            )
+        },
         { key: 'contact', label: 'CONTACT', render: (v) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5">{v}</div></div> },
         {
             key: 'createdAt',
@@ -635,14 +529,16 @@ export default function LeadsKanbanView({
     const wonLeadsColumns: Column<ApiLead>[] = [
         { key: 'fullName', label: 'LEAD NAME', render: (v) => <span className="font-semibold text-gray-900">{v}</span> },
         { key: 'kwRequirement', label: 'KW REQ', render: (v) => <span className="text-sm">{v || '-'}</span> },
-        { key: 'address', label: 'LOCATION', render: (v) => (
-            <span
-                className="block max-w-[140px] truncate overflow-hidden text-sm text-gray-700"
-                title={v || ''}
-            >
-                {v || '-'}
-            </span>
-        ) },
+        {
+            key: 'address', label: 'LOCATION', render: (v) => (
+                <span
+                    className="block max-w-[140px] truncate overflow-hidden text-sm text-gray-700"
+                    title={v || ''}
+                >
+                    {v || '-'}
+                </span>
+            )
+        },
         { key: 'contact', label: 'CONTACT', render: (v) => <div className="space-y-0.5 text-sm text-gray-600"><div className="flex items-center gap-1.5">{v}</div></div> },
         {
             key: 'createdAt',
@@ -756,40 +652,6 @@ export default function LeadsKanbanView({
 
     return (
         <div className="flex h-full flex-col gap-4">
-            {/* <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-                <div className="flex items-center gap-2">
-                    {(['board', 'lost', 'won'] as SubView[]).map((v) => {
-                        const lostCount = lostPagination?.totalItems ?? lostLeads.length;
-                        const wonCount = wonPagination?.totalItems ?? wonLeads.length;
-                        const label = v === 'board' ? 'Kanban View' : v === 'lost' ? 'Lost Leads' : 'Won Leads';
-                        const count = v === 'lost' ? lostCount : v === 'won' ? wonCount : null;
-                        return (
-                            <button
-                                key={v}
-                                onClick={() => handleSubViewChange(v)}
-                                className={`flex items-center gap-2 rounded-lg cursor-pointer px-4 py-1.5 text-sm font-medium capitalize transition-colors ${subView === v
-                                    ? 'border border-[#F28522] text-[#F28522] bg-white'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-transparent'
-                                    }`}
-                            >
-                                {label}
-                                {count !== null && (
-                                    <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${subView === v
-                                        ? 'bg-[#F28522] text-white'
-                                        : v === 'lost'
-                                            ? 'bg-red-100 text-red-700'
-                                            : 'bg-green-100 text-green-700'
-                                        }`}>
-                                        {count}
-                                    </span>
-                                )}
-                            </button>
-                        );
-                    })}
-                </div>
-            </div> */}
-
-
 
             {subView === 'board' && statusGroups.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-[calc(100vh-320px)] text-center gap-4">

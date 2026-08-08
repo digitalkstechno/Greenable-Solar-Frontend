@@ -1113,37 +1113,7 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
               )}
             </div>
 
-            {/* Quotation */}
-            {/* <div className="rounded-lg bg-gray-50 p-4">
-              <div className="mb-3 text-sm font-bold text-gray-800">Quotation</div>
-              <div className="flex gap-4">
-                {lead.quotation && (lead.quotation.solarModule || lead.quotation.inverter || (lead.quotation.options && lead.quotation.options.length > 0) || (lead.quotation.rows && lead.quotation.rows.length > 0)) ? (
-                  <>
-                    <button
-                      onClick={() => setQuotationOpen(true)}
-                      className="flex-1 rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary flex items-center justify-center gap-2"
-                    >
-                      <FileText className="h-4 w-4" /> Edit Quotation
-                    </button> */}
-            {/* <button
-                      onClick={() => { toast.info('Download PDF feature coming soon'); }}
-                      className="flex-1 rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary flex items-center justify-center gap-2"
-                    >
-                      <Download className="h-4 w-4" /> Download Quotation
-                    </button> */}
-            {/* </>
-                ) : (
-                  <button
-                    onClick={() => setQuotationOpen(true)}
-                    className="w-full rounded-lg bg-secondary px-4 py-2 text-sm font-semibold text-white hover:bg-primary flex items-center justify-center gap-2"
-                  >
-                    <FileText className="h-4 w-4" /> Add Quotation
-                  </button>
-                )}
-              </div>
-            </div> */}
 
-            {/* Activity Log */}
             <div className="rounded-lg bg-gray-50 p-4">
               <div className="mb-3 text-sm font-bold text-gray-800">Activity Log</div>
               {localActivities && localActivities.length > 0 ? (
@@ -1196,7 +1166,6 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
 
 
 
-      {/* Image Preview Modal */}
       {previewAttachment && (
         <CenterDialog
           isOpen={true}
@@ -1222,7 +1191,6 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
       )
       }
 
-      {/* Quotation Delete Confirmation Popup */}
       {
         deleteConfirm && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center">
@@ -1267,7 +1235,6 @@ export default function LeadViewDialog({ lead, statuses, currentUser, onClose, o
         )
       }
 
-      {/* Attachment Delete Confirmation Popup */}
       {
         attachmentDeleteConfirm && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center">

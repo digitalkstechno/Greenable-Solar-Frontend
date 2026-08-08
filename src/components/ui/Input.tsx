@@ -357,6 +357,7 @@ interface FormInputProps {
   checkboxColor?: string; // Custom color for checkbox
   min?: string;
   max?: string;
+  maxLength?: number;
   inputRef?: React.Ref<any>;
 }
 
@@ -381,6 +382,7 @@ const FormInput: React.FC<FormInputProps> = ({
   checkboxColor = "#1e40af", // Default dark blue color
   min,
   max,
+  maxLength,
   inputRef,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -653,6 +655,7 @@ const FormInput: React.FC<FormInputProps> = ({
             disabled={disabled}
             min={min}
             max={max}
+            maxLength={maxLength}
             className={getInputClasses()}
           />
         )}

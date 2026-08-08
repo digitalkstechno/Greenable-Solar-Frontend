@@ -11,6 +11,7 @@ import { baseUrl, getAuthToken } from '@/config';
 import { ApiLead } from './types';
 import FormSelect from '@/components/ui/FormSelect';
 import FormInput from '@/components/ui/Input';
+import Calendar from '@/components/ui/Calendar';
 
 interface Props {
   isOpen: boolean;
@@ -22,9 +23,24 @@ interface Props {
 type FileOrNull = File | null;
 
 interface FormState {
+  projectCode: string;
+  srNo: string;
+  salesPersonName: string;
   creatorName: string;
   customerFullName: string;
   registerMobileNumber: string;
+  locationLink: string;
+  address: string;
+  city: string;
+  pincode: string;
+  consumerNo: string;
+  division: string;
+  subDivision: string;
+  bankName: string;
+  accountNo: string;
+  ifscCode: string;
+  branchName: string;
+  accountHolderName: string;
   registrationPortal: string;
   panelType: string;
   panelMake: string;
@@ -54,16 +70,32 @@ interface FormState {
   subsidyLessProject: string;
   loanPortal: string;
   totalKw: string;
+  downPaymentAmount: string;
+  loanFirstPaymentAmount: string;
+  loanSecondPaymentAmount: string;
+  meterChargeAmount: string;
+  meterChargePayableBy: string;
+  registrationDate: string;
+  registrationNo: string;
+  registrationName: string;
+  documentFeasibilityDate: string;
+  registrationDone: string;
+  meterPaymentDone: string;
 }
 
 const EMPTY_FORM: FormState = {
-  creatorName: '', customerFullName: '', registerMobileNumber: '', registrationPortal: '', panelType: '', panelMake: '', panelWp: '', noOfPanel: '',
+  projectCode: '', srNo: '', salesPersonName: '', creatorName: '', customerFullName: '', registerMobileNumber: '',
+  locationLink: '', address: '', city: '', pincode: '', consumerNo: '', division: '', subDivision: '',
+  bankName: '', accountNo: '', ifscCode: '', branchName: '', accountHolderName: '',
+  registrationPortal: '', panelType: '', panelMake: '', panelWp: '', noOfPanel: '',
   inverterMake: '', inverterKw: '', inverterPhase: '', installationRoof: '',
   discom: '', consumerConnectionType: '', elcbInstalled: '', elcbProvideBy: '',
   wiringType: '', homeFloor: '', walkway: '', walkwayLengthFeet: '',
   ladder: '', ladderLengthFeet: '', hdgiPipeMake: '',
   hdgiPipe80x40: '0', hdgiPipe60x40: '0', hdgiPipe40x40: '0', hdgiPipe20x40PatiPipe: '0',
   paymentMode: '', projectAmount: '', subsidyLessProject: '', loanPortal: '', totalKw: '',
+  downPaymentAmount: '', loanFirstPaymentAmount: '', loanSecondPaymentAmount: '',
+  meterChargeAmount: '', meterChargePayableBy: '', registrationDate: '', registrationNo: '', registrationName: '', documentFeasibilityDate: '', registrationDone: '', meterPaymentDone: '',
 };
 
 const PHOTO_FIELDS = [
@@ -91,7 +123,7 @@ const LOAN_DOC_FIELDS = [
   { key: 'loanDocAadhaarCard', label: 'Aadhaar card (Loan)' },
 ];
 
-type SectionKey = 'project' | 'photos' | 'regDocs' | 'payment' | 'loanDocs';
+type SectionKey = 'project' | 'photos' | 'regDocs' | 'regProcess' | 'payment' | 'loanDocs';
 
 // ─── Option lists ───────────────────────────────────────────────────────────────
 const PHASE_OPTS = [{ value: 'single', label: 'Single' }, { value: 'three', label: 'Three' }];
@@ -195,7 +227,27 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
   const [activeSection, setActiveSection] = useState<SectionKey>('project');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showLoanDocs, setShowLoanDocs] = useState(false);
+  const [isBackOffice, setIsBackOffice] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const token = getAuthToken();
+    if (!token) return;
+    axios.get(baseUrl.currentStaff, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => {
+        const staff = res.data?.data || {};
+        const role = staff.role || {};
+        const roleName = (role.roleName || role.name || '').toLowerCase().replace(/\s+/g, '');
+        setIsBackOffice(roleName.includes('backoffice'));
+        
+        const staffName = staff.fullName || staff.name || '';
+        if (staffName) {
+          setForm(prev => prev.registrationName ? prev : { ...prev, registrationName: staffName });
+        }
+      })
+      .catch(() => setIsBackOffice(false));
+  }, [isOpen]);
 
   // Fetch data function
   const fetchData = async () => {
@@ -209,9 +261,24 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
         const d = res.data?.data;
         if (d) {
           setForm({
+            projectCode: d.projectCode || '',
+            srNo: d.srNo || '',
+            salesPersonName: d.salesPersonName || lead.assignedTo?.fullName || lead.createdBy?.fullName || '',
             creatorName: d.creatorName || d.leadRefrance || lead.createdBy?.fullName || lead.createdBy?.name || '',
-            customerFullName: d.customerFullName || '',
-            registerMobileNumber: d.registerMobileNumber || '',
+            customerFullName: d.customerFullName || lead.fullName || '',
+            registerMobileNumber: d.registerMobileNumber || lead.contact || '',
+            locationLink: d.locationLink || lead.locationLink || '',
+            address: d.address || lead.address || '',
+            city: d.city || '',
+            pincode: d.pincode || '',
+            consumerNo: d.consumerNo || '',
+            division: d.division || '',
+            subDivision: d.subDivision || '',
+            bankName: d.bankName || '',
+            accountNo: d.accountNo || '',
+            ifscCode: d.ifscCode || '',
+            branchName: d.branchName || '',
+            accountHolderName: d.accountHolderName || '',
             registrationPortal: d.registrationPortal || '',
             panelType: d.panelType || '',
             panelMake: d.panelMake || '',
@@ -222,7 +289,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
             inverterKw: d.inverterKw?.toString() || '',
             inverterPhase: d.inverterPhase || '',
             installationRoof: d.installationRoof || '',
-            discom: d.discom || '',
+            discom: d.discom || lead.discomName || '',
             consumerConnectionType: d.consumerConnectionType || '',
             elcbInstalled: d.elcbInstalled || '',
             elcbProvideBy: d.elcbProvideBy || '',
@@ -241,9 +308,22 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
             projectAmount: d.projectAmount?.toString() || '',
             subsidyLessProject: d.subsidyLessProject || '',
             loanPortal: d.loanPortal || '',
+            downPaymentAmount: d.downPaymentAmount?.toString() || '',
+            loanFirstPaymentAmount: d.loanFirstPaymentAmount?.toString() || '',
+            loanSecondPaymentAmount: d.loanSecondPaymentAmount?.toString() || '',
+            meterChargeAmount: d.meterChargeAmount?.toString() || '',
+            meterChargePayableBy: d.meterChargePayableBy || '',
+            registrationDate: d.registrationDate || '',
+            registrationNo: d.registrationNo || '',
+            registrationName: d.registrationName || '',
+            documentFeasibilityDate: d.documentFeasibilityDate || '',
+            registrationDone: d.registrationDone || '',
+            meterPaymentDone: d.meterPaymentDone || '',
           });
           const ef: Record<string, any> = {};
-          [...PHOTO_FIELDS, ...REG_DOC_FIELDS, ...LOAN_DOC_FIELDS].forEach(({ key }) => {
+          [...PHOTO_FIELDS, ...REG_DOC_FIELDS, ...LOAN_DOC_FIELDS, 
+            { key: 'downPaymentDoc' }, { key: 'loanFirstPaymentDoc' }, { key: 'loanSecondPaymentDoc' }
+          ].forEach(({ key }) => {
             if (d[key]) ef[key] = d[key];
           });
           setExistingFiles(ef);
@@ -278,7 +358,15 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
 
             setForm({
               ...EMPTY_FORM,
+              salesPersonName: lead.assignedTo?.fullName || lead.createdBy?.fullName || '',
               creatorName: lead.createdBy?.fullName || lead.createdBy?.name || '',
+              customerFullName: lead.fullName || '',
+              registerMobileNumber: lead.contact || '',
+              locationLink: (lead as any).locationLink || '',
+              address: (lead as any).address || '',
+              city: (lead as any).city || '',
+              pincode: (lead as any).pincode || '',
+              discom: lead.discomName || '',
               panelMake,
               panelWp,
               noOfPanel,
@@ -375,7 +463,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
             inverterMake: 'Inverter Make',
             inverterKw: 'Inverter KW',
             inverterPhase: 'Inverter Phase',
-            installationRoof: 'Installation Roof',
+            installationRoof: 'Installation Rood',
             discom: 'DISCOM',
             consumerConnectionType: 'Consumer Connection Type',
             elcbInstalled: 'ELCB / RCCB Installed',
@@ -427,13 +515,6 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
       });
     } else if (section === 'loanDocs') {
       LOAN_DOC_FIELDS.forEach(f => delete newErrors[f.key]);
-      LOAN_DOC_FIELDS.forEach(f => {
-        if (f.key !== 'loanDocBankStatement' && f.key !== 'loanDocITRReturn') {
-          if (!existingFiles[f.key] && !files[f.key]) {
-            newErrors[f.key] = `${f.label} is required`;
-          }
-        }
-      });
     }
 
     setErrors(newErrors);
@@ -450,11 +531,13 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
       return !PHOTO_FIELDS.some(f => !!newErrors[f.key]);
     } else if (section === 'regDocs') {
       return !REG_DOC_FIELDS.some(f => !!newErrors[f.key]);
+    } else if (section === 'regProcess') {
+      return true;
     } else if (section === 'payment') {
       const paymentFields = ['paymentMode', 'projectAmount', 'subsidyLessProject'];
       return !paymentFields.some(f => !!newErrors[f]);
     } else if (section === 'loanDocs') {
-      return !LOAN_DOC_FIELDS.some(f => !!newErrors[f.key]);
+      return true;
     }
 
     return true;
@@ -465,9 +548,8 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
     const isPhotosValid = validateSection('photos');
     const isRegDocsValid = validateSection('regDocs');
     const isPaymentValid = validateSection('payment');
-    const isLoanDocsValid = showLoanDocs ? validateSection('loanDocs') : true;
 
-    return isProjValid && isPhotosValid && isRegDocsValid && isPaymentValid && isLoanDocsValid;
+    return isProjValid && isPhotosValid && isRegDocsValid && isPaymentValid;
   };
 
   const handleSectionSwitch = (target: SectionKey) => {
@@ -497,9 +579,13 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
       }
     } else if (activeSection === 'regDocs') {
       if (validateSection('regDocs')) {
-        setActiveSection('payment');
+        setActiveSection(isBackOffice ? 'regProcess' : 'payment');
       } else {
         toast.error('Please upload all required Registration Documents first');
+      }
+    } else if (activeSection === 'regProcess') {
+      if (validateSection('regProcess')) {
+        setActiveSection('payment');
       }
     } else if (activeSection === 'payment') {
       if (validateSection('payment')) {
@@ -572,8 +658,11 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
     { key: 'project', label: 'Project Info', icon: <Settings className="h-4 w-4" /> },
     { key: 'photos', label: 'Site Photos', icon: <Image className="h-4 w-4" /> },
     { key: 'regDocs', label: 'Reg. Docs', icon: <FileCheck className="h-4 w-4" /> },
-    { key: 'payment', label: 'Payment', icon: <CreditCard className="h-4 w-4" /> },
   ];
+  if (isBackOffice) {
+    sections.push({ key: 'regProcess', label: 'Reg. Process', icon: <Zap className="h-4 w-4" /> });
+  }
+  sections.push({ key: 'payment', label: 'Payment', icon: <CreditCard className="h-4 w-4" /> });
 
   const handleAutosave = () => {
     // Attempt a silent save if some fields are filled
@@ -668,9 +757,34 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
               {/* ─── Project Info ───────────────────────────────────────────────── */}
               {activeSection === 'project' && (
                 <div>
-                  <SectionTitle>Add Details After Project Done</SectionTitle>
+                  <SectionTitle>Customer Basic Details</SectionTitle>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {isBackOffice && (
+                      <>
+                        <FormInput
+                          label="Project Code"
+                          name="projectCode"
+                          placeholder="e.g. GS001 (Auto generated if blank)"
+                          value={form.projectCode}
+                          onChange={(e) => handleFormChange('projectCode', e.target.value)}
+                        />
+                        <FormInput
+                          label="Sr No"
+                          name="srNo"
+                          placeholder="e.g. 1"
+                          value={form.srNo}
+                          onChange={(e) => handleFormChange('srNo', e.target.value)}
+                        />
+                        <FormInput
+                          label="Sales Person Name"
+                          name="salesPersonName"
+                          placeholder="Sales Person Name..."
+                          value={form.salesPersonName}
+                          onChange={(e) => handleFormChange('salesPersonName', e.target.value)}
+                        />
+                      </>
+                    )}
                     <FormInput
                       label="Lead Reference"
                       name="creatorName"
@@ -710,6 +824,59 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                       error={errors.registerMobileNumber}
                       required
                     />
+                    {isBackOffice && (
+                      <>
+                        <FormInput
+                          label="Location Link"
+                          name="locationLink"
+                          placeholder="Google Maps link..."
+                          value={form.locationLink}
+                          onChange={(e) => handleFormChange('locationLink', e.target.value)}
+                        />
+                        <FormInput
+                          label="Address"
+                          name="address"
+                          placeholder="Full Address..."
+                          value={form.address}
+                          onChange={(e) => handleFormChange('address', e.target.value)}
+                        />
+                        <FormInput
+                          label="City"
+                          name="city"
+                          placeholder="City..."
+                          value={form.city}
+                          onChange={(e) => handleFormChange('city', e.target.value)}
+                        />
+                        <FormInput
+                          label="Pincode"
+                          name="pincode"
+                          placeholder="Pincode..."
+                          value={form.pincode}
+                          onChange={(e) => handleFormChange('pincode', e.target.value)}
+                        />
+                        <FormInput
+                          label="Consumer No"
+                          name="consumerNo"
+                          placeholder="Consumer No..."
+                          value={form.consumerNo}
+                          onChange={(e) => handleFormChange('consumerNo', e.target.value)}
+                        />
+                        <FormInput
+                          label="Division"
+                          name="division"
+                          placeholder="Division..."
+                          value={form.division}
+                          onChange={(e) => handleFormChange('division', e.target.value)}
+                        />
+                        <FormInput
+                          label="Sub Division"
+                          name="subDivision"
+                          placeholder="Sub Division..."
+                          value={form.subDivision}
+                          onChange={(e) => handleFormChange('subDivision', e.target.value)}
+                        />
+                      </>
+                    )}
                     <div>
                       <FormSelect
                         label="Registration Portal"
@@ -805,7 +972,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                     </div>
                     <div>
                       <FormSelect
-                        label="Installation Roof"
+                        label="Installation Rood"
                         name="installationRoof"
                         value={form.installationRoof}
                         onChange={(val) => handleFormChange('installationRoof', val)}
@@ -1021,10 +1188,69 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                 </div>
               )}
 
+              {/* ─── Registration Process ────────────────────────────────────────── */}
+              {activeSection === 'regProcess' && isBackOffice && (
+                <div>
+                  <SectionTitle>Registration, Feasibility & Meter Payment</SectionTitle>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <FormInput label="Meter Charge (Discom)" name="_discom_display" value={form.discom} disabled readOnly className="bg-gray-100 font-bold" />
+                    <FormInput label="Meter Charge Amount" name="meterChargeAmount" type="number" value={form.meterChargeAmount} onChange={(e) => handleFormChange('meterChargeAmount', e.target.value)} />
+                    <div>
+                      <FormSelect label="Meter Charge Payable By" name="meterChargePayableBy" value={form.meterChargePayableBy} onChange={(val) => handleFormChange('meterChargePayableBy', val)} options={[{value:'Customer', label:'Customer'}, {value:'Greeneable', label:'Greeneable'}]} placeholder="Select..." />
+                    </div>
+                    
+                    <div className="w-full mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-semibold text-gray-700">Registration Date</label>
+                      </div>
+                      <Calendar 
+                        value={form.registrationDate ? new Date(form.registrationDate) : null} 
+                        onChange={(date) => handleFormChange('registrationDate', date ? date.toLocaleDateString('en-CA') : '')} 
+                        placeholder="dd-mm-yyyy"
+                        className="rounded-xl border-2 py-[9px] bg-white/90"
+                      />
+                    </div>
+
+                    <FormInput label="Registration No" name="registrationNo" value={form.registrationNo} onChange={(e) => handleFormChange('registrationNo', e.target.value)} />
+                    <FormInput label="Registration Name" name="registrationName" value={form.registrationName} onChange={(e) => handleFormChange('registrationName', e.target.value)} />
+                    
+                    <div className="w-full mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-semibold text-gray-700">Document Feasibility Date</label>
+                      </div>
+                      <Calendar 
+                        value={form.documentFeasibilityDate ? new Date(form.documentFeasibilityDate) : null} 
+                        onChange={(date) => handleFormChange('documentFeasibilityDate', date ? date.toLocaleDateString('en-CA') : '')} 
+                        placeholder="dd-mm-yyyy"
+                        className="rounded-xl border-2 py-[9px] bg-white/90"
+                      />
+                    </div>
+                    <div>
+                      <FormSelect label="Registration Done" name="registrationDone" value={form.registrationDone} onChange={(val) => handleFormChange('registrationDone', val)} options={YES_NO_OPTS} placeholder="Select..." />
+                    </div>
+                    <div>
+                      <FormSelect label="Meter Payment Done" name="meterPaymentDone" value={form.meterPaymentDone} onChange={(val) => handleFormChange('meterPaymentDone', val)} options={YES_NO_OPTS} placeholder="Select..." />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* ─── Payment ─────────────────────────────────────────────────────── */}
               {activeSection === 'payment' && (
                 <div>
                   <SectionTitle>Payment Details</SectionTitle>
+                  
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 mb-6">
+                    <p className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">Bank Details</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <FormInput label="Bank Account Holder Name" name="accountHolderName" value={form.accountHolderName} onChange={(e) => handleFormChange('accountHolderName', e.target.value.toUpperCase())} />
+                      <FormInput label="Bank Account No" name="accountNo" value={form.accountNo} maxLength={18} onChange={(e) => handleFormChange('accountNo', e.target.value.toUpperCase())} />
+                      <FormInput label="IFSC Code" name="ifscCode" value={form.ifscCode} maxLength={11} onChange={(e) => handleFormChange('ifscCode', e.target.value.toUpperCase())} />
+                      <FormInput label="Bank Branch" name="branchName" value={form.branchName} onChange={(e) => handleFormChange('branchName', e.target.value.toUpperCase())} />
+                      <FormInput label="Bank Name" name="bankName" value={form.bankName} onChange={(e) => handleFormChange('bankName', e.target.value.toUpperCase())} />
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div>
                       <FormSelect
@@ -1072,22 +1298,8 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                       <input
                         type="checkbox"
                         checked={showLoanDocs}
-                        onChange={async (e) => {
-                          const checked = e.target.checked;
-                          setShowLoanDocs(checked);
-                          if (!lead) return;
-                          try {
-                            const token = getAuthToken();
-                            const fd = new FormData();
-                            fd.append('applyForLoan', checked ? 'true' : 'false');
-                            await axios.post(`${baseUrl.projectDetail}/${lead._id}`, fd, {
-                              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
-                            });
-                            toast.success(`Loan status updated to ${checked ? 'Applied' : 'Removed'}`);
-                          } catch (err: any) {
-                            toast.error(err?.response?.data?.message || 'Failed to update loan status');
-                            setShowLoanDocs(!checked); // revert on failure
-                          }
+                        onChange={(e) => {
+                          setShowLoanDocs(e.target.checked);
                         }}
                         className="sr-only peer"
                       />
@@ -1095,18 +1307,94 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                     </label>
                   </div>
                   
-                  {/* Loan Portal slides down if toggle is on */}
+                  {/* Loan Portal and Payments slide down if toggle is on */}
                   {showLoanDocs && (
-                    <div className="mt-4 p-4 border border-orange-200 rounded-xl bg-white animate-in slide-in-from-top-4 fade-in duration-300">
-                      <FormInput
-                        label="Loan Portal"
-                        name="loanPortal"
-                        placeholder="Jansamarth / Private finance"
-                        value={form.loanPortal}
-                        onChange={(e) => handleFormChange('loanPortal', e.target.value)}
-                        error={errors.loanPortal}
-                        required
-                      />
+                    <div className="mt-4 space-y-4 transition-all duration-300 animate-in slide-in-from-top-4 fade-in">
+                      <div className="p-4 border border-orange-200 rounded-xl bg-orange-50/30">
+                        <FormInput
+                          label="Loan Portal *"
+                          name="loanPortal"
+                          placeholder="Jansamarth / Private finance"
+                          value={form.loanPortal}
+                          onChange={(e) => handleFormChange('loanPortal', e.target.value)}
+                          error={errors.loanPortal}
+                          required
+                        />
+                      </div>
+
+                      {/* Payment Breakdown - Only visible to Back Office */}
+                      {isBackOffice && (
+                        <>
+                          <div className="p-4 rounded-xl border border-orange-200 bg-orange-50/20 space-y-3">
+                            <p className="text-xs font-semibold text-gray-800">Down Payment</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <FormInput
+                                label="Down Payment Amount"
+                                name="downPaymentAmount"
+                                type="number"
+                                placeholder="e.g. 50000"
+                                value={form.downPaymentAmount}
+                                onChange={(e) => handleFormChange('downPaymentAmount', e.target.value)}
+                              />
+                              <FileInput
+                                fieldKey="downPaymentDoc"
+                                label="Down Payment Receipt / Document"
+                                accept="image/*,application/pdf"
+                                isPdf
+                                existingFiles={existingFiles}
+                                files={files}
+                                onFileChange={handleFileChange}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="p-4 rounded-xl border border-orange-200 bg-orange-50/20 space-y-3">
+                            <p className="text-xs font-semibold text-gray-800">Loan 1st Payment</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <FormInput
+                                label="Loan 1st Payment Amount"
+                                name="loanFirstPaymentAmount"
+                                type="number"
+                                placeholder="e.g. 40000"
+                                value={form.loanFirstPaymentAmount}
+                                onChange={(e) => handleFormChange('loanFirstPaymentAmount', e.target.value)}
+                              />
+                              <FileInput
+                                fieldKey="loanFirstPaymentDoc"
+                                label="Loan 1st Payment Document"
+                                accept="image/*,application/pdf"
+                                isPdf
+                                existingFiles={existingFiles}
+                                files={files}
+                                onFileChange={handleFileChange}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="p-4 rounded-xl border border-orange-200 bg-orange-50/20 space-y-3">
+                            <p className="text-xs font-semibold text-gray-800">Loan 2nd Payment</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <FormInput
+                                label="Loan 2nd Payment Amount"
+                                name="loanSecondPaymentAmount"
+                                type="number"
+                                placeholder="e.g. 30000"
+                                value={form.loanSecondPaymentAmount}
+                                onChange={(e) => handleFormChange('loanSecondPaymentAmount', e.target.value)}
+                              />
+                              <FileInput
+                                fieldKey="loanSecondPaymentDoc"
+                                label="Loan 2nd Payment Document"
+                                accept="image/*,application/pdf"
+                                isPdf
+                                existingFiles={existingFiles}
+                                files={files}
+                                onFileChange={handleFileChange}
+                              />
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

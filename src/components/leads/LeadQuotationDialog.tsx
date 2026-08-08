@@ -187,61 +187,10 @@ export default function LeadQuotationDialog({ isOpen, onClose, lead, onRefresh, 
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<{ date?: string; solarModule?: string; inverter?: string }>({});
 
-  // useEffect(() => {
-  //   if (isOpen && lead?._id) {
-  //     // First populate with whatever we have in the prop
-  //     if (lead.quotation) {
-  //       setDate(lead.quotation.date ? new Date(lead.quotation.date).toISOString().substring(0, 10) : new Date().toISOString().substring(0, 10));
-  //       setSolarModule(lead.quotation.solarModule || '');
-  //       setInverter(lead.quotation.inverter || '');
-  //       if (lead.quotation.options && lead.quotation.options.length > 0) {
-  //         setOptions(lead.quotation.options);
-  //       }
-  //       if (lead.quotation.rows && lead.quotation.rows.length > 0) {
-  //         setRows(lead.quotation.rows);
-  //       }
-  //     }
-
-  //     // Then fetch the latest from server in case the prop is stale
-  //     axios.get(`${baseUrl.findLeadById}/${lead._id}`, {
-  //       headers: { Authorization: `Bearer ${getAuthToken()}` }
-  //     }).then(res => {
-  //       const latestLead = res.data.data;
-  //       if (latestLead?.quotation && (latestLead.quotation.solarModule || latestLead.quotation.inverter || (latestLead.quotation.options && latestLead.quotation.options.length > 0) || (latestLead.quotation.rows && latestLead.quotation.rows.length > 0))) {
-  //         setDate(latestLead.quotation.date ? new Date(latestLead.quotation.date).toISOString().substring(0, 10) : new Date().toISOString().substring(0, 10));
-  //         setSolarModule(latestLead.quotation.solarModule || '');
-  //         setInverter(latestLead.quotation.inverter || '');
-  //         if (latestLead.quotation.options && latestLead.quotation.options.length > 0) {
-  //           setOptions(latestLead.quotation.options);
-  //         }
-  //         if (latestLead.quotation.rows && latestLead.quotation.rows.length > 0) {
-  //           setRows(latestLead.quotation.rows);
-  //         }
-  //       }
-  //     }).catch(err => {
-  //       console.error("Failed to fetch latest quotation data", err);
-  //     });
-  //   } else if (isOpen) {
-  //     // Reset
-  //     setDate(new Date().toISOString().substring(0, 10));
-  //     setSolarModule('');
-  //     setInverter('');
-  //     setOptions(['OPTION 1']);
-  //     setRows([
-  //       { title: 'SOLAR MODULE MAKE', values: [''] },
-  //       { title: 'SYSTEM CAPACITY', values: [''] },
-  //       { title: 'METER CHARGES REGISTRATION', values: [''] },
-  //       { title: 'CUSTOMER PAYABLE AMOUNT', values: [''] },
-  //       { title: 'SUBSIDY', values: [''] },
-  //       { title: 'EFFECTIVE PRICE', values: [''] },
-  //     ]);
-  //   }
-  //   setEditingId(null);
-  // }, [isOpen, lead]);
 
   useEffect(() => {
     if (isOpen && !editQuotationData) {
-      // Reset for Add New
+
       setDate(new Date().toISOString().substring(0, 10));
       setSolarModule('');
       setInverter('');
@@ -281,7 +230,7 @@ export default function LeadQuotationDialog({ isOpen, onClose, lead, onRefresh, 
     }
     const newOptions = [...options, `OPTION ${options.length + 1}`];
     setOptions(newOptions);
-    // setRows(rows.map(row => ({ ...row, values: [...row.values, ''] })));
+    
     setRows(rows.map(row => {
       const titleUpper = row.title.toUpperCase();
       const defaultValue = (titleUpper.includes('SOLAR METER CHARGE') || titleUpper.includes('GST')) ? 'INCLUDED' : '';
@@ -293,34 +242,7 @@ export default function LeadQuotationDialog({ isOpen, onClose, lead, onRefresh, 
     setRows([...rows, { title: '', values: Array(options.length).fill('') }]);
   };
 
-  // const handleSave = async () => {
-  //   setSaving(true);
-  //   try {
-  //     const payload = {
-  //       quotation: {
-  //         date,
-  //         solarModule,
-  //         inverter,
-  //         options,
-  //         rows
-  //       }
-  //     };
 
-  //     await axios.put(
-  //       `${baseUrl.updateLead}/${lead._id}`,
-  //       payload,
-  //       { headers: { Authorization: `Bearer ${getAuthToken()}` } }
-  //     );
-
-  //     toast.success('Quotation saved successfully');
-  //     onRefresh();
-  //     onClose();
-  //   } catch (e: any) {
-  //     toast.error(e?.response?.data?.message || 'Failed to save quotation');
-  //   } finally {
-  //     setSaving(false);
-  //   }
-  // };
 
   const handleSave = async () => {
     const newErrors: { date?: string; solarModule?: string; inverter?: string } = {};
