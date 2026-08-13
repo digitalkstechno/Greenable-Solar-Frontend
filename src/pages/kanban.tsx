@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { FiSearch } from "react-icons/fi";
 import axios from "axios";
-import toast from "react-hot-toast";
+import { toast } from 'react-toastify';
 import { useRouter } from "next/router";
 import { baseUrl, getAuthToken } from "@/config";
 import { ListCollapse, Plus } from "lucide-react";

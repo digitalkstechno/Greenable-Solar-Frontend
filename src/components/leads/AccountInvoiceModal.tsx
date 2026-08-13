@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Receipt, CheckCircle, Upload, FileText, Loader2 } from 'lucide-react';
 import axios from 'axios';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import { baseUrl, getAuthToken } from '@/config';
 import FormSelect from '@/components/ui/FormSelect';
 

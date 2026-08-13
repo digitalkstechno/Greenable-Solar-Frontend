@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import {
   X, Upload, FileText, Image, ChevronRight, CheckCircle,
   Zap, Settings, CreditCard, FileCheck, Camera, Building2, Receipt, ArrowRightLeft

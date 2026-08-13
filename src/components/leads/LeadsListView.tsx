@@ -470,7 +470,33 @@ export default function LeadsListView({
                 label: 'Inst. Doc',
                 icon: <FileText className="h-3.5 w-3.5" />,
                 color: 'orange' as const,
-                show: (row: TableLead) => !!(row._raw?.projectDetail?.isFullyCompleted),
+                show: (row: TableLead) => {
+                  if (!row._raw?.projectDetail?.isFullyCompleted) return false;
+                  const pd = row._raw.projectDetail;
+                  const checkFields = [
+                    'photoSiteOverview', 'photoPanelSrNo', 'photoInverterSrNo', 
+                    'photoPanelPlacement', 'photoMountingStructure', 'photoInverterInstalled', 
+                    'photoAcdbDcdb', 'photoEarthingConnection', 'photoCableWiringRoute1', 
+                    'photoCableWiringRoute2', 'photoCableWiringRoute3', 'photoEarthingPit', 
+                    'photoJioTagCustomer', 'docDcrReport', 'docPanelInverterSrNo', 
+                    'docInvoice', 'docWarrantyCertificate',
+                    'meterFileMakeDate', 'meterFileRegDate', 'meterFileMakePersonName', 
+                    'dcrReportNo', 'dcrDate', 'finalPanelMake', 'finalPanelWp', 
+                    'finalNoOfPanel', 'finalProjectKw', 'finalInverterMake', 'finalInverterKw',
+                    'intimationDate', 'intimationRejectDate', 'intimationRejectReason',
+                    'meterInstolationDate', 'intimationApprovalDate', 'subsidyRedeem',
+                    'subsidyRedeemName', 'subsidyAmount', 'subsidyDisbusmentDate',
+                    'makeInvoice', 'consumerFile'
+                  ];
+                  return checkFields.some((key: string) => {
+                    const val = pd[key];
+                    if (val === undefined || val === null || val === '') return false;
+                    if (typeof val === 'object') {
+                      return !!val.url;
+                    }
+                    return true;
+                  });
+                },
                 onClick: (row: TableLead) => {
                   const rawLead: ApiLead = row._raw || row;
                   setInstallationDocLead(rawLead);

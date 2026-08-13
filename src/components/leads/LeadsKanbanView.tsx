@@ -4,7 +4,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { FiSearch, FiPhone, FiMail, FiX } from 'react-icons/fi';
 import axios from 'axios';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import { baseUrl, getAuthToken } from '@/config';
 import { ApiLead } from './types';
 import { RefreshCw, Plus, FileText } from 'lucide-react';
