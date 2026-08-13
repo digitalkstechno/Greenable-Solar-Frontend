@@ -57,7 +57,7 @@ export default function InstallationDocModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto print-modal-overlay">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto print-modal-overlay animate-fade-in">
       <style jsx global>{`
         @media print {
           @page {
@@ -99,7 +99,7 @@ export default function InstallationDocModal({
             padding: 0 !important;
             height: auto !important;
           }
-          .print\\:hidden {
+          .print\:hidden {
             display: none !important;
           }
           tr {
@@ -116,37 +116,38 @@ export default function InstallationDocModal({
           }
         }
       `}</style>
-      <div className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200 print-modal-card">
-        
-        {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50 print:hidden">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-orange-100 rounded-lg text-orange-700">
-              <FileText className="h-6 w-6" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-slate-800">INSTALLATION & ACCOUNTS DOCUMENT VIEW</h2>
-              <p className="text-xs text-slate-500">Post-Installation, Meter File, Subsidy & Account Details ({lead.fullName})</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onClose}
-              className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 rounded-full transition cursor-pointer"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
 
-        {/* Modal Content - Styled Excel Sheet Format */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4 print-modal-content">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-16 text-slate-500 gap-3">
-              <Loader2 className="h-8 w-8 animate-spin text-orange-600" />
-              <p className="text-sm font-medium">Loading Installation Document Details...</p>
+      {loading ? (
+        <div className="flex flex-col items-center justify-center p-8 bg-white/95 rounded-2xl shadow-2xl border border-slate-200 gap-3 min-w-[280px]">
+          <Loader2 className="h-10 w-10 animate-spin text-orange-600" />
+          <p className="text-sm font-semibold text-slate-700 animate-pulse">Loading Details...</p>
+        </div>
+      ) : (
+        <div className="relative w-full max-w-6xl max-h-[95vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200 print-modal-card animate-slide-up">
+          
+          {/* Modal Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50 print:hidden">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-100 rounded-lg text-orange-700">
+                <FileText className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-800">INSTALLATION & ACCOUNTS DOCUMENT VIEW</h2>
+                <p className="text-xs text-slate-500">Post-Installation, Meter File, Subsidy & Account Details ({lead.fullName})</p>
+              </div>
             </div>
-          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onClose}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 rounded-full transition cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Modal Content - Styled Excel Sheet Format */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 print-modal-content">
             <div className="border border-slate-300 rounded-lg overflow-hidden shadow-sm print:border-slate-400">
               {/* Header Title Bar */}
               <div className="bg-[#F6D2B4] border-b border-slate-300 px-4 py-2.5 text-center font-black text-slate-900 tracking-wider text-base uppercase">
@@ -348,28 +349,28 @@ export default function InstallationDocModal({
                 </tbody>
               </table>
             </div>
-          )}
-        </div>
+          </div>
 
-        {/* Modal Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50 print:hidden">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 text-sm font-semibold transition cursor-pointer"
-          >
-            Close
-          </button>
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-orange-600 text-white hover:bg-orange-700 text-sm font-bold shadow-md transition cursor-pointer"
-          >
-            <Printer className="h-5 w-5" />
-            <span>Print / Save as PDF</span>
-          </button>
+          {/* Modal Footer */}
+          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200 bg-slate-50 print:hidden">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 text-sm font-semibold transition cursor-pointer"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-orange-600 text-white hover:bg-orange-700 text-sm font-bold shadow-md transition cursor-pointer"
+            >
+              <Printer className="h-5 w-5" />
+              <span>Print / Save as PDF</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

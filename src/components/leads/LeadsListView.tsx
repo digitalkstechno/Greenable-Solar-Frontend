@@ -504,8 +504,15 @@ export default function LeadsListView({
               });
             }
 
-            const isOnlyBackOffice = roleNameStr.includes('back office') || deptNameStr.includes('back office');
-            if (isOnlyBackOffice) {
+            const canMakeInvoice = 
+              roleNameStr.includes('back office') || 
+              deptNameStr.includes('back office') || 
+              roleNameStr.includes('account') || 
+              deptNameStr.includes('account') || 
+              roleNameStr.includes('admin') || 
+              deptNameStr.includes('admin');
+
+            if (canMakeInvoice) {
               actions.push({
                 label: 'Make Invoice',
                 icon: <Receipt className="h-3.5 w-3.5" />,

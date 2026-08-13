@@ -774,7 +774,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
         if (showLoanDocs) {
           setActiveSection('loanDocs');
         } else if (isBackOffice && isExecutiveVerified) {
-          setActiveSection('installationPhotos');
+          setActiveSection('installation');
         } else {
           handleSubmit();
         }
@@ -784,18 +784,12 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
     } else if (activeSection === 'loanDocs') {
       if (validateSection('loanDocs')) {
         if (isBackOffice && isExecutiveVerified) {
-          setActiveSection('installationPhotos');
+          setActiveSection('installation');
         } else {
           handleSubmit();
         }
       } else {
         toast.error('Please upload all required Loan Documents first');
-      }
-    } else if (activeSection === 'installationPhotos') {
-      if (isBackOffice && isExecutiveVerified) {
-        setActiveSection('installation');
-      } else {
-        handleSubmit();
       }
     } else if (activeSection === 'installation') {
       handleSubmit();
@@ -864,7 +858,6 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
     sections.push({ key: 'loanDocs', label: 'Loan Docs', icon: <FileText className="h-4 w-4" /> });
   }
   if (isBackOffice && isExecutiveVerified) {
-    sections.push({ key: 'installationPhotos', label: 'Inst. Photos', icon: <Camera className="h-4 w-4" /> });
     sections.push({ key: 'installation', label: 'Installation', icon: <CheckCircle className="h-4 w-4" /> });
   }
 
@@ -2069,27 +2062,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                 </div>
               )}
 
-              {/* ─── Required Photos for Installation (Image 1) ───────────────────── */}
-              {activeSection === 'installationPhotos' && isBackOffice && isExecutiveVerified && (
-                <div className="space-y-4">
-                  <SectionTitle>Required Photos for Installation</SectionTitle>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {INSTALLATION_PHOTO_FIELDS.map((f) => (
-                      <FileInput
-                        key={f.key}
-                        fieldKey={f.key}
-                        label={f.label}
-                        accept={f.isPdf ? 'application/pdf' : 'image/*,application/pdf'}
-                        isPdf={f.isPdf}
-                        existingFiles={existingFiles}
-                        files={files}
-                        onFileChange={handleFileChange}
-                        required={false}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
+
             </>
           )}
         </div>
