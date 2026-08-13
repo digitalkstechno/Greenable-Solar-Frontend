@@ -60,12 +60,12 @@ export function useLeadsData(
   // Keep latest values in a ref so callbacks always read fresh values
   const stateRef = useRef({
     activeTab, filters, viewMode, kanbanSubView,
-    listPage, lostPage, wonPage, limit,
+    listPage, lostPage, wonPage, limit, currentUser
   });
   useEffect(() => {
     stateRef.current = {
       activeTab, filters, viewMode, kanbanSubView,
-      listPage, lostPage, wonPage, limit,
+      listPage, lostPage, wonPage, limit, currentUser
     };
   });
 
@@ -78,9 +78,47 @@ export function useLeadsData(
     f: Filters = stateRef.current.filters
   ) => {
     try {
-      const useKanbanEndpoint = !!baseUrl.getKanbanData;
+      const curUser = stateRef.current.currentUser;
+      const roleNameStr = (curUser?.role?.roleName || '').toLowerCase();
+      const deptNameStr = (curUser?.department?.roleName || curUser?.department?.name || '').toLowerCase();
+      const isExecutive = roleNameStr.includes('executive') || deptNameStr.includes('executive');
+      const isAccount = roleNameStr.includes('account') || deptNameStr.includes('account');
 
-      if (useKanbanEndpoint) {
+      if (isAccount) {
+        const res = await axios.get(baseUrl.accountLeads, {
+          headers: getHeaders(),
+          params: {
+            search: f.search || undefined,
+            status: f.status || undefined,
+            source: f.source || undefined,
+            staff: f.staff || undefined,
+            from: f.from || undefined,
+            to: f.to || undefined,
+            limit: 100,
+          },
+        });
+        if (res.data?.totals) {
+          setTotals(res.data.totals);
+        }
+        setLeads(res.data?.data || []);
+      } else if (isExecutive) {
+        const res = await axios.get(baseUrl.executiveLeads, {
+          headers: getHeaders(),
+          params: {
+            search: f.search || undefined,
+            status: f.status || undefined,
+            source: f.source || undefined,
+            staff: f.staff || undefined,
+            from: f.from || undefined,
+            to: f.to || undefined,
+            limit: 100,
+          },
+        });
+        if (res.data?.totals) {
+          setTotals(res.data.totals);
+        }
+        setLeads(res.data?.data || []);
+      } else if (!!baseUrl.getKanbanData) {
         const res = await axios.get(baseUrl.getKanbanData, {
           headers: getHeaders(),
           params: {
@@ -100,15 +138,12 @@ export function useLeadsData(
         }
 
         if (Array.isArray(data)) {
-          // Shape A: grouped → [{ leads: [...] }, ...]
-          // Shape B: flat array of leads
           const isGrouped = data.length > 0 && Array.isArray((data[0] as any)?.leads);
           setLeads(isGrouped ? (data as any[]).flatMap((g: any) => g.leads || []) : (data as ApiLead[]));
         } else {
           setLeads([]);
         }
       } else {
-        // Fallback: no dedicated kanban endpoint
         const url = tab === 'my' ? baseUrl.myLeads : baseUrl.getAllLeads;
         const res = await axios.get(url, {
           headers: getHeaders(),
@@ -140,7 +175,13 @@ export function useLeadsData(
     lim = stateRef.current.limit
   ) => {
     try {
-      const url = tab === 'my' ? baseUrl.myLeads : baseUrl.getAllLeads;
+      const curUser = stateRef.current.currentUser;
+      const roleNameStr = (curUser?.role?.roleName || '').toLowerCase();
+      const deptNameStr = (curUser?.department?.roleName || curUser?.department?.name || '').toLowerCase();
+      const isExecutive = roleNameStr.includes('executive') || deptNameStr.includes('executive');
+      const isAccount = roleNameStr.includes('account') || deptNameStr.includes('account');
+      
+      const url = isAccount ? baseUrl.accountLeads : (isExecutive ? baseUrl.backOfficeLeads : (tab === 'my' ? baseUrl.myLeads : baseUrl.getAllLeads));
       const res = await axios.get(url, {
         headers: getHeaders(),
         params: {
@@ -175,6 +216,18 @@ export function useLeadsData(
     lim = stateRef.current.limit
   ) => {
     try {
+      const curUser = stateRef.current.currentUser;
+      const roleNameStr = (curUser?.role?.roleName || '').toLowerCase();
+      const deptNameStr = (curUser?.department?.roleName || curUser?.department?.name || '').toLowerCase();
+      const isExecutive = roleNameStr.includes('executive') || deptNameStr.includes('executive');
+
+      if (isExecutive) {
+        setLostLeads([]);
+        setLostTotalItems(0);
+        setLostTotalPages(1);
+        return;
+      }
+
       const res = await axios.get(baseUrl.getLostLeads, {
         headers: getHeaders(),
         params: {
@@ -208,6 +261,62 @@ export function useLeadsData(
     lim = stateRef.current.limit
   ) => {
     try {
+      const curUser = stateRef.current.currentUser;
+      const roleNameStr = (curUser?.role?.roleName || '').toLowerCase();
+      const deptNameStr = (curUser?.department?.roleName || curUser?.department?.name || '').toLowerCase();
+      const isExecutive = roleNameStr.includes('executive') || deptNameStr.includes('executive');
+      const isAccount = roleNameStr.includes('account') || deptNameStr.includes('account');
+
+      if (isAccount) {
+        const res = await axios.get(baseUrl.accountLeads, {
+          headers: getHeaders(),
+          params: {
+            search: f.search || undefined,
+            status: f.status || undefined,
+            source: f.source || undefined,
+            staff: f.staff || undefined,
+            from: f.from || undefined,
+            to: f.to || undefined,
+            page,
+            limit: lim,
+          },
+        });
+        const list = res.data?.data || [];
+        const p = res.data?.pagination || {};
+        if (res.data?.totals) {
+          setTotals(res.data.totals);
+        }
+        setWonLeads(list);
+        setWonTotalItems(p.totalRecords ?? p.total ?? p.count ?? list.length);
+        setWonTotalPages(p.totalPages ?? (p.totalRecords ? Math.ceil(p.totalRecords / lim) : 1));
+        return;
+      }
+
+      if (isExecutive) {
+        const res = await axios.get(baseUrl.backOfficeLeads, {
+          headers: getHeaders(),
+          params: {
+            search: f.search || undefined,
+            status: f.status || undefined,
+            source: f.source || undefined,
+            staff: f.staff || undefined,
+            from: f.from || undefined,
+            to: f.to || undefined,
+            page,
+            limit: lim,
+          },
+        });
+        const list = res.data?.data || [];
+        const p = res.data?.pagination || {};
+        if (res.data?.totals) {
+          setTotals(res.data.totals);
+        }
+        setWonLeads(list);
+        setWonTotalItems(p.totalRecords ?? p.total ?? p.count ?? list.length);
+        setWonTotalPages(p.totalPages ?? (p.totalRecords ? Math.ceil(p.totalRecords / lim) : 1));
+        return;
+      }
+
       const res = await axios.get(baseUrl.getWonLeads, {
         headers: getHeaders(),
         params: {
@@ -242,19 +351,46 @@ export function useLeadsData(
     f: Filters = stateRef.current.filters
   ) => {
     try {
-      const url = tab === 'my' ? baseUrl.myLeadCountSummary : baseUrl.leadCountSummary;
-      const res = await axios.get(url, {
-        headers: getHeaders(),
-        params: {
-          search: f.search || undefined,
-          status: f.status || undefined,
-          source: f.source || undefined,
-          staff: f.staff || undefined,
-          from: f.from || undefined,
-          to: f.to || undefined,
-        },
-      });
-      setCounts(res.data?.data || null);
+      const curUser = stateRef.current.currentUser;
+      const roleNameStr = (curUser?.role?.roleName || '').toLowerCase();
+      const deptNameStr = (curUser?.department?.roleName || curUser?.department?.name || '').toLowerCase();
+      const isExecutive = roleNameStr.includes('executive') || deptNameStr.includes('executive');
+
+      if (isExecutive) {
+        const res = await axios.get(baseUrl.backOfficeLeads, {
+          headers: getHeaders(),
+          params: {
+            search: f.search || undefined,
+            status: f.status || undefined,
+            source: f.source || undefined,
+            staff: f.staff || undefined,
+            from: f.from || undefined,
+            to: f.to || undefined,
+            limit: 1000,
+          },
+        });
+        const list = res.data?.data || [];
+        const countsObj: Record<string, number> = {};
+        list.forEach((item: any) => {
+          const statusName = item.leadStatus?.name || item.status?.name || 'New Lead';
+          countsObj[statusName] = (countsObj[statusName] || 0) + 1;
+        });
+        setCounts(countsObj);
+      } else {
+        const url = tab === 'my' ? baseUrl.myLeadCountSummary : baseUrl.leadCountSummary;
+        const res = await axios.get(url, {
+          headers: getHeaders(),
+          params: {
+            search: f.search || undefined,
+            status: f.status || undefined,
+            source: f.source || undefined,
+            staff: f.staff || undefined,
+            from: f.from || undefined,
+            to: f.to || undefined,
+          },
+        });
+        setCounts(res.data?.data || null);
+      }
     } catch (e) {
       console.error('fetchCounts error:', e);
     }
@@ -328,7 +464,11 @@ export function useLeadsData(
 
   useEffect(() => { fetchMeta(); }, []); 
 
- 
+  useEffect(() => {
+    if (currentUser) {
+      refetchAll();
+    }
+  }, [currentUser, refetchAll]);
   useEffect(() => {
     let cancelled = false;
     const init = async () => {

@@ -5,7 +5,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import {
   X, Upload, FileText, Image, ChevronRight, CheckCircle,
-  Zap, Settings, CreditCard, FileCheck
+  Zap, Settings, CreditCard, FileCheck, Camera, Building2, Receipt, ArrowRightLeft
 } from 'lucide-react';
 import { baseUrl, getAuthToken } from '@/config';
 import { ApiLead } from './types';
@@ -81,6 +81,56 @@ interface FormState {
   documentFeasibilityDate: string;
   registrationDone: string;
   meterPaymentDone: string;
+  installationStatus: string;
+  installationDate: string;
+  pipeDispatchDate: string;
+  pipeDispatchNote: string;
+  panelDispatchDate: string;
+  panelDispatchNote: string;
+  fabricationDate: string;
+  fabricationTeamName: string;
+  fabricationNote: string;
+  wiringDate: string;
+  wiringTeamName: string;
+  wiringNote: string;
+  elcbStatus: string;
+  elcbNote: string;
+  giPipe80x40Consumption: string;
+  giPipe60x40Consumption: string;
+  giPipe40x40Consumption: string;
+  giPipe20x40PatiPipeConsumption: string;
+  giPipeConsumptionNote: string;
+
+  // Meter File (Image 2)
+  meterFileMakeDate: string;
+  meterFileRegDate: string;
+  meterFileMakePersonName: string;
+  dcrReportNo: string;
+  dcrDate: string;
+
+  // After Installation Final Data (Image 2)
+  finalPanelMake: string;
+  finalPanelWp: string;
+  finalNoOfPanel: string;
+  finalProjectKw: string;
+  finalInverterMake: string;
+  finalInverterKw: string;
+
+  // Intimation and Subsidy (Image 2)
+  intimationDate: string;
+  intimationRejectDate: string;
+  intimationRejectReason: string;
+  meterInstolationDate: string;
+  intimationApprovalDate: string;
+  subsidyRedeem: string;
+  subsidyRedeemName: string;
+  subsidyAmount: string;
+  subsidyDisbusmentDate: string;
+
+  // Account Dept / Invoice & Warranty (Image 2)
+  makeInvoice: string;
+  consumerFile: string;
+  currentDepartment: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -96,6 +146,17 @@ const EMPTY_FORM: FormState = {
   paymentMode: '', projectAmount: '', subsidyLessProject: '', loanPortal: '', totalKw: '',
   downPaymentAmount: '', loanFirstPaymentAmount: '', loanSecondPaymentAmount: '',
   meterChargeAmount: '', meterChargePayableBy: '', registrationDate: '', registrationNo: '', registrationName: '', documentFeasibilityDate: '', registrationDone: '', meterPaymentDone: '',
+  installationStatus: 'Pending', installationDate: '', pipeDispatchDate: '', pipeDispatchNote: '',
+  panelDispatchDate: '', panelDispatchNote: '', fabricationDate: '', fabricationTeamName: '',
+  fabricationNote: '', wiringDate: '', wiringTeamName: '', wiringNote: '', elcbStatus: 'Pending', elcbNote: '',
+  giPipe80x40Consumption: '', giPipe60x40Consumption: '', giPipe40x40Consumption: '',
+  giPipe20x40PatiPipeConsumption: '', giPipeConsumptionNote: '',
+
+  meterFileMakeDate: '', meterFileRegDate: '', meterFileMakePersonName: '', dcrReportNo: '', dcrDate: '',
+  finalPanelMake: '', finalPanelWp: '', finalNoOfPanel: '', finalProjectKw: '', finalInverterMake: '', finalInverterKw: '',
+  intimationDate: '', intimationRejectDate: '', intimationRejectReason: '', meterInstolationDate: '', intimationApprovalDate: '',
+  subsidyRedeem: 'no', subsidyRedeemName: '', subsidyAmount: '', subsidyDisbusmentDate: '',
+  makeInvoice: 'no', consumerFile: 'PENDING', currentDepartment: 'Project Back Office',
 };
 
 const PHOTO_FIELDS = [
@@ -105,6 +166,22 @@ const PHOTO_FIELDS = [
   { key: 'photoInverterLocation', label: 'Location where the inverter is to be installed' },
   { key: 'photoEarthingLocation', label: 'Location where the earthing is to be done' },
   { key: 'photoMeterBox', label: 'Where the meter box and ECB are installed' },
+];
+
+const INSTALLATION_PHOTO_FIELDS = [
+  { key: 'photoSiteOverview', label: 'SITE OVERVIEW PHOTO' },
+  { key: 'photoPanelSrNo', label: 'PANEL SR NO PHOTO (IN PDF)', isPdf: true },
+  { key: 'photoInverterSrNo', label: 'INVETER SR NO PHOTO' },
+  { key: 'photoPanelPlacement', label: 'PANEL PLASEMENT CLERLY VISIBAL PHOTO' },
+  { key: 'photoMountingStructure', label: 'MOUNTING STRUCTURE PHOTO PROPERLY VISIBLE' },
+  { key: 'photoInverterInstalled', label: 'INVETER INSTOLLED PHOTO' },
+  { key: 'photoAcdbDcdb', label: 'ACDB / DCDB PHOTO' },
+  { key: 'photoEarthingConnection', label: 'ERTHING CONECTION VISIBLE PHOTO' },
+  { key: 'photoCableWiringRoute1', label: 'CABLE ROUTE AND WIRING ROUTE PHOTO 1' },
+  { key: 'photoCableWiringRoute2', label: 'CABLE ROUTE AND WIRING ROUTE PHOTO 2' },
+  { key: 'photoCableWiringRoute3', label: 'CABLE ROUTE AND WIRING ROUTE PHOTO 3' },
+  { key: 'photoEarthingPit', label: 'ERTHING PIT PHOTO' },
+  { key: 'photoJioTagCustomer', label: 'JIO TAG CUSTOMER PHOTO' },
 ];
 
 const REG_DOC_FIELDS = [
@@ -123,7 +200,7 @@ const LOAN_DOC_FIELDS = [
   { key: 'loanDocAadhaarCard', label: 'Aadhaar card (Loan)' },
 ];
 
-type SectionKey = 'project' | 'photos' | 'regDocs' | 'regProcess' | 'payment' | 'loanDocs';
+type SectionKey = 'project' | 'photos' | 'regDocs' | 'regProcess' | 'payment' | 'loanDocs' | 'installationPhotos' | 'installation';
 
 // ─── Option lists ───────────────────────────────────────────────────────────────
 const PHASE_OPTS = [{ value: 'single', label: 'Single' }, { value: 'three', label: 'Three' }];
@@ -228,6 +305,8 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showLoanDocs, setShowLoanDocs] = useState(false);
   const [isBackOffice, setIsBackOffice] = useState(false);
+  const [isExecutiveVerified, setIsExecutiveVerified] = useState(false);
+  const [executiveName, setExecutiveName] = useState('');
   const drawerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -239,7 +318,9 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
         const staff = res.data?.data || {};
         const role = staff.role || {};
         const roleName = (role.roleName || role.name || '').toLowerCase().replace(/\s+/g, '');
-        setIsBackOffice(roleName.includes('backoffice'));
+        const deptName = (staff.department?.name || staff.department?.roleName || '').toLowerCase().replace(/\s+/g, '');
+        const isBO = roleName.includes('backoffice') || deptName.includes('backoffice');
+        setIsBackOffice(isBO);
         
         const staffName = staff.fullName || staff.name || '';
         if (staffName) {
@@ -259,12 +340,18 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
           headers: { Authorization: `Bearer ${token}` },
         });
         const d = res.data?.data;
+        const isVer = !!(d && d.isExecutiveVerified);
+        setIsExecutiveVerified(isVer);
+        if ((!isBackOffice || !isVer) && (activeSection === 'installation' || activeSection === 'installationPhotos')) {
+          setActiveSection('project');
+        }
         if (d) {
+          setExecutiveName(d.executiveVerifiedBy?.fullName || d.executiveVerifiedBy?.name || '');
           setForm({
             projectCode: d.projectCode || '',
             srNo: d.srNo || '',
             salesPersonName: d.salesPersonName || lead.assignedTo?.fullName || lead.createdBy?.fullName || '',
-            creatorName: d.creatorName || d.leadRefrance || lead.createdBy?.fullName || lead.createdBy?.name || '',
+            creatorName: d.creatorName || d.leadRefrance || lead.createdBy?.fullName || (lead.createdBy as any)?.name || '',
             customerFullName: d.customerFullName || lead.fullName || '',
             registerMobileNumber: d.registerMobileNumber || lead.contact || '',
             locationLink: d.locationLink || lead.locationLink || '',
@@ -319,10 +406,54 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
             documentFeasibilityDate: d.documentFeasibilityDate || '',
             registrationDone: d.registrationDone || '',
             meterPaymentDone: d.meterPaymentDone || '',
+            installationStatus: d.installationStatus || 'Pending',
+            installationDate: d.installationDate || (d.executiveVerifiedAt ? new Date(d.executiveVerifiedAt).toISOString().split('T')[0] : ''),
+            pipeDispatchDate: d.pipeDispatchDate || '',
+            pipeDispatchNote: d.pipeDispatchNote || '',
+            panelDispatchDate: d.panelDispatchDate || '',
+            panelDispatchNote: d.panelDispatchNote || '',
+            fabricationDate: d.fabricationDate || '',
+            fabricationTeamName: d.fabricationTeamName || '',
+            fabricationNote: d.fabricationNote || '',
+            wiringDate: d.wiringDate || '',
+            wiringTeamName: d.wiringTeamName || '',
+            wiringNote: d.wiringNote || '',
+            elcbStatus: d.elcbStatus || 'Pending',
+            elcbNote: d.elcbNote || '',
+            giPipe80x40Consumption: d.giPipe80x40Consumption !== undefined && d.giPipe80x40Consumption !== null ? d.giPipe80x40Consumption.toString() : (d.hdgiPipe80x40?.toString() || '0'),
+            giPipe60x40Consumption: d.giPipe60x40Consumption !== undefined && d.giPipe60x40Consumption !== null ? d.giPipe60x40Consumption.toString() : (d.hdgiPipe60x40?.toString() || '0'),
+            giPipe40x40Consumption: d.giPipe40x40Consumption !== undefined && d.giPipe40x40Consumption !== null ? d.giPipe40x40Consumption.toString() : (d.hdgiPipe40x40?.toString() || '0'),
+            giPipe20x40PatiPipeConsumption: d.giPipe20x40PatiPipeConsumption !== undefined && d.giPipe20x40PatiPipeConsumption !== null ? d.giPipe20x40PatiPipeConsumption.toString() : (d.hdgiPipe20x40PatiPipe?.toString() || '0'),
+            giPipeConsumptionNote: d.giPipeConsumptionNote || '',
+
+            meterFileMakeDate: d.meterFileMakeDate || '',
+            meterFileRegDate: d.meterFileRegDate || '',
+            meterFileMakePersonName: d.meterFileMakePersonName || '',
+            dcrReportNo: d.dcrReportNo || '',
+            dcrDate: d.dcrDate || '',
+            finalPanelMake: d.finalPanelMake || d.panelMake || '',
+            finalPanelWp: d.finalPanelWp?.toString() || d.panelWp?.toString() || '',
+            finalNoOfPanel: d.finalNoOfPanel?.toString() || d.noOfPanel?.toString() || '',
+            finalProjectKw: d.finalProjectKw?.toString() || d.totalKw?.toString() || '',
+            finalInverterMake: d.finalInverterMake || d.inverterMake || '',
+            finalInverterKw: d.finalInverterKw?.toString() || d.inverterKw?.toString() || '',
+            intimationDate: d.intimationDate || '',
+            intimationRejectDate: d.intimationRejectDate || '',
+            intimationRejectReason: d.intimationRejectReason || '',
+            meterInstolationDate: d.meterInstolationDate || '',
+            intimationApprovalDate: d.intimationApprovalDate || '',
+            subsidyRedeem: d.subsidyRedeem || 'no',
+            subsidyRedeemName: d.subsidyRedeemName || '',
+            subsidyAmount: d.subsidyAmount?.toString() || '',
+            subsidyDisbusmentDate: d.subsidyDisbusmentDate || '',
+            makeInvoice: d.makeInvoice || 'no',
+            consumerFile: d.consumerFile || 'PENDING',
+            currentDepartment: d.currentDepartment || 'Project Back Office',
           });
           const ef: Record<string, any> = {};
-          [...PHOTO_FIELDS, ...REG_DOC_FIELDS, ...LOAN_DOC_FIELDS, 
-            { key: 'downPaymentDoc' }, { key: 'loanFirstPaymentDoc' }, { key: 'loanSecondPaymentDoc' }
+          [...PHOTO_FIELDS, ...INSTALLATION_PHOTO_FIELDS, ...REG_DOC_FIELDS, ...LOAN_DOC_FIELDS, 
+            { key: 'downPaymentDoc' }, { key: 'loanFirstPaymentDoc' }, { key: 'loanSecondPaymentDoc' },
+            { key: 'docDcrReport' }, { key: 'docPanelInverterSrNo' }, { key: 'docInvoice' }, { key: 'docWarrantyCertificate' }
           ].forEach(({ key }) => {
             if (d[key]) ef[key] = d[key];
           });
@@ -359,7 +490,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
             setForm({
               ...EMPTY_FORM,
               salesPersonName: lead.assignedTo?.fullName || lead.createdBy?.fullName || '',
-              creatorName: lead.createdBy?.fullName || lead.createdBy?.name || '',
+              creatorName: lead.createdBy?.fullName || (lead.createdBy as any)?.name || '',
               customerFullName: lead.fullName || '',
               registerMobileNumber: lead.contact || '',
               locationLink: (lead as any).locationLink || '',
@@ -377,7 +508,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
           } else {
             setForm({
               ...EMPTY_FORM,
-              creatorName: lead.createdBy?.fullName || lead.createdBy?.name || '',
+              creatorName: lead.createdBy?.fullName || (lead.createdBy as any)?.name || '',
             });
             setShowLoanDocs(false);
           }
@@ -591,6 +722,8 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
       if (validateSection('payment')) {
         if (showLoanDocs) {
           setActiveSection('loanDocs');
+        } else if (isBackOffice && isExecutiveVerified) {
+          setActiveSection('installationPhotos');
         } else {
           handleSubmit();
         }
@@ -599,10 +732,22 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
       }
     } else if (activeSection === 'loanDocs') {
       if (validateSection('loanDocs')) {
-        handleSubmit();
+        if (isBackOffice && isExecutiveVerified) {
+          setActiveSection('installationPhotos');
+        } else {
+          handleSubmit();
+        }
       } else {
         toast.error('Please upload all required Loan Documents first');
       }
+    } else if (activeSection === 'installationPhotos') {
+      if (isBackOffice && isExecutiveVerified) {
+        setActiveSection('installation');
+      } else {
+        handleSubmit();
+      }
+    } else if (activeSection === 'installation') {
+      handleSubmit();
     }
   };
 
@@ -663,6 +808,13 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
     sections.push({ key: 'regProcess', label: 'Reg. Process', icon: <Zap className="h-4 w-4" /> });
   }
   sections.push({ key: 'payment', label: 'Payment', icon: <CreditCard className="h-4 w-4" /> });
+  if (showLoanDocs) {
+    sections.push({ key: 'loanDocs', label: 'Loan Docs', icon: <FileText className="h-4 w-4" /> });
+  }
+  if (isBackOffice && isExecutiveVerified) {
+    sections.push({ key: 'installationPhotos', label: 'Inst. Photos', icon: <Camera className="h-4 w-4" /> });
+    sections.push({ key: 'installation', label: 'Installation', icon: <CheckCircle className="h-4 w-4" /> });
+  }
 
   const handleAutosave = () => {
     // Attempt a silent save if some fields are filled
@@ -700,9 +852,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
     onClose();
   }
 
-  if (showLoanDocs) {
-    sections.push({ key: 'loanDocs', label: 'Loan Docs', icon: <FileText className="h-4 w-4" /> });
-  }
+
 
   return (
     <>
@@ -850,9 +1000,13 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                         <FormInput
                           label="Pincode"
                           name="pincode"
-                          placeholder="Pincode..."
+                          placeholder="Enter 6-digit Pincode"
+                          maxLength={6}
                           value={form.pincode}
-                          onChange={(e) => handleFormChange('pincode', e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                            handleFormChange('pincode', val);
+                          }}
                         />
                         <FormInput
                           label="Consumer No"
@@ -935,8 +1089,8 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                       name="totalKw"
                       type="number"
                       value={form.totalKw || ((Number(form.panelWp || 0) * Number(form.noOfPanel || 0)) / 1000).toString()}
+                      onChange={() => {}}
                       disabled
-                      readOnly
                       className="bg-gray-100 font-bold"
                     />
                     <FormInput
@@ -1193,7 +1347,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                 <div>
                   <SectionTitle>Registration, Feasibility & Meter Payment</SectionTitle>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <FormInput label="Meter Charge (Discom)" name="_discom_display" value={form.discom} disabled readOnly className="bg-gray-100 font-bold" />
+                    <FormInput label="Meter Charge (Discom)" name="_discom_display" value={form.discom} onChange={() => {}} disabled className="bg-gray-100 font-bold" />
                     <FormInput label="Meter Charge Amount" name="meterChargeAmount" type="number" value={form.meterChargeAmount} onChange={(e) => handleFormChange('meterChargeAmount', e.target.value)} />
                     <div>
                       <FormSelect label="Meter Charge Payable By" name="meterChargePayableBy" value={form.meterChargePayableBy} onChange={(val) => handleFormChange('meterChargePayableBy', val)} options={[{value:'Customer', label:'Customer'}, {value:'Greeneable', label:'Greeneable'}]} placeholder="Select..." />
@@ -1420,6 +1574,424 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                   ))}
                 </div>
               )}
+
+              {/* ─── Installation & Execution Details ───────────────────────────── */}
+              {activeSection === 'installation' && isBackOffice && isExecutiveVerified && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormInput
+                      label="Executive Person Name"
+                      name="executiveName"
+                      value={executiveName}
+                      onChange={() => {}}
+                      disabled
+                    />
+                    <FormSelect
+                      label="Installation"
+                      name="installationStatus"
+                      value={form.installationStatus}
+                      onChange={(val) => handleFormChange('installationStatus', val)}
+                      options={[
+                        { value: 'Pending', label: 'Pending' },
+                        { value: 'Done', label: 'Done' }
+                      ]}
+                    />
+                    <div className="w-full relative">
+                      <label className="block text-sm font-bold text-gray-700 mb-1.5 px-1">
+                        Installation Date
+                      </label>
+                      <Calendar
+                        value={form.installationDate ? new Date(form.installationDate) : null}
+                        onChange={(d) => handleFormChange('installationDate', d ? d.toISOString().split('T')[0] : '')}
+                      />
+                    </div>
+                    <div className="w-full relative">
+                      <label className="block text-sm font-bold text-gray-700 mb-1.5 px-1">
+                        Pipe Dispatch Date
+                      </label>
+                      <Calendar
+                        value={form.pipeDispatchDate ? new Date(form.pipeDispatchDate) : null}
+                        onChange={(d) => handleFormChange('pipeDispatchDate', d ? d.toISOString().split('T')[0] : '')}
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <FormInput
+                        label="Pipe Dispatch Note"
+                        name="pipeDispatchNote"
+                        placeholder="Enter note..."
+                        value={form.pipeDispatchNote}
+                        onChange={(e) => handleFormChange('pipeDispatchNote', e.target.value)}
+                      />
+                    </div>
+                    <div className="w-full relative">
+                      <label className="block text-sm font-bold text-gray-700 mb-1.5 px-1">
+                        Panel Dispatch Date
+                      </label>
+                      <Calendar
+                        value={form.panelDispatchDate ? new Date(form.panelDispatchDate) : null}
+                        onChange={(d) => handleFormChange('panelDispatchDate', d ? d.toISOString().split('T')[0] : '')}
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <FormInput
+                        label="Panel Dispatch Note"
+                        name="panelDispatchNote"
+                        placeholder="Enter note..."
+                        value={form.panelDispatchNote}
+                        onChange={(e) => handleFormChange('panelDispatchNote', e.target.value)}
+                      />
+                    </div>
+                    <div className="w-full relative">
+                      <label className="block text-sm font-bold text-gray-700 mb-1.5 px-1">
+                        Fabrication Date
+                      </label>
+                      <Calendar
+                        value={form.fabricationDate ? new Date(form.fabricationDate) : null}
+                        onChange={(d) => handleFormChange('fabricationDate', d ? d.toISOString().split('T')[0] : '')}
+                      />
+                    </div>
+                    <FormInput
+                      label="Fabrication Team Name"
+                      name="fabricationTeamName"
+                      placeholder="Enter team name..."
+                      value={form.fabricationTeamName}
+                      onChange={(e) => handleFormChange('fabricationTeamName', e.target.value)}
+                    />
+                    <div className="md:col-span-2">
+                      <FormInput
+                        label="Fabrication Note"
+                        name="fabricationNote"
+                        placeholder="Enter note..."
+                        value={form.fabricationNote}
+                        onChange={(e) => handleFormChange('fabricationNote', e.target.value)}
+                      />
+                    </div>
+                    <div className="w-full relative">
+                      <label className="block text-sm font-bold text-gray-700 mb-1.5 px-1">
+                        Wiring Date
+                      </label>
+                      <Calendar
+                        value={form.wiringDate ? new Date(form.wiringDate) : null}
+                        onChange={(d) => handleFormChange('wiringDate', d ? d.toISOString().split('T')[0] : '')}
+                      />
+                    </div>
+                    <FormInput
+                      label="Wiring Team Name"
+                      name="wiringTeamName"
+                      placeholder="Enter team name..."
+                      value={form.wiringTeamName}
+                      onChange={(e) => handleFormChange('wiringTeamName', e.target.value)}
+                    />
+                    <div className="md:col-span-2">
+                      <FormInput
+                        label="Wiring Note"
+                        name="wiringNote"
+                        placeholder="Enter note..."
+                        value={form.wiringNote}
+                        onChange={(e) => handleFormChange('wiringNote', e.target.value)}
+                      />
+                    </div>
+                    <FormSelect
+                      label="ELCB / RCCB"
+                      name="elcbStatus"
+                      value={form.elcbStatus}
+                      onChange={(val) => handleFormChange('elcbStatus', val)}
+                      options={[
+                        { value: 'Pending', label: 'Pending' },
+                        { value: 'Done', label: 'Done' }
+                      ]}
+                    />
+                    <div className="md:col-span-2">
+                      <FormInput
+                        label="ELCB / RCCB Note"
+                        name="elcbNote"
+                        placeholder="Enter note..."
+                        value={form.elcbNote}
+                        onChange={(e) => handleFormChange('elcbNote', e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 space-y-4">
+                    <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wide">GI Pipe Consumption Report</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormInput
+                        label="80 X 40 *"
+                        name="giPipe80x40Consumption"
+                        type="number"
+                        value={form.giPipe80x40Consumption}
+                        onChange={(e) => handleFormChange('giPipe80x40Consumption', e.target.value)}
+                      />
+                      <FormInput
+                        label="60 X 40 *"
+                        name="giPipe60x40Consumption"
+                        type="number"
+                        value={form.giPipe60x40Consumption}
+                        onChange={(e) => handleFormChange('giPipe60x40Consumption', e.target.value)}
+                      />
+                      <FormInput
+                        label="40 X 40"
+                        name="giPipe40x40Consumption"
+                        type="number"
+                        value={form.giPipe40x40Consumption}
+                        onChange={(e) => handleFormChange('giPipe40x40Consumption', e.target.value)}
+                      />
+                      <FormInput
+                        label="20 X 40 Pati Pipe"
+                        name="giPipe20x40PatiPipeConsumption"
+                        type="number"
+                        value={form.giPipe20x40PatiPipeConsumption}
+                        onChange={(e) => handleFormChange('giPipe20x40PatiPipeConsumption', e.target.value)}
+                      />
+                      <div className="md:col-span-2">
+                        <FormInput
+                          label="GI Pipe Note"
+                          name="giPipeConsumptionNote"
+                          placeholder="Enter note..."
+                          value={form.giPipeConsumptionNote}
+                          onChange={(e) => handleFormChange('giPipeConsumptionNote', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── Meter File, After Installation, Intimation & Subsidy (Requires Make Invoice = YES) ── */}
+                  {form.makeInvoice === 'yes' ? (
+                    <>
+                      {/* ── Meter File (Image 2 Section 1) ────────────────── */}
+                      <div className="border border-orange-200 rounded-xl p-4 bg-orange-50/20 space-y-4">
+                        <div className="bg-[#F6D2B4] px-4 py-2 rounded-lg border border-orange-300 shadow-xs flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-slate-900" />
+                          <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm uppercase tracking-wide">METER FILE</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="w-full relative">
+                            <label className="block text-xs font-bold text-gray-700 mb-1.5">Meter File Make Date</label>
+                            <Calendar
+                              value={form.meterFileMakeDate ? new Date(form.meterFileMakeDate) : null}
+                              onChange={(d) => handleFormChange('meterFileMakeDate', d ? d.toISOString().split('T')[0] : '')}
+                            />
+                          </div>
+                          <div className="w-full relative">
+                            <label className="block text-xs font-bold text-gray-700 mb-1.5">Meter File Registration Date</label>
+                            <Calendar
+                              value={form.meterFileRegDate ? new Date(form.meterFileRegDate) : null}
+                              onChange={(d) => handleFormChange('meterFileRegDate', d ? d.toISOString().split('T')[0] : '')}
+                            />
+                          </div>
+                          <FormInput
+                            label="Meter File Make Person Name (Auto)"
+                            name="meterFileMakePersonName"
+                            placeholder="Auto filled user name"
+                            value={form.meterFileMakePersonName}
+                            onChange={(e) => handleFormChange('meterFileMakePersonName', e.target.value)}
+                          />
+                          <FormInput
+                            label="DCR Report No"
+                            name="dcrReportNo"
+                            placeholder="Enter DCR report number"
+                            value={form.dcrReportNo}
+                            onChange={(e) => handleFormChange('dcrReportNo', e.target.value)}
+                          />
+                          <div className="w-full relative">
+                            <label className="block text-xs font-bold text-gray-700 mb-1.5">DCR Date</label>
+                            <Calendar
+                              value={form.dcrDate ? new Date(form.dcrDate) : null}
+                              onChange={(d) => handleFormChange('dcrDate', d ? d.toISOString().split('T')[0] : '')}
+                            />
+                          </div>
+                          <FileInput
+                            fieldKey="docDcrReport"
+                            label="DCR Report Document"
+                            accept="image/*,application/pdf"
+                            isPdf
+                            existingFiles={existingFiles}
+                            files={files}
+                            onFileChange={handleFileChange}
+                            required={false}
+                          />
+                        </div>
+                      </div>
+
+                      {/* ── After Installation Final Data (Image 2 Section 2) ────────────────── */}
+                      <div className="border border-orange-200 rounded-xl p-4 bg-orange-50/20 space-y-4">
+                        <div className="bg-[#F6D2B4] px-4 py-2 rounded-lg border border-orange-300 shadow-xs flex items-center gap-2">
+                          <Zap className="h-4 w-4 text-slate-900" />
+                          <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm uppercase tracking-wide">AFTER INSTALLATION FINAL DATA</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <FormInput
+                            label="Panel Make"
+                            name="finalPanelMake"
+                            placeholder="Panel Make"
+                            value={form.finalPanelMake}
+                            onChange={(e) => handleFormChange('finalPanelMake', e.target.value)}
+                          />
+                          <FormInput
+                            label="Panel WP"
+                            name="finalPanelWp"
+                            type="number"
+                            placeholder="Panel WP"
+                            value={form.finalPanelWp}
+                            onChange={(e) => {
+                              const wp = e.target.value;
+                              const count = form.finalNoOfPanel;
+                              const kw = (wp && count) ? ((Number(wp) * Number(count)) / 1000).toFixed(2) : form.finalProjectKw;
+                              setForm(prev => ({ ...prev, finalPanelWp: wp, finalProjectKw: kw }));
+                            }}
+                          />
+                          <FormInput
+                            label="No of Panel"
+                            name="finalNoOfPanel"
+                            type="number"
+                            placeholder="No of Panel"
+                            value={form.finalNoOfPanel}
+                            onChange={(e) => {
+                              const count = e.target.value;
+                              const wp = form.finalPanelWp;
+                              const kw = (wp && count) ? ((Number(wp) * Number(count)) / 1000).toFixed(2) : form.finalProjectKw;
+                              setForm(prev => ({ ...prev, finalNoOfPanel: count, finalProjectKw: kw }));
+                            }}
+                          />
+                          <FormInput
+                            label="Final Project KW"
+                            name="finalProjectKw"
+                            type="number"
+                            placeholder="Final Project KW"
+                            value={form.finalProjectKw}
+                            onChange={(e) => handleFormChange('finalProjectKw', e.target.value)}
+                          />
+                          <FormInput
+                            label="Inverter Make"
+                            name="finalInverterMake"
+                            placeholder="Inverter Make"
+                            value={form.finalInverterMake}
+                            onChange={(e) => handleFormChange('finalInverterMake', e.target.value)}
+                          />
+                          <FormInput
+                            label="Inverter KW"
+                            name="finalInverterKw"
+                            type="number"
+                            placeholder="Inverter KW"
+                            value={form.finalInverterKw}
+                            onChange={(e) => handleFormChange('finalInverterKw', e.target.value)}
+                          />
+                          <div className="md:col-span-2">
+                            <FileInput
+                              fieldKey="docPanelInverterSrNo"
+                              label="Panel & Inverter SR No Document"
+                              accept="image/*,application/pdf"
+                              isPdf
+                              existingFiles={existingFiles}
+                              files={files}
+                              onFileChange={handleFileChange}
+                              required={false}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ── Intimation and Subsidy (Image 2 Section 3) ────────────────── */}
+                      <div className="border border-orange-200 rounded-xl p-4 bg-orange-50/20 space-y-4">
+                        <div className="bg-[#F6D2B4] px-4 py-2 rounded-lg border border-orange-300 shadow-xs flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-slate-900" />
+                          <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm uppercase tracking-wide">INTIMATION AND SUBSIDY</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="w-full relative">
+                            <label className="block text-xs font-bold text-gray-700 mb-1.5">Intimation Date</label>
+                            <Calendar
+                              value={form.intimationDate ? new Date(form.intimationDate) : null}
+                              onChange={(d) => handleFormChange('intimationDate', d ? d.toISOString().split('T')[0] : '')}
+                            />
+                          </div>
+                          <div className="w-full relative">
+                            <label className="block text-xs font-bold text-gray-700 mb-1.5">Intimation Reject Date</label>
+                            <Calendar
+                              value={form.intimationRejectDate ? new Date(form.intimationRejectDate) : null}
+                              onChange={(d) => handleFormChange('intimationRejectDate', d ? d.toISOString().split('T')[0] : '')}
+                            />
+                          </div>
+                          <div className="md:col-span-2">
+                            <FormInput
+                              label="Intimation Reject Reason"
+                              name="intimationRejectReason"
+                              placeholder="Enter reject reason if any..."
+                              value={form.intimationRejectReason}
+                              onChange={(e) => handleFormChange('intimationRejectReason', e.target.value)}
+                            />
+                          </div>
+                          <div className="w-full relative">
+                            <label className="block text-xs font-bold text-gray-700 mb-1.5">Meter Installation Date</label>
+                            <Calendar
+                              value={form.meterInstolationDate ? new Date(form.meterInstolationDate) : null}
+                              onChange={(d) => handleFormChange('meterInstolationDate', d ? d.toISOString().split('T')[0] : '')}
+                            />
+                          </div>
+                          <div className="w-full relative">
+                            <label className="block text-xs font-bold text-gray-700 mb-1.5">Intimation Approval Date</label>
+                            <Calendar
+                              value={form.intimationApprovalDate ? new Date(form.intimationApprovalDate) : null}
+                              onChange={(d) => handleFormChange('intimationApprovalDate', d ? d.toISOString().split('T')[0] : '')}
+                            />
+                          </div>
+                          <FormSelect
+                            label="Subsidy Redeem"
+                            name="subsidyRedeem"
+                            value={form.subsidyRedeem}
+                            onChange={(val) => handleFormChange('subsidyRedeem', val)}
+                            options={[{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }]}
+                          />
+                          <FormInput
+                            label="Subsidy Redeem Name (Auto)"
+                            name="subsidyRedeemName"
+                            placeholder="Auto filled user name"
+                            value={form.subsidyRedeemName}
+                            onChange={(e) => handleFormChange('subsidyRedeemName', e.target.value)}
+                          />
+                          <FormInput
+                            label="Subsidy Amount"
+                            name="subsidyAmount"
+                            type="number"
+                            placeholder="e.g. 78000"
+                            value={form.subsidyAmount}
+                            onChange={(e) => handleFormChange('subsidyAmount', e.target.value)}
+                          />
+                          <div className="w-full relative">
+                            <label className="block text-xs font-bold text-gray-700 mb-1.5">Subsidy Disbursement Date</label>
+                            <Calendar
+                              value={form.subsidyDisbusmentDate ? new Date(form.subsidyDisbusmentDate) : null}
+                              onChange={(d) => handleFormChange('subsidyDisbusmentDate', d ? d.toISOString().split('T')[0] : '')}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              )}
+
+              {/* ─── Required Photos for Installation (Image 1) ───────────────────── */}
+              {activeSection === 'installationPhotos' && isBackOffice && isExecutiveVerified && (
+                <div className="space-y-4">
+                  <SectionTitle>Required Photos for Installation</SectionTitle>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {INSTALLATION_PHOTO_FIELDS.map((f) => (
+                      <FileInput
+                        key={f.key}
+                        fieldKey={f.key}
+                        label={f.label}
+                        accept={f.isPdf ? 'application/pdf' : 'image/*,application/pdf'}
+                        isPdf={f.isPdf}
+                        existingFiles={existingFiles}
+                        files={files}
+                        onFileChange={handleFileChange}
+                        required={false}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -1454,7 +2026,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
               ) : (
                 <ChevronRight className="h-4 w-4" />
               )}
-              {saving ? 'Saving...' : activeSection === (showLoanDocs ? 'loanDocs' : 'payment') ? 'Save Details' : 'Next '}
+              {saving ? 'Saving...' : (activeSection === 'installation' || (!isExecutiveVerified && ((activeSection === 'payment' && !showLoanDocs) || activeSection === 'loanDocs'))) ? 'Save Details' : 'Next '}
             </button>
           </div>
         </div>
