@@ -384,6 +384,17 @@ export default function LeadsListView({
     }, { totalKwReq: 0, totalAmount: 0, totalPendingAmount: 0 });
   }, [leads]);
 
+  const roleNameStr = (currentUser?.role?.roleName || currentUser?.roleName || '').toLowerCase();
+  const deptNameStr = (
+    typeof currentUser?.department === 'string'
+      ? currentUser.department
+      : (currentUser?.department?.roleName || currentUser?.department?.name || currentUser?.departmentName || '')
+  ).toLowerCase();
+
+  const isBackOfficeUser = roleNameStr.includes('back office') || roleNameStr.includes('backoffice') || deptNameStr.includes('back office') || deptNameStr.includes('backoffice');
+  const isExecutiveUser = roleNameStr.includes('executive') || deptNameStr.includes('executive');
+  const isBackOfficeOrExecutive = isBackOfficeUser || isExecutiveUser;
+
   return (
     <div className="space-y-4 h-[calc(100vh-220px)] flex flex-col">
 
@@ -405,7 +416,7 @@ export default function LeadsListView({
           onPageChange={handlePageChange}
           onPageSizeChange={handlePageSizeChange}
           actions
-          onView={handleView}
+          onView={isBackOfficeOrExecutive ? undefined : handleView}
           onEdit={permissions?.update ? handleEdit : undefined}
           onDelete={permissions?.delete ? (row) => { setDeleteTarget(row); setShowDelete(true); } : undefined}
           extraActions={(() => {
@@ -416,8 +427,7 @@ export default function LeadsListView({
               color?: 'blue' | 'green' | 'red' | 'orange' | 'purple' | 'emerald';
               show?: (row: TableLead) => boolean;
             }[] = [];
-            const roleName = currentUser?.role?.roleName || '';
-            if (permissions?.update) {
+            if (permissions?.update || isBackOfficeOrExecutive) {
               actions.push({
                 label: 'Add ',
                 icon: <Plus className="h-3.5 w-3.5" />,
@@ -428,6 +438,9 @@ export default function LeadsListView({
                   setProjectDetailLead(rawLead);
                 },
               });
+            }
+
+            if (permissions?.update && !isBackOfficeOrExecutive) {
               actions.push({
                 label: 'Pay',
                 icon: <span className="text-xs font-bold">₹</span>,
@@ -439,13 +452,10 @@ export default function LeadsListView({
                 },
               });
             }
-            const roleNameStr = (currentUser?.role?.roleName || '').toLowerCase();
-            const deptNameStr = (currentUser?.department?.roleName || currentUser?.department?.name || '').toLowerCase();
             const isAdminUser = roleNameStr.includes('admin');
-            const isBackOfficeUser = roleNameStr.includes('back office') || roleNameStr.includes('backoffice') || deptNameStr.includes('back office') || deptNameStr.includes('backoffice');
-            const isExecutiveUser = !isAdminUser && !isBackOfficeUser && (roleNameStr.includes('executive') || deptNameStr.includes('executive'));
+            const isExecUser = !isAdminUser && !isBackOfficeUser && (roleNameStr.includes('executive') || deptNameStr.includes('executive'));
 
-            if (isExecutiveUser) {
+            if (isExecUser) {
               actions.push({
                 label: 'Executive',
                 icon: <ShieldCheck className="h-3.5 w-3.5" />,

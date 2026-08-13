@@ -641,7 +641,7 @@ export default function LeadsKanbanView({
             }
             const pendingAmt = (projectAmt || 0) - (lead.paymentAmount || 0);
             return {
-                totalKwReq: acc.totalKwReq + kw,
+            totalKwReq: acc.totalKwReq + kw,
                 totalAmount: acc.totalAmount + projectAmt,
                 totalPendingAmount: acc.totalPendingAmount + pendingAmt
             };
@@ -650,6 +650,17 @@ export default function LeadsKanbanView({
 
     const formatNumber = (num: number) => num.toLocaleString('en-IN');
 
+    const roleNameStr = (currentUser?.role?.roleName || currentUser?.roleName || '').toLowerCase();
+    const deptNameStr = (
+        typeof currentUser?.department === 'string'
+            ? currentUser.department
+            : (currentUser?.department?.roleName || currentUser?.department?.name || currentUser?.departmentName || '')
+    ).toLowerCase();
+
+    const isBackOfficeUser = roleNameStr.includes('back office') || roleNameStr.includes('backoffice') || deptNameStr.includes('back office') || deptNameStr.includes('backoffice');
+    const isExecutiveUser = roleNameStr.includes('executive') || deptNameStr.includes('executive');
+    const isBackOfficeOrExecutive = isBackOfficeUser || isExecutiveUser;
+
     return (
         <div className="flex h-full flex-col gap-4">
 
@@ -657,7 +668,7 @@ export default function LeadsKanbanView({
                 <div className="flex flex-col items-center justify-center h-[calc(100vh-320px)] text-center gap-4">
                     <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center">
                         <svg className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 0 012 2m0 10V7" />
                         </svg>
                     </div>
                     <div>
@@ -699,9 +710,16 @@ export default function LeadsKanbanView({
                                     </div>
 
                                     <div
-                                        className={`flex-1 overflow-y-auto rounded-b-lg ${bodyBg} p-3 space-y-3`}
-                                        onDragOver={(e) => e.preventDefault()}
-                                        onDrop={() => handleDrop(group.id)}
+                                        className={`flex-1 ${bodyBg} p-3 overflow-y-auto space-y-3 rounded-b-xl border border-gray-100`}
+                                        onDragOver={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                        }}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            handleDrop(group.id, group.leads.length);
+                                        }}
                                         onScroll={(e) => {
                                             const t = e.target as HTMLDivElement;
                                             if (Math.ceil(t.scrollTop + t.clientHeight) >= t.scrollHeight - 20) {
@@ -715,8 +733,8 @@ export default function LeadsKanbanView({
                                                     }`} />
                                             </div>
                                         ) : group.leads.length === 0 ? (
-                                            <div className="flex h-full flex-col items-center justify-center text-center text-gray-400">
-                                                <p className="text-sm font-medium">No leads yet</p>
+                                            <div className="h-28 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-200 text-gray-400">
+                                                <p className="text-sm font-medium">No Leads</p>
                                                 <p className="text-xs mt-1">Drag and drop here</p>
                                             </div>
                                         ) : (
@@ -738,7 +756,7 @@ export default function LeadsKanbanView({
                                                             lead={lead}
                                                             isUpdating={updatingId === lead._id}
                                                             onDragStart={permissions?.update && !group.isWon ? () => setDraggingId(lead._id) : undefined}
-                                                            onView={() => onView?.(lead)}
+                                                            onView={isBackOfficeOrExecutive ? undefined : () => onView?.(lead)}
                                                             onEdit={permissions?.update ? () => onEdit?.(lead) : undefined}
                                                             onMarkLost={permissions?.update && !group.isLost && !group.isWon ? () => markLost(lead._id) : undefined}
                                                             onMarkWon={permissions?.update && !group.isWon && !group.isLost ? () => markWon(lead._id) : undefined}
@@ -776,7 +794,7 @@ export default function LeadsKanbanView({
                         onPageChange={lostPagination?.handlePageChange}
                         onPageSizeChange={lostPagination?.handleRowsPerPageChange}
                         actions
-                        onView={(row) => onView?.(row)}
+                        onView={isBackOfficeOrExecutive ? undefined : (row) => onView?.(row)}
                         onEdit={permissions?.update ? (row) => onEdit?.(row) : undefined}
                         extraActions={permissions?.update ? [{ label: 'Reactivate', onClick: (row) => reactivate(row._id), icon: <RefreshCw className="h-4 w-4" />, color: 'orange' }] : undefined}
                         searchable={false}
@@ -799,7 +817,7 @@ export default function LeadsKanbanView({
                         onPageChange={wonPagination?.handlePageChange}
                         onPageSizeChange={wonPagination?.handleRowsPerPageChange}
                         actions
-                        onView={(row) => onView?.(row)}
+                        onView={isBackOfficeOrExecutive ? undefined : (row) => onView?.(row)}
                         onEdit={permissions?.update ? (row) => onEdit?.(row) : undefined}
                         extraActions={(() => {
                             const actions: {
@@ -820,13 +838,15 @@ export default function LeadsKanbanView({
                                     },
                                 });
                             }
-                            if (permissions?.update) {
+                            if (permissions?.update || isBackOfficeOrExecutive) {
                                 actions.push({
                                     label: 'Add',
                                     icon: <Plus className="h-3.5 w-3.5" />,
                                     color: 'emerald',
                                     onClick: (row: ApiLead) => setProjectDetailLead(row),
                                 });
+                            }
+                            if (permissions?.update && !isBackOfficeOrExecutive) {
                                 actions.push({
                                     label: 'Pay',
                                     icon: <span className="text-xs font-bold">₹</span>,

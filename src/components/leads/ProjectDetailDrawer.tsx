@@ -305,6 +305,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showLoanDocs, setShowLoanDocs] = useState(false);
   const [isBackOffice, setIsBackOffice] = useState(false);
+  const [canViewBankDetails, setCanViewBankDetails] = useState(false);
   const [isExecutiveVerified, setIsExecutiveVerified] = useState(false);
   const [executiveName, setExecutiveName] = useState('');
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -317,18 +318,72 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
       .then((res) => {
         const staff = res.data?.data || {};
         const role = staff.role || {};
-        const roleName = (role.roleName || role.name || '').toLowerCase().replace(/\s+/g, '');
-        const deptName = (staff.department?.name || staff.department?.roleName || '').toLowerCase().replace(/\s+/g, '');
-        const isBO = roleName.includes('backoffice') || deptName.includes('backoffice');
+        const roleName = (role.roleName || role.name || '').toLowerCase();
+        const deptName = (
+          typeof staff.department === 'string'
+            ? staff.department
+            : (staff.department?.name || staff.department?.roleName || '')
+        ).toLowerCase();
+        
+        const isBO = roleName.includes('back office') || roleName.includes('backoffice') || deptName.includes('back office') || deptName.includes('backoffice');
+        const isExec = roleName.includes('executive') || deptName.includes('executive');
+        const isAdmin = roleName.includes('admin') || deptName.includes('admin');
+
         setIsBackOffice(isBO);
+        setCanViewBankDetails(isBO);
         
         const staffName = staff.fullName || staff.name || '';
-        if (staffName) {
+        if (staffName) {  
           setForm(prev => prev.registrationName ? prev : { ...prev, registrationName: staffName });
         }
       })
-      .catch(() => setIsBackOffice(false));
+      .catch(() => {
+        setIsBackOffice(false);
+        setCanViewBankDetails(false);
+      });
   }, [isOpen]);
+
+  const getDefaultFormFromLead = (ld: ApiLead): FormState => {
+    const quotations = ld.quotations || [];
+    let panelMake = '';
+    let panelWp = '';
+    let inverterMake = '';
+    let projectAmount = '';
+
+    if (quotations.length > 0) {
+      const lastQ = quotations[quotations.length - 1];
+      const solarStr = lastQ.solarModule || '';
+      const matchSolar = solarStr.match(/^([a-zA-Z\s\-]+)?\s*(\d+)/);
+      panelMake = matchSolar ? (matchSolar[1] || '').trim() : solarStr;
+      panelWp = matchSolar ? matchSolar[2] : '';
+
+      const inverterStr = lastQ.inverter || '';
+      const matchInverter = inverterStr.match(/^([a-zA-Z\s\-]+)?\s*(\d+(\.\d+)?)/);
+      inverterMake = matchInverter ? (matchInverter[1] || '').trim() : inverterStr;
+
+      const firstRow = lastQ.rows?.[0];
+      const costVal = firstRow ? (firstRow.values?.[0] || '') : '';
+      const matchCost = costVal.replace(/[^\d]/g, '');
+      projectAmount = matchCost || '';
+    }
+
+    return {
+      ...EMPTY_FORM,
+      salesPersonName: ld.assignedTo?.fullName || (ld.assignedTo as any)?.name || ld.createdBy?.fullName || (ld.createdBy as any)?.name || '',
+      creatorName: ld.createdBy?.fullName || (ld.createdBy as any)?.name || '',
+      customerFullName: ld.fullName || (ld as any).name || '',
+      registerMobileNumber: ld.contact || (ld as any).phone || (ld as any).mobile || '',
+      locationLink: (ld as any).locationLink || '',
+      address: (ld as any).address || '',
+      city: (ld as any).city || '',
+      pincode: (ld as any).pincode || '',
+      discom: ld.discomName || '',
+      panelMake,
+      panelWp,
+      inverterMake,
+      projectAmount,
+    };
+  };
 
   // Fetch data function
   const fetchData = async () => {
@@ -352,8 +407,8 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
             srNo: d.srNo || '',
             salesPersonName: d.salesPersonName || lead.assignedTo?.fullName || lead.createdBy?.fullName || '',
             creatorName: d.creatorName || d.leadRefrance || lead.createdBy?.fullName || (lead.createdBy as any)?.name || '',
-            customerFullName: d.customerFullName || lead.fullName || '',
-            registerMobileNumber: d.registerMobileNumber || lead.contact || '',
+            customerFullName: d.customerFullName || lead.fullName || (lead as any).name || '',
+            registerMobileNumber: d.registerMobileNumber || lead.contact || (lead as any).phone || '',
             locationLink: d.locationLink || lead.locationLink || '',
             address: d.address || lead.address || '',
             city: d.city || '',
@@ -462,59 +517,11 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
           const hasLoan = d.applyForLoan === true || d.applyForLoan === 'true' || !!(d.loanDocQuotation || d.loanDocBankStatement || d.loanDocITRReturn || d.loanDocPanCard || d.loanDocAadhaarCard);
           setShowLoanDocs(hasLoan);
         } else {
-          // If no existing project detail, try to autofill from the last quotation
-          const quotations = lead.quotations || [];
-          if (quotations.length > 0) {
-            const lastQ = quotations[quotations.length - 1];
-            
-            // Parse solar module
-            const solarStr = lastQ.solarModule || '';
-            const matchSolar = solarStr.match(/^([a-zA-Z\s\-]+)?\s*(\d+)/);
-            const panelMake = matchSolar ? (matchSolar[1] || '').trim() : solarStr;
-            const panelWp = matchSolar ? matchSolar[2] : '';
-
-            
-            const inverterStr = lastQ.inverter || '';
-            const matchInverter = inverterStr.match(/^([a-zA-Z\s\-]+)?\s*(\d+(\.\d+)?)/);
-            const inverterMake = matchInverter ? (matchInverter[1] || '').trim() : inverterStr;
-
-        
-            let noOfPanel = '';
-
-           
-            const firstRow = lastQ.rows?.[0];
-            const costVal = firstRow ? (firstRow.values?.[0] || '') : '';
-            const matchCost = costVal.replace(/[^\d]/g, '');
-            const projectAmount = matchCost || '';
-
-            setForm({
-              ...EMPTY_FORM,
-              salesPersonName: lead.assignedTo?.fullName || lead.createdBy?.fullName || '',
-              creatorName: lead.createdBy?.fullName || (lead.createdBy as any)?.name || '',
-              customerFullName: lead.fullName || '',
-              registerMobileNumber: lead.contact || '',
-              locationLink: (lead as any).locationLink || '',
-              address: (lead as any).address || '',
-              city: (lead as any).city || '',
-              pincode: (lead as any).pincode || '',
-              discom: lead.discomName || '',
-              panelMake,
-              panelWp,
-              noOfPanel,
-              inverterMake,
-              projectAmount,
-            });
-            setShowLoanDocs(false);
-          } else {
-            setForm({
-              ...EMPTY_FORM,
-              creatorName: lead.createdBy?.fullName || (lead.createdBy as any)?.name || '',
-            });
-            setShowLoanDocs(false);
-          }
+          setForm(getDefaultFormFromLead(lead));
+          setShowLoanDocs(false);
         }
       } catch {
-        // 404 = no existing data, fine
+        if (lead) setForm(getDefaultFormFromLead(lead));
       } finally {
         setLoading(false);
       }
@@ -522,7 +529,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
 
   useEffect(() => {
     if (!isOpen || !lead) return;
-    setForm(EMPTY_FORM);
+    setForm(getDefaultFormFromLead(lead));
     setFiles({});
     setExistingFiles({});
     setActiveSection('project');
@@ -633,7 +640,8 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
       });
     } else if (section === 'payment') {
       const paymentFields: (keyof FormState)[] = ['paymentMode', 'projectAmount', 'subsidyLessProject'];
-      paymentFields.forEach(f => delete newErrors[f]);
+      const bankFields = ['accountHolderName', 'accountNo', 'ifscCode', 'branchName', 'bankName'];
+      [...paymentFields, ...bankFields].forEach(f => delete newErrors[f]);
       paymentFields.forEach(field => {
         if (!form[field]) {
           const fieldNames: Record<string, string> = {
@@ -644,6 +652,43 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
           newErrors[field] = `${fieldNames[field] || field} is required`;
         }
       });
+
+      if (canViewBankDetails) {
+        if (form.accountHolderName && form.accountHolderName.trim()) {
+          const val = form.accountHolderName.trim();
+          if (!/^[a-zA-Z\s\.\'-]{2,}$/.test(val)) {
+            newErrors.accountHolderName = 'Account holder name must contain letters only (min 2 chars)';
+          }
+        }
+
+        if (form.accountNo && form.accountNo.trim()) {
+          const val = form.accountNo.trim();
+          if (!/^\d{9,18}$/.test(val)) {
+            newErrors.accountNo = 'Bank account number must be between 9 and 18 digits';
+          }
+        }
+
+        if (form.ifscCode && form.ifscCode.trim()) {
+          const val = form.ifscCode.trim().toUpperCase();
+          if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(val)) {
+            newErrors.ifscCode = 'IFSC code must be 11 characters (e.g. SBIN0001234)';
+          }
+        }
+
+        if (form.branchName && form.branchName.trim()) {
+          const val = form.branchName.trim();
+          if (!/^[a-zA-Z0-9\s\.\,-]{2,}$/.test(val) || /^\d+$/.test(val)) {
+            newErrors.branchName = 'Branch name must contain valid text (min 2 chars)';
+          }
+        }
+
+        if (form.bankName && form.bankName.trim()) {
+          const val = form.bankName.trim();
+          if (!/^[a-zA-Z\s\.\'-]{2,}$/.test(val)) {
+            newErrors.bankName = 'Bank name must contain letters only (min 2 chars)';
+          }
+        }
+      }
     } else if (section === 'loanDocs') {
       LOAN_DOC_FIELDS.forEach(f => delete newErrors[f.key]);
     }
@@ -665,8 +710,8 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
     } else if (section === 'regProcess') {
       return true;
     } else if (section === 'payment') {
-      const paymentFields = ['paymentMode', 'projectAmount', 'subsidyLessProject'];
-      return !paymentFields.some(f => !!newErrors[f]);
+      const paymentCheckFields = ['paymentMode', 'projectAmount', 'subsidyLessProject', 'accountHolderName', 'accountNo', 'ifscCode', 'branchName', 'bankName'];
+      return !paymentCheckFields.some(f => !!newErrors[f]);
     } else if (section === 'loanDocs') {
       return true;
     }
@@ -1394,16 +1439,50 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                 <div>
                   <SectionTitle>Payment Details</SectionTitle>
                   
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 mb-6">
-                    <p className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">Bank Details</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <FormInput label="Bank Account Holder Name" name="accountHolderName" value={form.accountHolderName} onChange={(e) => handleFormChange('accountHolderName', e.target.value.toUpperCase())} />
-                      <FormInput label="Bank Account No" name="accountNo" value={form.accountNo} maxLength={18} onChange={(e) => handleFormChange('accountNo', e.target.value.toUpperCase())} />
-                      <FormInput label="IFSC Code" name="ifscCode" value={form.ifscCode} maxLength={11} onChange={(e) => handleFormChange('ifscCode', e.target.value.toUpperCase())} />
-                      <FormInput label="Bank Branch" name="branchName" value={form.branchName} onChange={(e) => handleFormChange('branchName', e.target.value.toUpperCase())} />
-                      <FormInput label="Bank Name" name="bankName" value={form.bankName} onChange={(e) => handleFormChange('bankName', e.target.value.toUpperCase())} />
+                  {canViewBankDetails && (
+                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 mb-6">
+                      <p className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">Bank Details</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <FormInput
+                          label="Bank Account Holder Name"
+                          name="accountHolderName"
+                          value={form.accountHolderName}
+                          onChange={(e) => handleFormChange('accountHolderName', e.target.value.toUpperCase())}
+                          error={errors.accountHolderName}
+                        />
+                        <FormInput
+                          label="Bank Account No"
+                          name="accountNo"
+                          value={form.accountNo}
+                          maxLength={18}
+                          onChange={(e) => handleFormChange('accountNo', e.target.value.replace(/\D/g, ''))}
+                          error={errors.accountNo}
+                        />
+                        <FormInput
+                          label="IFSC Code"
+                          name="ifscCode"
+                          value={form.ifscCode}
+                          maxLength={11}
+                          onChange={(e) => handleFormChange('ifscCode', e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                          error={errors.ifscCode}
+                        />
+                        <FormInput
+                          label="Bank Branch"
+                          name="branchName"
+                          value={form.branchName}
+                          onChange={(e) => handleFormChange('branchName', e.target.value.toUpperCase())}
+                          error={errors.branchName}
+                        />
+                        <FormInput
+                          label="Bank Name"
+                          name="bankName"
+                          value={form.bankName}
+                          onChange={(e) => handleFormChange('bankName', e.target.value.toUpperCase())}
+                          error={errors.bankName}
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div>
