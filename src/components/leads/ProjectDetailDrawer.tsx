@@ -576,8 +576,9 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
     const newErrors: Record<string, string> = { ...errors };
 
     if (section === 'project') {
-      const projectFields = [
-        'creatorName', 'panelMake', 'panelWp', 'noOfPanel',
+      const projectFields: (keyof FormState)[] = [
+        'creatorName', 'customerFullName', 'registerMobileNumber', 'registrationPortal', 'panelType',
+        'panelMake', 'panelWp', 'noOfPanel',
         'inverterMake', 'inverterKw', 'inverterPhase', 'installationRoof',
         'discom', 'consumerConnectionType', 'elcbInstalled', 'elcbProvideBy',
         'wiringType', 'homeFloor', 'walkway', 'walkwayLengthFeet', 'ladder', 'ladderLengthFeet', 'hdgiPipeMake'
@@ -585,7 +586,8 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
       projectFields.forEach(f => delete newErrors[f]);
 
       const requiredFields: (keyof FormState)[] = [
-        'creatorName', 'panelMake', 'panelWp', 'noOfPanel',
+        'creatorName', 'customerFullName', 'registerMobileNumber', 'registrationPortal', 'panelType',
+        'panelMake', 'panelWp', 'noOfPanel',
         'inverterMake', 'inverterKw', 'inverterPhase', 'installationRoof',
         'discom', 'consumerConnectionType', 'elcbInstalled', 'elcbProvideBy',
         'wiringType', 'homeFloor', 'walkway', 'ladder', 'hdgiPipeMake'
@@ -595,13 +597,17 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
         if (!form[field]) {
           const fieldNames: Record<string, string> = {
             creatorName: 'Lead Reference',
+            customerFullName: 'Customer Full Name',
+            registerMobileNumber: 'Register Mobile Number',
+            registrationPortal: 'Registration Portal',
+            panelType: 'Panel Type',
             panelMake: 'Panel Make',
             panelWp: 'Panel WP',
             noOfPanel: 'No. of Panels',
             inverterMake: 'Inverter Make',
             inverterKw: 'Inverter KW',
             inverterPhase: 'Inverter Phase',
-            installationRoof: 'Installation Rood',
+            installationRoof: 'Installation Roof',
             discom: 'DISCOM',
             consumerConnectionType: 'Consumer Connection Type',
             elcbInstalled: 'ELCB / RCCB Installed',
@@ -829,6 +835,7 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
       });
       Object.entries(files).forEach(([k, f]) => { if (f) fd.append(k, f); });
       fd.append('applyForLoan', showLoanDocs ? 'true' : 'false');
+      fd.append('isFullyCompleted', 'true');
 
       await axios.post(`${baseUrl.projectDetail}/${lead._id}`, fd, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
@@ -1034,6 +1041,8 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                           placeholder="Full Address..."
                           value={form.address}
                           onChange={(e) => handleFormChange('address', e.target.value)}
+                          error={errors.address}
+                          required
                         />
                         <FormInput
                           label="City"
@@ -1041,6 +1050,8 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                           placeholder="City..."
                           value={form.city}
                           onChange={(e) => handleFormChange('city', e.target.value)}
+                          error={errors.city}
+                          required
                         />
                         <FormInput
                           label="Pincode"
@@ -1052,6 +1063,8 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                             const val = e.target.value.replace(/\D/g, '').slice(0, 6);
                             handleFormChange('pincode', val);
                           }}
+                          error={errors.pincode}
+                          required
                         />
                         <FormInput
                           label="Consumer No"
@@ -1059,6 +1072,8 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                           placeholder="Consumer No..."
                           value={form.consumerNo}
                           onChange={(e) => handleFormChange('consumerNo', e.target.value)}
+                          error={errors.consumerNo}
+                          required
                         />
                         <FormInput
                           label="Division"
@@ -1066,6 +1081,8 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                           placeholder="Division..."
                           value={form.division}
                           onChange={(e) => handleFormChange('division', e.target.value)}
+                          error={errors.division}
+                          required
                         />
                         <FormInput
                           label="Sub Division"
@@ -1073,6 +1090,8 @@ export default function ProjectDetailDrawer({ isOpen, lead, onClose, onSaved }: 
                           placeholder="Sub Division..."
                           value={form.subDivision}
                           onChange={(e) => handleFormChange('subDivision', e.target.value)}
+                          error={errors.subDivision}
+                          required
                         />
                       </>
                     )}

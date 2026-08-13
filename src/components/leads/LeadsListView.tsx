@@ -432,7 +432,7 @@ export default function LeadsListView({
                 label: 'Add ',
                 icon: <Plus className="h-3.5 w-3.5" />,
                 color: 'emerald' as const,
-                show: (row: TableLead) => row.status?.toLowerCase() === 'won',
+                show: (row: TableLead) => (row.status?.toLowerCase() === 'won') && !isExecutiveUser,
                 onClick: (row: TableLead) => {
                   const rawLead: ApiLead = row._raw || row;
                   setProjectDetailLead(rawLead);
@@ -460,7 +460,7 @@ export default function LeadsListView({
                 label: 'Executive',
                 icon: <ShieldCheck className="h-3.5 w-3.5" />,
                 color: 'emerald' as const,
-                show: (row: TableLead) => row.status?.toLowerCase() === 'won' || !!row._raw?.projectDetail,
+                show: (row: TableLead) => !!(row._raw?.projectDetail?.isFullyCompleted),
                 onClick: (row: TableLead) => {
                   const rawLead: ApiLead = row._raw || row;
                   setExecutiveLead(rawLead);
@@ -470,7 +470,7 @@ export default function LeadsListView({
                 label: 'Inst. Doc',
                 icon: <FileText className="h-3.5 w-3.5" />,
                 color: 'orange' as const,
-                show: (row: TableLead) => row.status?.toLowerCase() === 'won' || !!row._raw?.projectDetail,
+                show: (row: TableLead) => !!(row._raw?.projectDetail?.isFullyCompleted),
                 onClick: (row: TableLead) => {
                   const rawLead: ApiLead = row._raw || row;
                   setInstallationDocLead(rawLead);

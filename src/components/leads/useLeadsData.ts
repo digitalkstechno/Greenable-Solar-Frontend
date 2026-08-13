@@ -181,7 +181,7 @@ export function useLeadsData(
       const isExecutive = roleNameStr.includes('executive') || deptNameStr.includes('executive');
       const isAccount = roleNameStr.includes('account') || deptNameStr.includes('account');
       
-      const url = isAccount ? baseUrl.accountLeads : (isExecutive ? baseUrl.backOfficeLeads : (tab === 'my' ? baseUrl.myLeads : baseUrl.getAllLeads));
+      const url = isAccount ? baseUrl.accountLeads : (isExecutive ? baseUrl.executiveLeads : (tab === 'my' ? baseUrl.myLeads : baseUrl.getAllLeads));
       const res = await axios.get(url, {
         headers: getHeaders(),
         params: {
@@ -293,7 +293,7 @@ export function useLeadsData(
       }
 
       if (isExecutive) {
-        const res = await axios.get(baseUrl.backOfficeLeads, {
+        const res = await axios.get(baseUrl.executiveLeads, {
           headers: getHeaders(),
           params: {
             search: f.search || undefined,
@@ -357,7 +357,7 @@ export function useLeadsData(
       const isExecutive = roleNameStr.includes('executive') || deptNameStr.includes('executive');
 
       if (isExecutive) {
-        const res = await axios.get(baseUrl.backOfficeLeads, {
+        const res = await axios.get(baseUrl.executiveLeads, {
           headers: getHeaders(),
           params: {
             search: f.search || undefined,

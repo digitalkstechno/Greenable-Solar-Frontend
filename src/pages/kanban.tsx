@@ -512,6 +512,10 @@ export default function LeadsPage() {
     return sum + (isNaN(amount) ? 0 : amount);
   }, 0);
 
+  const currentUserRoleStr = (currentUser?.role?.roleName || '').toLowerCase();
+  const currentUserDeptStr = (currentUser?.department?.roleName || currentUser?.department?.name || '').toLowerCase();
+  const isExecutiveUser = currentUserRoleStr.includes('executive') || currentUserDeptStr.includes('executive');
+
   const statusGroups: StatusGroup[] = statuses.map((status) => ({
     id: status._id,
     title: status.name,
@@ -538,17 +542,19 @@ export default function LeadsPage() {
             <p className="text-sm text-gray-600">Manage your leads pipeline</p>
           </div>
 
-          <button
-            className="ml-auto flex items-center gap-2 px-6 py-2.5 rounded-lg bg-secondary hover:bg-blue-700 text-white text-sm font-semibold shadow"
-            onClick={() => {
-              setEditingLead(null);
-              resetForm();
-              setShowAddDialog(true);
-            }}
-          >
-            <Plus className="w-4 h-4" />
-            Add Lead
-          </button>
+          {!isExecutiveUser && (
+            <button
+              className="ml-auto flex items-center gap-2 px-6 py-2.5 rounded-lg bg-secondary hover:bg-blue-700 text-white text-sm font-semibold shadow"
+              onClick={() => {
+                setEditingLead(null);
+                resetForm();
+                setShowAddDialog(true);
+              }}
+            >
+              <Plus className="w-4 h-4" />
+              Add Lead
+            </button>
+          )}
 
           <button
             onClick={() => router.push('/leads')}
