@@ -11,9 +11,10 @@ interface CalendarProps {
     placeholder?: string;
     className?: string;
     align?: 'left' | 'right';
+    position?: 'top' | 'bottom';
 }
 
-export default function Calendar({ value, onChange, minDate, placeholder = 'Select date', className, align = 'left' }: CalendarProps) {
+export default function Calendar({ value, onChange, minDate, placeholder = 'Select date', className, align = 'left', position = 'bottom' }: CalendarProps) {
     const today = new Date();
     const [open, setOpen] = useState(false);
     const [cur, setCur] = useState({ y: value?.getFullYear() || today.getFullYear(), m: value?.getMonth() || today.getMonth() });
@@ -64,7 +65,7 @@ export default function Calendar({ value, onChange, minDate, placeholder = 'Sele
 
             {/* Dropdown */}
             {open && (
-                <div className={`absolute z-50 mt-1 bg-white rounded-xl border border-gray-200 p-4 w-72 shadow-lg ${align === 'right' ? 'right-0' : 'left-0'}`}>
+                <div className={`absolute z-50 ${position === 'top' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-white rounded-xl border border-gray-200 p-4 w-full min-w-[280px] shadow-lg ${align === 'right' ? 'right-0' : 'left-0'}`}>
                     {/* Header */}
                     <div className="flex items-center justify-between mb-3">
                         <button onClick={prev} className="p-1 rounded-md hover:bg-gray-100 text-gray-500">
@@ -93,10 +94,10 @@ export default function Calendar({ value, onChange, minDate, placeholder = 'Sele
                                     onClick={() => selectDay(d)}
                                     disabled={dis}
                                     className={`text-center text-sm py-1.5 rounded-md transition-colors
-                    ${isToday(d) || isSelected(d) ? 'bg-[#F28522] text-white font-semibold' : ''}
-                    ${!isToday(d) && !isSelected(d) && !dis ? 'text-gray-800 hover:bg-[#F28522] hover:text-white' : ''}
-                    ${dis ? 'text-gray-300 cursor-not-allowed' : 'cursor-pointer'}
-                  `}
+                                        ${isSelected(d) ? 'bg-[#F28522] text-white font-semibold' : ''}
+                                        ${!isSelected(d) && !dis ? 'text-gray-800 hover:bg-[#F28522] hover:text-white' : ''}
+                                        ${dis ? 'text-gray-300 cursor-not-allowed' : 'cursor-pointer'}
+                                    `}
                                 >
                                     {d}
                                 </button>

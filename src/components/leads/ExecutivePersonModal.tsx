@@ -183,8 +183,8 @@ export default function ExecutivePersonModal({
     { label: 'INVETER PHASE', value: formatVal(projectDetail?.inverterPhase) },
     { label: 'CONSUMER NO', value: formatVal(projectDetail?.consumerNo) },
     { label: 'DISCOM', value: formatVal(projectDetail?.discom) },
-    { label: 'PROJECT AMOUNT', value: projectAmt ? `₹${Number(projectAmt).toLocaleString()}` : '-' },
-    { label: 'PENDING AMOUNT', value: pendingAmt ? `₹${Number(pendingAmt).toLocaleString()}` : '-' },
+    { label: 'PROJECT AMOUNT', value: projectAmt ? `Rs. ${Number(projectAmt).toLocaleString()}` : '-' },
+    { label: 'PENDING AMOUNT', value: pendingAmt ? `Rs. ${Number(pendingAmt).toLocaleString()}` : '-' },
     { label: 'DIVISON', value: formatVal(projectDetail?.division) },
     { label: 'SUB DIVISON', value: formatVal(projectDetail?.subDivision) },
     { label: 'Instolation roof', value: formatVal(projectDetail?.installationRoof) },
@@ -226,7 +226,10 @@ export default function ExecutivePersonModal({
         tableRows.push([f.label, f.value]);
       });
       
-      tableRows.push([{ content: 'HDGI PIPE IN FEET*', colSpan: 2, styles: { fillColor: [220, 230, 241], fontStyle: 'bold' } }]);
+      tableRows.push([
+        { content: 'HDGI PIPE IN FEET*', styles: { fillColor: [220, 230, 241], fontStyle: 'bold' } },
+        { content: '', styles: { fillColor: [220, 230, 241] } }
+      ]);
       
       hdgiSizes.forEach((h) => {
         tableRows.push([h.label, h.value]);
@@ -324,7 +327,7 @@ export default function ExecutivePersonModal({
                       colSpan={2}
                       className="px-4 py-2.5 font-bold text-slate-800 text-xs sm:text-sm uppercase tracking-wide border-r border-slate-300"
                     >
-                      HDGI PIPE IN FEET*
+                      HDGI PIPE IN FEET
                     </td>
                   </tr>
 

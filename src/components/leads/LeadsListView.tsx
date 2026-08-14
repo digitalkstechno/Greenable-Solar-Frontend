@@ -472,6 +472,7 @@ export default function LeadsListView({
                 color: 'orange' as const,
                 show: (row: TableLead) => {
                   if (!row._raw?.projectDetail?.isFullyCompleted) return false;
+                  if (!row._raw?.projectDetail?.isExecutiveVerified) return false;
                   const pd = row._raw.projectDetail;
                   const checkFields = [
                     'photoSiteOverview', 'photoPanelSrNo', 'photoInverterSrNo', 

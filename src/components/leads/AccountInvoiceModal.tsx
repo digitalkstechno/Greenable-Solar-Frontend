@@ -45,14 +45,14 @@ function CustomFileInput({ label, file, existingFile, onFileChange, isPdf = true
   const fileName = existingFile?.originalName || 'document.pdf';
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5 w-full">
       <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide">
         {label}
       </label>
-      <div className="flex flex-col sm:flex-row gap-3">
-        <label className="group flex flex-1 items-center gap-3 cursor-pointer rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/70 p-3 hover:border-[#D87611] hover:bg-amber-50/30 transition">
-          <div className="flex-shrink-0 rounded-lg bg-[#D87611]/10 p-2 text-[#D87611] group-hover:scale-105 transition duration-200">
-            {isPdf ? <FileText className="h-5 w-5" /> : <Upload className="h-5 w-5" />}
+      <div className="flex flex-row items-center gap-2 w-full min-w-0 h-[40px]">
+        <label className="group flex flex-1 min-w-0 items-center gap-2 cursor-pointer rounded-xl border border-dashed border-slate-200 bg-slate-50/70 px-3 h-[40px] hover:border-[#D87611] hover:bg-amber-50/30 transition">
+          <div className="flex-shrink-0 rounded-lg bg-[#D87611]/10 p-1.5 text-[#D87611] group-hover:scale-105 transition duration-200">
+            {isPdf ? <FileText className="h-4 w-4" /> : <Upload className="h-4 w-4" />}
           </div>
           <div className="flex-1 min-w-0">
             {file ? (
@@ -62,7 +62,7 @@ function CustomFileInput({ label, file, existingFile, onFileChange, isPdf = true
                 {existingFile.originalName || 'Existing Document'}
               </span>
             ) : (
-              <p className="text-xs font-semibold text-slate-400">Click to choose image or PDF file</p>
+              <p className="text-xs font-semibold text-slate-400 truncate">Click to choose file</p>
             )}
           </div>
           <input
@@ -74,13 +74,13 @@ function CustomFileInput({ label, file, existingFile, onFileChange, isPdf = true
         </label>
 
         {existingFile && (
-          <div className="flex gap-2 items-center justify-end">
+          <div className="flex gap-1.5 items-center justify-end flex-shrink-0 h-[40px]">
             <a
               href={fileUrl}
               target="_blank"
               rel="noreferrer"
               title="View File"
-              className="flex items-center justify-center p-3 rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-[#D87611] hover:border-[#D87611]/30 hover:bg-amber-50/20 shadow-sm transition duration-200"
+              className="flex items-center justify-center h-[40px] w-[40px] rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-[#D87611] hover:border-[#D87611]/30 hover:bg-amber-50/20 shadow-sm transition duration-200"
             >
               <Eye className="h-4 w-4" />
             </a>
@@ -88,7 +88,7 @@ function CustomFileInput({ label, file, existingFile, onFileChange, isPdf = true
               type="button"
               onClick={(e) => handleDownload(e, fileUrl, fileName)}
               title="Download File"
-              className="flex items-center justify-center p-3 rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-[#D87611] hover:border-[#D87611]/30 hover:bg-amber-50/20 shadow-sm transition duration-200"
+              className="flex items-center justify-center h-[40px] w-[40px] rounded-xl border border-slate-200 bg-white text-slate-600 hover:text-[#D87611] hover:border-[#D87611]/30 hover:bg-amber-50/20 shadow-sm transition duration-200"
             >
               <Download className="h-4 w-4" />
             </button>
@@ -569,6 +569,7 @@ export function AccountInvoiceModal({ isOpen, onClose, lead, onSaved }: AccountI
                         <Calendar
                           value={dcrDate ? new Date(dcrDate) : null}
                           onChange={(d) => setDcrDate(d ? d.toISOString().split('T')[0] : '')}
+                          position="top"
                         />
                       </div>
                       <CustomFileInput
@@ -615,6 +616,7 @@ export function AccountInvoiceModal({ isOpen, onClose, lead, onSaved }: AccountI
                         <Calendar
                           value={meterInstolationDate ? new Date(meterInstolationDate) : null}
                           onChange={(d) => setMeterInstolationDate(d ? d.toISOString().split('T')[0] : '')}
+                          position="top"
                         />
                       </div>
                       <div className="w-full relative space-y-1">
@@ -622,6 +624,7 @@ export function AccountInvoiceModal({ isOpen, onClose, lead, onSaved }: AccountI
                         <Calendar
                           value={intimationApprovalDate ? new Date(intimationApprovalDate) : null}
                           onChange={(d) => setIntimationApprovalDate(d ? d.toISOString().split('T')[0] : '')}
+                          position="top"
                         />
                       </div>
                       <FormSelect
@@ -649,6 +652,7 @@ export function AccountInvoiceModal({ isOpen, onClose, lead, onSaved }: AccountI
                         <Calendar
                           value={subsidyDisbusmentDate ? new Date(subsidyDisbusmentDate) : null}
                           onChange={(d) => setSubsidyDisbusmentDate(d ? d.toISOString().split('T')[0] : '')}
+                          position="top"
                         />
                       </div>
                     </div>
