@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Plus, Loader2 } from 'lucide-react';
 import axios from 'axios';
-import toast from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import { baseUrl, getAuthToken } from '@/config';
 import { ApiLead } from './types';
 
@@ -109,8 +109,8 @@ export default function PaymentModal({ isOpen, lead, onClose, onPaymentAdded }: 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 animate-fade-in">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-slide-up">
         {/* Header */}
         <div className="bg-primary px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold text-white">

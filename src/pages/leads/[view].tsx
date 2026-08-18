@@ -267,7 +267,10 @@ export default function LeadsPage({ isSidebarOpen }: { isSidebarOpen: boolean })
   };
 
   // ── Permission flags ──────────────────────────────────────────────────────
-  const canCreate = !!leadPermissions?.create;
+  const currentUserRoleStr = (currentUser?.role?.roleName || '').toLowerCase();
+  const currentUserDeptStr = (currentUser?.department?.roleName || currentUser?.department?.name || '').toLowerCase();
+  const isExecutiveUser = currentUserRoleStr.includes('executive') || currentUserDeptStr.includes('executive');
+  const canCreate = !!leadPermissions?.create && !isExecutiveUser;
   const canRead = !!(leadPermissions?.readAll || leadPermissions?.readOwn);
   const canReadAll = !!leadPermissions?.readAll;
   const canReadOwn = !!leadPermissions?.readOwn;

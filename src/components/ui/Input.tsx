@@ -397,85 +397,54 @@ const FormInput: React.FC<FormInputProps> = ({
 
   const getInputClasses = () => {
     let base = `
-      w-full px-3 py-2.5 rounded-xl
-      bg-white/90 backdrop-blur-sm
-      text-gray-800 text-sm outline-none transition-all duration-200
-      border-2
+      w-full px-4 py-2.5 rounded-xl border
+      bg-white transition-all duration-300
+      text-gray-900 text-sm outline-none
     `;
 
     if (disabled) {
-      base += " bg-gray-50 cursor-not-allowed opacity-70";
+      base += " border-gray-200 bg-gray-50/50 opacity-60 cursor-not-allowed";
     } else {
-      base += " hover:shadow-sm";
+      if (hasError) {
+        base += " border-red-500 ring-2 ring-red-50";
+      } else if (isFocused) {
+        base += " border-secondary ring-2 ring-orange-50";
+      } else {
+        base += " border-gray-200 hover:border-gray-400 shadow-sm hover:shadow-md";
+      }
     }
 
-    if (icon) base += " pl-10";
-    if (isPassword) base += " pr-10";
-
-    if (hasError) {
-      base += " border-error ring-2 ring-red-50 focus:border-error focus:ring-red-50";
-    } else if (showSuccess) {
-      base += " border-green-700 ring-2 ring-green-300 focus:border-green-700 focus:ring-green-300";
-    } else if (isFocused) {
-      base += " border-blue-700 ring-2 ring-blue-300";
-    } else {
-      base += " border-gray-500 hover:border-gray-700";
-    }
+    if (icon) base += " pl-11";
+    if (isPassword) base += " pr-11";
 
     return `${base} ${className}`;
   };
 
   const getFileInputClasses = () => {
-    let classes = `
-      w-full px-3 py-2 rounded-xl border-2
-      bg-white/90 backdrop-blur-sm
-      text-sm outline-none transition-all duration-200
+    let base = `
+      w-full px-4 py-2 rounded-xl border
+      bg-white transition-all duration-300
+      text-sm outline-none
       file:mr-3 file:py-2 file:px-4 file:rounded-lg
       file:border-0 file:text-sm file:font-medium
-      file:bg-blue-50 file:text-blue-700
-      hover:file:bg-blue-100
+      file:bg-orange-50 file:text-secondary
+      hover:file:bg-orange-100/80
     `;
 
     if (disabled) {
-      classes += " bg-gray-50 cursor-not-allowed opacity-70";
+      base += " border-gray-200 bg-gray-50/50 opacity-60 cursor-not-allowed";
     } else {
-      classes += " cursor-pointer";
+      base += " cursor-pointer";
+      if (hasError) {
+        base += " border-red-500 ring-2 ring-red-50";
+      } else if (isFocused) {
+        base += " border-secondary ring-2 ring-orange-50";
+      } else {
+        base += " border-gray-200 hover:border-gray-400 shadow-sm hover:shadow-md";
+      }
     }
 
-    if (hasError) {
-      classes += " border-error ring-2 ring-red-50";
-    } else if (showSuccess) {
-      classes += " border-green-700 ring-2 ring-green-300";
-    } else if (isFocused) {
-      classes += " border-blue-700 ring-2 ring-blue-300";
-    } else {
-      classes += " border-gray-500 hover:border-gray-700";
-    }
-
-    return classes;
-  };
-
-  const getCheckboxClasses = () => {
-    let classes = `
-      appearance-none w-5 h-5 rounded
-      border-2 transition-all duration-200
-      cursor-pointer relative
-      focus:outline-none focus:ring-2 focus:ring-offset-2
-    `;
-
-    if (disabled) {
-      classes += " cursor-not-allowed opacity-70";
-    }
-
-    if (hasError) {
-      classes += ` border-red-700 focus:ring-red-300`;
-    } else if (checked) {
-      classes += ` border-${checkboxColor} bg-${checkboxColor} focus:ring-${checkboxColor}`;
-    } else {
-      classes += ` border-gray-400 focus:ring-blue-300`;
-    }
-
-    return classes;
+    return base;
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -497,8 +466,6 @@ const FormInput: React.FC<FormInputProps> = ({
       },
     });
   };
-
-
 
   if (isCheckbox) {
     return (
@@ -590,24 +557,23 @@ const FormInput: React.FC<FormInputProps> = ({
   }
 
   return (
-    <div className="w-full mb-4">
+    <div className="w-full relative">
       {/* Label */}
       {label && (
-        <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-semibold text-gray-700">
-            {label}
-            {required && <span className="text-red-500 ml-1">*</span>}
+        <div className="flex items-center justify-between mb-1.5 px-1">
+          <label className="text-sm font-bold text-gray-700">
+            {label} {required && <span className="text-red-500">*</span>}
           </label>
           {helperText && !hasError && (
-            <span className="text-xs text-gray-500">{helperText}</span>
+            <span className="text-xs text-gray-400 italic">{helperText}</span>
           )}
         </div>
       )}
 
-      <div className="relative">
+      <div className="relative group">
         {/* Left Icon */}
         {icon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10 pointer-events-none group-hover:text-secondary transition-colors">
             {icon}
           </div>
         )}
@@ -638,6 +604,7 @@ const FormInput: React.FC<FormInputProps> = ({
             accept={accept}
             disabled={disabled}
             className={getFileInputClasses()}
+            style={{ height: '46px' }}
           />
         ) : (
           <input
@@ -657,6 +624,7 @@ const FormInput: React.FC<FormInputProps> = ({
             max={max}
             maxLength={maxLength}
             className={getInputClasses()}
+            style={{ height: '46px' }}
           />
         )}
 
@@ -666,7 +634,7 @@ const FormInput: React.FC<FormInputProps> = ({
             type="button"
             onClick={() => setShowPassword(!showPassword)}
             disabled={disabled}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
           >
             {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
           </button>
@@ -674,7 +642,7 @@ const FormInput: React.FC<FormInputProps> = ({
 
         {/* Success Icon */}
         {showSuccess && !hasError && !isPassword && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+          <div className="absolute right-4 top-1/2 -translate-y-1/2">
             <CheckCircle size={18} className="text-green-700" />
           </div>
         )}
@@ -682,15 +650,10 @@ const FormInput: React.FC<FormInputProps> = ({
 
       {/* Error Message with Icon */}
       {hasError && (
-        <div className="mt-2 flex items-center gap-1.5">
+        <div className="mt-1.5 flex items-center gap-1.5 px-1 animate-in slide-in-from-top-1 duration-200">
           <AlertCircle size={14} className="text-red-500 flex-shrink-0" />
           <p className="text-red-500 text-xs">{error}</p>
         </div>
-      )}
-
-      {/* Success Message */}
-      {success && !hasError && value && !error && (
-        <p className="text-green-700 text-xs mt-2">✓ Valid input</p>
       )}
     </div>
   );

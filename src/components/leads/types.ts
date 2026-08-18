@@ -88,9 +88,8 @@ export type ApiLead = {
 
   };
   projectAmount?: number;
-  projectDetail?: {
-    projectAmount?: number;
-  };
+  projectDetail?: any;
+  createdAt?: string;
   pendingAmount?: number;
   paymentAmount?: number;
   _raw?: any;

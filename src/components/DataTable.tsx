@@ -409,8 +409,9 @@ export default function DataTable<T extends Record<string, any>>({
                               blue: { base: 'text-blue-600', hover: 'hover:bg-blue-600', ring: 'focus:ring-blue-500' },
                               green: { base: 'text-green-600', hover: 'hover:bg-green-600', ring: 'focus:ring-green-500' },
                               red: { base: 'text-red-600', hover: 'hover:bg-red-500', ring: 'focus:ring-red-500' },
-                              orange: { base: 'text-orange-600', hover: 'hover:bg-orange-500', ring: 'focus:ring-orange-500' },
-                              purple: { base: 'text-purple-600', hover: 'hover:bg-purple-600', ring: 'focus:ring-purple-500' },
+                              orange: { base: 'text-[#D87611]', hover: 'hover:bg-[#D87611]', ring: 'focus:ring-[#D87611]' },
+                              purple: { base: 'text-[#D87611]', hover: 'hover:bg-[#D87611]', ring: 'focus:ring-[#D87611]' },
+                              brand: { base: 'text-[#D87611]', hover: 'hover:bg-[#D87611]', ring: 'focus:ring-[#D87611]' },
                               emerald: { base: 'text-emerald-600', hover: 'hover:bg-emerald-500', ring: 'focus:ring-emerald-500' },
                             };
                             const c = colors[act.color || 'blue'] || colors.blue;
