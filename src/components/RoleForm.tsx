@@ -191,7 +191,7 @@ export default function RoleForm({
 
     formik.setFieldValue('permissions', newPermissions);
   };
-  const isLockedName = initialData?.roleName?.toLowerCase().includes('sales');
+  const isLockedName = initialData?.roleName?.toLowerCase().includes('sales') || isSuperAdmin;
 
   return (
     <Dialog

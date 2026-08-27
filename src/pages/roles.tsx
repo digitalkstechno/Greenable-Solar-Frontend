@@ -371,7 +371,7 @@ export function RolesContent() {
           onDelete={canDelete ? handleDeleteClick : undefined}
           // canEdit={(row) => !row.roleName.toLowerCase().includes('sales')}
           canEdit={() => true}
-          canDelete={(row) => !row.roleName.toLowerCase().includes('sales')}
+          canDelete={(row) => !row.roleName.toLowerCase().includes('sales') && row.roleName.toLowerCase() !== 'super admin'}
           actions={true}
           addButton={
             canCreate
