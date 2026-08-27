@@ -412,14 +412,7 @@ export function useLeadsData(
         const users = staffRes.value.data?.data ?? [];
         setStaffMembers(users); // unfiltered - for filter dropdown
 
-        const salesExecs = users.filter((u: any) => {
-          const r = u.role;
-          const roleName = r ? (r.roleName || r.name || (typeof r === 'string' ? r : '')) : '';
-          const d = depts.find((dept: any) => dept._id === u.department);
-          const deptName = d ? (d.roleName || d.name || '') : '';
-          return !!(roleName.match(/\bsales\b/i) || deptName.match(/\bsales\b/i));
-        });
-        const usersWithDepts = salesExecs.map((u: any) => {
+        const usersWithDepts = users.map((u: any) => {
           const d = depts.find((dept: any) => dept._id === u.department);
           return { ...u, departmentName: d ? (d.roleName || d.name) : '' };
         });
