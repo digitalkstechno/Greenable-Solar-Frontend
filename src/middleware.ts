@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login", "/support"];
 const TOKEN_COOKIE_NAME = "crm_token";
 
 function isPublicPath(pathname: string) {
